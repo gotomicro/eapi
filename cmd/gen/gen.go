@@ -14,6 +14,7 @@ import (
 	"ego-gen-api/internal/pongo2"
 	"ego-gen-api/internal/pongo2render"
 	"ego-gen-api/internal/utils"
+	"github.com/go-openapi/spec"
 	"github.com/spf13/cobra"
 )
 
@@ -55,14 +56,14 @@ func CmdFunc(cmd *cobra.Command, args []string) {
 	// 获取目录
 
 	render := pongo2render.NewRender(filepath.Dir(tmplPath))
-	err = Exec(render, tmplPath, p.GetData())
+	err = Exec(render, tmplPath, p.GetData(), p.GetDefinitions())
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println("finish")
 }
 
-func Exec(render *pongo2render.Render, tmplName string, data []parser.UrlInfo) error {
+func Exec(render *pongo2render.Render, tmplName string, data []parser.UrlInfo, definitions spec.Definitions) error {
 	var (
 		buf string
 		err error
@@ -72,6 +73,7 @@ func Exec(render *pongo2render.Render, tmplName string, data []parser.UrlInfo) e
 	flushFile := filepath.Dir(tmplName) + "/dist/" + strings.TrimRight(filepath.Base(tmplName), filepath.Ext(filepath.Base(tmplName))) + flushSuffix
 	ctx := make(pongo2.Context)
 	ctx["data"] = data
+	ctx["definitions"] = definitions
 	buf, err = render.Template(filepath.Base(tmplName)).Execute(ctx)
 	if err != nil {
 		return fmt.Errorf("Could not create the %s render tmpl , err: %w", tmplName, err)

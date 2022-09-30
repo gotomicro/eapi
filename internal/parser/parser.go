@@ -101,17 +101,6 @@ type GroupInfo struct {
 	Prefix    string // 前缀
 }
 
-type UrlInfo struct {
-	CurrentMod  string
-	FullPath    string
-	Method      string
-	Prefix      string
-	PackagePath string
-	ModuleName  string
-	FuncName    string
-	Swagger     *spec.Schema
-}
-
 func AstParserBuild(userOption UserOption) (*astParser, error) {
 	a := &astParser{
 		readContent: "",
@@ -124,6 +113,26 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 		//ParseDependency: true,
 		fieldParserFactory: newTagBaseFieldParser,
 		packages:           NewPackagesDefinitions(),
+		swagger: &spec.SwaggerProps{
+			Info: &spec.Info{
+				InfoProps: spec.InfoProps{
+					Contact: &spec.ContactInfo{},
+					License: nil,
+				},
+				VendorExtensible: spec.VendorExtensible{
+					Extensions: spec.Extensions{},
+				},
+			},
+			Paths: &spec.Paths{
+				Paths: make(map[string]spec.PathItem),
+			},
+			Definitions:         make(map[string]spec.Schema),
+			SecurityDefinitions: make(map[string]*spec.SecurityScheme),
+		},
+		parsedSchemas:      make(map[*TypeSpecDef]*Schema),
+		outputSchemas:      make(map[*TypeSpecDef]*Schema),
+		existSchemaNames:   make(map[string]*Schema),
+		toBeRenamedSchemas: make(map[string]string),
 	}
 
 	// 初始化配置，校验数据
@@ -198,13 +207,16 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 					if reqInfo.ParamName != "" {
 						// 说明这个类型就在这个函数里，直接使用type解析即可
 						if reqInfo.ModName == "" {
-							schemaInfo, err := a.getTypeSchema(reqInfo.ParamName, file, false)
+							schemaInfo, err := a.getTypeSchema(reqInfo.ParamName, file, true)
 							if err != nil {
 								fmt.Printf("err--------------->"+"%+v\n", err)
 							}
 							value.Swagger = schemaInfo
+							// reqInfo.ModName == "" 说明是跟调用url地方在一个包里
+							value.ReqParam = value.ModuleName + "." + reqInfo.ParamName
+
 							a.urlMap[value.FullPath] = value
-							spew.Dump(schemaInfo)
+							//spew.Dump(schemaInfo)
 							// {"type":"object","properties":{"arr":{"type":"array","items":{"type":"string"}},"cover":{"type":"string"},"subTitle":{"type":"string"},"title":{"type":"string"}}}
 							//jsonBytes, err := schemaInfo.MarshalJSON()
 							//fmt.Printf("defInfo--------------->"+"%+v\n", string(jsonBytes))
@@ -228,6 +240,8 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 			return nil
 		})
 	}
+	//fmt.Printf("a.swagger.Definitions--------------->"+"%+v\n", a.swagger.Definitions)
+	spew.Dump(a.swagger.Definitions)
 
 	return a, nil
 }
@@ -238,6 +252,10 @@ func (p *astParser) GetData() []UrlInfo {
 		output = append(output, p.urlMap[value.FullPath])
 	}
 	return output
+}
+
+func (p *astParser) GetDefinitions() spec.Definitions {
+	return p.swagger.Definitions
 }
 
 func (p *astParser) getTypeSchema(typeName string, file *ast.File, ref bool) (*spec.Schema, error) {
@@ -268,6 +286,7 @@ func (p *astParser) getTypeSchema(typeName string, file *ast.File, ref bool) (*s
 		}
 	}
 
+	// 如果ref为true，同时是对象类型
 	if ref && len(schema.Schema.Type) > 0 && schema.Schema.Type[0] == OBJECT {
 		return p.getRefTypeSchema(typeSpecDef, schema), nil
 	}
@@ -301,7 +320,7 @@ func (p *astParser) ParseDefinition(typeSpecDef *TypeSpecDef) (*Schema, error) {
 	p.structStack = append(p.structStack, typeSpecDef)
 
 	//p.debug.Printf("Generating %s", typeName)
-
+	fmt.Println(fmt.Sprintf("Generating %s", typeName))
 	definition, err := p.parseTypeExpr(typeSpecDef.File, typeSpecDef.TypeSpec.Type, false)
 	if err != nil {
 		return nil, err
@@ -433,6 +452,7 @@ func (p *astParser) parseTypeExpr(file *ast.File, typeExpr ast.Expr, ref bool) (
 }
 
 func (p *astParser) getRefTypeSchema(typeSpecDef *TypeSpecDef, schema *Schema) *spec.Schema {
+	fmt.Printf("typeSpecDef--------------->"+"%+v\n", typeSpecDef)
 	_, ok := p.outputSchemas[typeSpecDef]
 	if !ok {
 		existSchema, ok := p.existSchemaNames[schema.Name]
