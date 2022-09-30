@@ -2,28 +2,97 @@ package parser
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"go/ast"
+	"go/build"
 	"go/parser"
 	"go/token"
 	"io/ioutil"
+	"net/url"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 
+	"github.com/go-openapi/spec"
+	"github.com/gotomicro/ego/core/elog"
 	"github.com/samber/lo"
 )
+
+var ErrRecursiveParseStruct = errors.New("recursively parsing struct")
+
+type Swagger struct {
+	spec.SwaggerProps
+}
 
 type astParser struct {
 	readContent string // 读取原文件数据
 	userOption  UserOption
-	importMap   map[string]struct{}
+	importMap   map[string]ImportInfo
 	routerFunc  *ast.FuncDecl
 	routerParam string // router的变量名
 	// 存储group信息
 	groupMap map[string]GroupInfo
 	// 存储url信息
 	urlMap map[string]UrlInfo
+	// 顺序URL
+	sortedUrl []UrlInfo
+	// packages store entities of APIs, definitions, file, package path etc.  and their relations
+	packages *PackagesDefinitions
+	// ParseInternal whether ego-gen-api should parse internal packages
+	ParseInternal bool
+	// excludes excludes dirs and files in SearchDir
+	excludes map[string]struct{}
+	// ParseVendor parse vendor folder
+	ParseVendor bool
+	// ParseDependencies whether swag should be parse outside dependency folder
+	ParseDependency bool
+	// structStack stores full names of the structures that were already parsed or are being parsed now
+	structStack []*TypeSpecDef
+	// fieldParserFactory create FieldParser
+	fieldParserFactory FieldParserFactory
+	// PropNamingStrategy naming strategy
+	PropNamingStrategy string
+
+	// parsedSchemas store schemas which have been parsed from ast.TypeSpec
+	parsedSchemas map[*TypeSpecDef]*Schema
+
+	// outputSchemas store schemas which will be export to swagger
+	outputSchemas map[*TypeSpecDef]*Schema
+
+	// existSchemaNames store names of models for conflict determination
+	existSchemaNames map[string]*Schema
+
+	// toBeRenamedSchemas names of models to be renamed
+	toBeRenamedSchemas map[string]string
+
+	// toBeRenamedSchemas URLs of ref models to be renamed
+	toBeRenamedRefURLs []*url.URL
+
+	swagger *spec.SwaggerProps
+}
+
+// FieldParserFactory create FieldParser
+type FieldParserFactory func(ps *astParser, field *ast.Field) FieldParser
+
+// FieldParser parse struct field
+type FieldParser interface {
+	ShouldSkip() (bool, error)
+	FieldName() (string, error)
+	CustomSchema() (*spec.Schema, error)
+	ComplementSchema(schema *spec.Schema) error
+	IsRequired() (bool, error)
+}
+
+type ImportInfo struct {
+	KeyName     string
+	Alias       string
+	PackagePath string
 }
 
 type GroupInfo struct {
@@ -32,28 +101,530 @@ type GroupInfo struct {
 }
 
 type UrlInfo struct {
-	FullPath   string
-	Method     string
-	Prefix     string
-	ModuleName string
-	FuncName   string
+	CurrentMod  string
+	FullPath    string
+	Method      string
+	Prefix      string
+	PackagePath string
+	ModuleName  string
+	FuncName    string
 }
 
 func AstParserBuild(userOption UserOption) (*astParser, error) {
 	a := &astParser{
 		readContent: "",
 		userOption:  userOption,
-		importMap:   map[string]struct{}{},
+		importMap:   map[string]ImportInfo{},
 		routerParam: "",
 		groupMap:    map[string]GroupInfo{},
 		urlMap:      map[string]UrlInfo{},
+		sortedUrl:   make([]UrlInfo, 0),
+		//ParseDependency: true,
+		fieldParserFactory: newTagBaseFieldParser,
+		packages:           NewPackagesDefinitions(),
 	}
 	err := a.initReadContent()
 	if err != nil {
 		return nil, err
 	}
+
+	err = a.ParseAPI("testdata/bff", "main.go", 100)
+	if err != nil {
+		panic("parse api fail" + err.Error())
+	}
+	// 解析group，url
 	a.parserStruct()
+	fmt.Printf("	a.packages.files--------------->"+"%+v\n", a.packages.files)
+	// {FullPath:/api/test/new/goodCreate Method:POST Prefix:/api/test ModuleName:shop FuncName:GoodCreate}
+	// package path: File:0x140003fa200 Path:/Users/askuy/code/github/gotomicro/ego-gen-api/internal/parser/testdata/bff/pkg/shop/shop.go ModName:bff/pkg/shop
+	for _, value := range a.sortedUrl {
+		fmt.Printf("value--------------->"+"%+v\n", value)
+		a.packages.rangeByPkgPath(value.PackagePath, func(filename string, file *ast.File) error {
+			// 先找到有没有名称为value.FuncName的函数
+			for _, declValue := range file.Decls {
+				// 找到函数
+				funcValue, flag := declValue.(*ast.FuncDecl)
+				if !flag {
+					continue
+				}
+
+				if funcValue.Name.String() != value.FuncName {
+					continue
+				}
+
+				// 获取参数名称，拿到他是(c *gin.Context)，还是(ctx *gin.Context)
+				// 目前只存在一个参数
+				if len(funcValue.Type.Params.List) != 1 {
+					panic("参数个数不为1")
+				}
+				ctxName := funcValue.Type.Params.List[0].Names[0].String()
+				fmt.Printf("ctxName--------------->"+"%+v\n", ctxName)
+				var bindReqName string
+				// 因为会存在两种类型，所以直接使用ast.Inspect找到对应的 *ast.AssignStme
+				// if err := c.Bind() xxxx
+				// err := c.Bind()
+				ast.Inspect(funcValue, func(n ast.Node) bool {
+					if !funcValue.Name.IsExported() {
+						return true
+					}
+					switch nn := n.(type) {
+					case *ast.CallExpr:
+						fun, flag := nn.Fun.(*ast.SelectorExpr)
+						if !flag {
+							return true
+						}
+						funcXIndent, flag := fun.X.(*ast.Ident)
+						if !flag {
+							return true
+						}
+						// 说明找到了c.Bind
+						if fun.Sel.Name == "Bind" && funcXIndent.String() == ctxName {
+							switch argType := nn.Args[0].(type) {
+							case *ast.UnaryExpr:
+								bindReqName = argType.X.(*ast.Ident).String()
+							case *ast.Ident:
+								bindReqName = argType.String()
+							}
+							return false
+						}
+					}
+					return true
+				})
+				// warning 有这个参数，才需要去找下这个变量
+				if bindReqName != "" {
+					reqInfo := getStructByParamName(bindReqName, funcValue.Body.List)
+					fmt.Printf("reqInfo--------------->"+"%+v\n", reqInfo)
+					if reqInfo.ParamName != "" {
+						// 说明这个类型就在这个函数里，直接使用type解析即可
+						if reqInfo.ModName == "" {
+							schemaInfo, err := a.getTypeSchema(reqInfo.ParamName, file, false)
+							if err != nil {
+								fmt.Printf("err--------------->"+"%+v\n", err)
+							}
+							//defInfo := a.packages.FindTypeSpec(reqInfo.ParamName, file, false)
+							jsonBytes, err := schemaInfo.MarshalJSON()
+							fmt.Printf("defInfo--------------->"+"%+v\n", string(jsonBytes))
+							// 说明在go其他包里
+							// 先找到他引用的包
+						} else {
+							importMapInfo := a.getImport(file)
+							importInfo, flag := importMapInfo[reqInfo.ModName]
+							if !flag {
+								panic("not find import info, modName: " + reqInfo.ModName)
+							}
+							// 遍历去找这个type类型
+							a.packages.rangeByPkgPath(importInfo.PackagePath, func(filename string, file *ast.File) error {
+								return nil
+							})
+						}
+					}
+				}
+
+				//for _, value := range funcValue.Body.List {
+				//
+				//}
+
+				//ast.Inspect(funcValue, func(n ast.Node) bool {
+				//	if !funcValue.Name.IsExported() {
+				//		return true
+				//	}
+				//	fmt.Printf("n--------------->"+"%+v\n", n)
+				//	return true
+				//})
+
+				// 找到函数
+				//funcValue.Body.List
+				break
+			}
+
+			fmt.Printf("filename--------------->"+"%+v\n", filename)
+			fmt.Printf("file--------------->"+"%+v\n", file)
+			return nil
+		})
+	}
+
 	return a, nil
+}
+
+func (p *astParser) getTypeSchema(typeName string, file *ast.File, ref bool) (*spec.Schema, error) {
+	if IsGolangPrimitiveType(typeName) {
+		return PrimitiveSchema(TransToValidSchemeType(typeName)), nil
+	}
+
+	//schemaType, err := convertFromSpecificToPrimitive(typeName)
+	//if err == nil {
+	//	return PrimitiveSchema(schemaType), nil
+	//}
+
+	typeSpecDef := p.packages.FindTypeSpec(typeName, file, p.ParseDependency)
+	if typeSpecDef == nil {
+		return nil, fmt.Errorf("cannot find type definition: %s", typeName)
+	}
+
+	schema, ok := p.parsedSchemas[typeSpecDef]
+	if !ok {
+		var err error
+		schema, err = p.ParseDefinition(typeSpecDef)
+		if err != nil {
+			if err == ErrRecursiveParseStruct && ref {
+				return p.getRefTypeSchema(typeSpecDef, schema), nil
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref && len(schema.Schema.Type) > 0 && schema.Schema.Type[0] == OBJECT {
+		return p.getRefTypeSchema(typeSpecDef, schema), nil
+	}
+
+	return schema.Schema, nil
+}
+
+// ParseDefinition parses given type spec that corresponds to the type under
+// given name and package, and populates swagger schema definitions registry
+// with a schema for the given type
+func (p *astParser) ParseDefinition(typeSpecDef *TypeSpecDef) (*Schema, error) {
+	typeName := typeSpecDef.FullName()
+	refTypeName := TypeDocName(typeName, typeSpecDef.TypeSpec)
+
+	schema, ok := p.parsedSchemas[typeSpecDef]
+	if ok {
+		elog.Debugf("Skipping '%s', already parsed.", typeName)
+		return schema, nil
+	}
+
+	if p.isInStructStack(typeSpecDef) {
+		//p.debug.Printf("Skipping '%s', recursion detected.", typeName)
+
+		return &Schema{
+				Name:    refTypeName,
+				PkgPath: typeSpecDef.PkgPath,
+				Schema:  PrimitiveSchema(OBJECT),
+			},
+			ErrRecursiveParseStruct
+	}
+	p.structStack = append(p.structStack, typeSpecDef)
+
+	//p.debug.Printf("Generating %s", typeName)
+
+	definition, err := p.parseTypeExpr(typeSpecDef.File, typeSpecDef.TypeSpec.Type, false)
+	if err != nil {
+		return nil, err
+	}
+
+	if definition.Description == "" {
+		fillDefinitionDescription(definition, typeSpecDef.File, typeSpecDef)
+	}
+
+	s := Schema{
+		Name:    refTypeName,
+		PkgPath: typeSpecDef.PkgPath,
+		Schema:  definition,
+	}
+	p.parsedSchemas[typeSpecDef] = &s
+
+	// update an empty schema as a result of recursion
+	s2, ok := p.outputSchemas[typeSpecDef]
+	if ok {
+		p.swagger.Definitions[s2.Name] = *definition
+	}
+
+	return &s, nil
+}
+
+// fillDefinitionDescription additionally fills fields in definition (spec.Schema)
+// TODO: If .go file contains many types, it may work for a long time
+func fillDefinitionDescription(definition *spec.Schema, file *ast.File, typeSpecDef *TypeSpecDef) {
+	for _, astDeclaration := range file.Decls {
+		generalDeclaration, ok := astDeclaration.(*ast.GenDecl)
+		if !ok || generalDeclaration.Tok != token.TYPE {
+			continue
+		}
+
+		for _, astSpec := range generalDeclaration.Specs {
+			typeSpec, ok := astSpec.(*ast.TypeSpec)
+			if !ok || typeSpec != typeSpecDef.TypeSpec {
+				continue
+			}
+
+			definition.Description =
+				extractDeclarationDescription(typeSpec.Doc, typeSpec.Comment, generalDeclaration.Doc)
+		}
+	}
+}
+
+// extractDeclarationDescription gets first description
+// from attribute descriptionAttr in commentGroups (ast.CommentGroup)
+func extractDeclarationDescription(commentGroups ...*ast.CommentGroup) string {
+	var description string
+
+	for _, commentGroup := range commentGroups {
+		if commentGroup == nil {
+			continue
+		}
+
+		isHandlingDescription := false
+		for _, comment := range commentGroup.List {
+			commentText := strings.TrimSpace(strings.TrimLeft(comment.Text, "/"))
+			attribute := strings.Split(commentText, " ")[0]
+			if strings.ToLower(attribute) != descriptionAttr {
+				if !isHandlingDescription {
+					continue
+				}
+				break
+			}
+
+			isHandlingDescription = true
+			description += " " + strings.TrimSpace(commentText[len(attribute):])
+		}
+	}
+
+	return strings.TrimLeft(description, " ")
+}
+
+// parseTypeExpr parses given type expression that corresponds to the type under
+// given name and package, and returns swagger schema for it.
+func (p *astParser) parseTypeExpr(file *ast.File, typeExpr ast.Expr, ref bool) (*spec.Schema, error) {
+	switch expr := typeExpr.(type) {
+	// type Foo interface{}
+	case *ast.InterfaceType:
+		return &spec.Schema{}, nil
+
+	// type Foo struct {...}
+	case *ast.StructType:
+		return p.parseStruct(file, expr.Fields)
+
+	// type Foo Baz
+	case *ast.Ident:
+		return p.getTypeSchema(expr.Name, file, ref)
+
+	// type Foo *Baz
+	case *ast.StarExpr:
+		return p.parseTypeExpr(file, expr.X, ref)
+
+	// type Foo pkg.Bar
+	case *ast.SelectorExpr:
+		if xIdent, ok := expr.X.(*ast.Ident); ok {
+			return p.getTypeSchema(fullTypeName(xIdent.Name, expr.Sel.Name), file, ref)
+		}
+	// type Foo []Baz
+	case *ast.ArrayType:
+		itemSchema, err := p.parseTypeExpr(file, expr.Elt, true)
+		if err != nil {
+			return nil, err
+		}
+
+		return spec.ArrayProperty(itemSchema), nil
+	// type Foo map[string]Bar
+	case *ast.MapType:
+		if _, ok := expr.Value.(*ast.InterfaceType); ok {
+			return spec.MapProperty(nil), nil
+		}
+		schema, err := p.parseTypeExpr(file, expr.Value, true)
+		if err != nil {
+			return nil, err
+		}
+
+		return spec.MapProperty(schema), nil
+
+	case *ast.FuncType:
+		return nil, ErrFuncTypeField
+	// ...
+	default:
+		panic(fmt.Sprintf("Type definition of type '%T' is not supported yet. Using 'object' instead.\n", typeExpr))
+	}
+
+	return PrimitiveSchema(OBJECT), nil
+}
+
+func (p *astParser) getRefTypeSchema(typeSpecDef *TypeSpecDef, schema *Schema) *spec.Schema {
+	_, ok := p.outputSchemas[typeSpecDef]
+	if !ok {
+		existSchema, ok := p.existSchemaNames[schema.Name]
+		if ok {
+			// store the first one to be renamed after parsing over
+			_, ok = p.toBeRenamedSchemas[existSchema.Name]
+			if !ok {
+				p.toBeRenamedSchemas[existSchema.Name] = existSchema.PkgPath
+			}
+			// rename not the first one
+			schema.Name = p.renameSchema(schema.Name, schema.PkgPath)
+		} else {
+			p.existSchemaNames[schema.Name] = schema
+		}
+		p.swagger.Definitions[schema.Name] = spec.Schema{}
+
+		if schema.Schema != nil {
+			p.swagger.Definitions[schema.Name] = *schema.Schema
+		}
+
+		p.outputSchemas[typeSpecDef] = schema
+	}
+
+	refSchema := RefSchema(schema.Name)
+	// store every URL
+	p.toBeRenamedRefURLs = append(p.toBeRenamedRefURLs, refSchema.Ref.GetURL())
+
+	return refSchema
+}
+
+func (p *astParser) parseStruct(file *ast.File, fields *ast.FieldList) (*spec.Schema, error) {
+	required := make([]string, 0)
+	properties := make(map[string]spec.Schema)
+	for _, field := range fields.List {
+		fieldProps, requiredFromAnon, err := p.parseStructField(file, field)
+		if err != nil {
+			if err == ErrFuncTypeField || err == ErrSkippedField {
+				continue
+			}
+
+			return nil, err
+		}
+		if len(fieldProps) == 0 {
+			continue
+		}
+		required = append(required, requiredFromAnon...)
+		for k, v := range fieldProps {
+			properties[k] = v
+		}
+	}
+
+	sort.Strings(required)
+
+	return &spec.Schema{
+		SchemaProps: spec.SchemaProps{
+			Type:       []string{OBJECT},
+			Properties: properties,
+			Required:   required,
+		},
+	}, nil
+}
+
+func (p *astParser) parseStructField(file *ast.File, field *ast.Field) (map[string]spec.Schema, []string, error) {
+	if field.Names == nil {
+		if field.Tag != nil {
+			skip, ok := reflect.StructTag(strings.ReplaceAll(field.Tag.Value, "`", "")).Lookup("swaggerignore")
+			if ok && strings.EqualFold(skip, "true") {
+				return nil, nil, nil
+			}
+		}
+
+		typeName, err := getFieldType(field.Type)
+		if err != nil {
+			return nil, nil, err
+		}
+		schema, err := p.getTypeSchema(typeName, file, false)
+		if err != nil {
+			return nil, nil, err
+		}
+		if len(schema.Type) > 0 && schema.Type[0] == OBJECT {
+			if len(schema.Properties) == 0 {
+				return nil, nil, nil
+			}
+
+			properties := map[string]spec.Schema{}
+			for k, v := range schema.Properties {
+				properties[k] = v
+			}
+
+			return properties, schema.SchemaProps.Required, nil
+		}
+
+		// for alias type of non-struct types ,such as array,map, etc. ignore field tag.
+		return map[string]spec.Schema{typeName: *schema}, nil, nil
+	}
+
+	ps := p.fieldParserFactory(p, field)
+
+	ok, err := ps.ShouldSkip()
+	if err != nil {
+		return nil, nil, err
+	}
+	if ok {
+		return nil, nil, nil
+	}
+
+	fieldName, err := ps.FieldName()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	schema, err := ps.CustomSchema()
+	if err != nil {
+		return nil, nil, err
+	}
+	if schema == nil {
+		typeName, err := getFieldType(field.Type)
+		if err == nil {
+			// named type
+			schema, err = p.getTypeSchema(typeName, file, true)
+		} else {
+			// unnamed type
+			schema, err = p.parseTypeExpr(file, field.Type, false)
+		}
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	err = ps.ComplementSchema(schema)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var tagRequired []string
+	required, err := ps.IsRequired()
+	if err != nil {
+		return nil, nil, err
+	}
+	if required {
+		tagRequired = append(tagRequired, fieldName)
+	}
+
+	return map[string]spec.Schema{fieldName: *schema}, tagRequired, nil
+}
+
+func getFieldType(field ast.Expr) (string, error) {
+	switch fieldType := field.(type) {
+	case *ast.Ident:
+		return fieldType.Name, nil
+	case *ast.SelectorExpr:
+		packageName, err := getFieldType(fieldType.X)
+		if err != nil {
+			return "", err
+		}
+
+		return fullTypeName(packageName, fieldType.Sel.Name), nil
+
+	case *ast.StarExpr:
+		fullName, err := getFieldType(fieldType.X)
+		if err != nil {
+			return "", err
+		}
+
+		return fullName, nil
+	default:
+		return "", fmt.Errorf("unknown field type %#v", field)
+	}
+}
+
+func (p *astParser) renameSchema(name, pkgPath string) string {
+	parts := strings.Split(name, ".")
+	name = fullTypeName(pkgPath, parts[len(parts)-1])
+	name = strings.ReplaceAll(name, "/", "_")
+
+	return name
+}
+
+func (p *astParser) isInStructStack(typeSpecDef *TypeSpecDef) bool {
+	for _, specDef := range p.structStack {
+		if typeSpecDef == specDef {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (a *astParser) initReadContent() error {
@@ -313,14 +884,15 @@ func (p *astParser) parserStruct() error {
 		return true
 	})
 
-	commentMap := ast.NewCommentMap(fSet, f, f.Comments)
-	fmt.Printf("commentMap--------------->"+"%+v\n", commentMap)
-	f.Comments = commentMap.Filter(f).Comments()
+	//commentMap := ast.NewCommentMap(fSet, f, f.Comments)
+	//fmt.Printf("commentMap--------------->"+"%+v\n", commentMap)
+	//f.Comments = commentMap.Filter(f).Comments()
 
 	funcValue, orderNum := p.findEginRouter(f)
 	p.findRouterParam(funcValue, orderNum)
+	p.findImport(f)
 	//p.findGroup()
-	fmt.Printf("p--------------->"+"%+v\n", p.groupMap)
+	fmt.Printf("p--------------->"+"%+v\n", p.importMap)
 	for _, stmtValue := range funcValue.Body.List {
 		p.dealGroup(stmtValue)
 		p.findUrl(stmtValue)
@@ -434,6 +1006,55 @@ func (p *astParser) findRouterParam(decl *ast.FuncDecl, orderNum int) {
 	return
 }
 
+// 找到变量名
+func (p *astParser) findImport(f *ast.File) {
+	p.importMap = p.getImport(f)
+}
+
+// 找到变量名
+func (p *astParser) getImport(f *ast.File) map[string]ImportInfo {
+	output := make(map[string]ImportInfo)
+	//  f.Decls
+	for _, value := range f.Decls {
+		// *ast.FuncDecl
+		// 拿到函数
+		valueData, flag := value.(*ast.GenDecl)
+		if !flag {
+			continue
+		}
+		if valueData.Tok != token.IMPORT {
+			continue
+		}
+
+		for _, spec := range valueData.Specs {
+			importSpec, flag := spec.(*ast.ImportSpec)
+			if !flag {
+				continue
+			}
+			importPath := trimPath(importSpec.Path.Value)
+			importPath = strings.Trim(importPath, p.userOption.GoMod+"/")
+			// 如果不等于nil，说明import 有别名
+			if importSpec.Name != nil {
+				output[importSpec.Name.String()] = ImportInfo{
+					KeyName:     importSpec.Name.String(),
+					Alias:       importSpec.Name.String(),
+					PackagePath: importPath,
+				}
+			} else {
+				arr := strings.Split(importPath, "/")
+				keyName := arr[len(arr)-1]
+				output[keyName] = ImportInfo{
+					KeyName:     keyName,
+					Alias:       "",
+					PackagePath: importPath,
+				}
+			}
+
+		}
+	}
+	return output
+}
+
 // 找到group
 func (p *astParser) findGroup() {
 	for _, stmtValue := range p.routerFunc.Body.List {
@@ -473,6 +1094,10 @@ func (p *astParser) findGroup() {
 		return
 	}
 	return
+}
+
+func trimPath(path string) string {
+	return strings.Trim(path, `"`)
 }
 
 /**
@@ -585,13 +1210,22 @@ func (p *astParser) getUrl(methodName string, prefix string, callExpr *ast.CallE
 		urlPath := strings.Trim(urlKey.Value, `"`)
 		fullPath := prefix + urlPath
 		funcInfo := getFuncType(callExpr.Args[length-1])
-		p.urlMap[fullPath] = UrlInfo{
+		urlInfo := UrlInfo{
 			Method:     methodName,
 			Prefix:     prefix,
 			FullPath:   fullPath,
 			ModuleName: funcInfo.ModuleName,
 			FuncName:   funcInfo.FuncName,
 		}
+
+		// 寻找他的调用文件的module path
+		importInfo, flag := p.importMap[funcInfo.ModuleName]
+		if !flag {
+			panic("cant get import info, module name: " + funcInfo.ModuleName)
+		}
+		urlInfo.PackagePath = importInfo.PackagePath
+		p.urlMap[fullPath] = urlInfo
+		p.sortedUrl = append(p.sortedUrl, urlInfo)
 		return
 	}
 }
@@ -618,4 +1252,473 @@ func getFuncType(expr ast.Expr) CallApiFunc {
 		return getFuncType(arg)
 	}
 	panic("not exist type")
+}
+
+func (p *astParser) getAllGoFileInfoFromDepsByList(pkg *build.Package) error {
+	ignoreInternal := pkg.Goroot && !p.ParseInternal
+	if ignoreInternal { // ignored internal
+		return nil
+	}
+
+	srcDir := pkg.Dir
+	var err error
+	for i := range pkg.GoFiles {
+		err = p.parseFile(pkg.ImportPath, filepath.Join(srcDir, pkg.GoFiles[i]), nil)
+		if err != nil {
+			return err
+		}
+	}
+
+	// parse .go source files that import "C"
+	for i := range pkg.CgoFiles {
+		err = p.parseFile(pkg.ImportPath, filepath.Join(srcDir, pkg.CgoFiles[i]), nil)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (p *astParser) parseFile(packageDir, path string, src interface{}) error {
+	if strings.HasSuffix(strings.ToLower(path), "_test.go") || filepath.Ext(path) != ".go" {
+		return nil
+	}
+
+	// positions are relative to FileSet
+	astFile, err := parser.ParseFile(token.NewFileSet(), path, src, parser.ParseComments)
+	if err != nil {
+		return fmt.Errorf("ParseFile error:%+v", err)
+	}
+
+	err = p.packages.CollectAstFile(packageDir, path, astFile)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func listPackages(ctx context.Context, dir string, env []string, args ...string) (pkgs []*build.Package, finalErr error) {
+	cmd := exec.CommandContext(ctx, "go", append([]string{"list", "-json", "-e"}, args...)...)
+	cmd.Env = env
+	cmd.Dir = dir
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	var stderrBuf bytes.Buffer
+	cmd.Stderr = &stderrBuf
+	defer func() {
+		if stderrBuf.Len() > 0 {
+			finalErr = fmt.Errorf("%v\n%s", finalErr, stderrBuf.Bytes())
+		}
+	}()
+
+	err = cmd.Start()
+	if err != nil {
+		return nil, err
+	}
+	dec := json.NewDecoder(stdout)
+	for dec.More() {
+		var pkg build.Package
+		err = dec.Decode(&pkg)
+		if err != nil {
+			return nil, err
+		}
+		pkgs = append(pkgs, &pkg)
+	}
+	err = cmd.Wait()
+	if err != nil {
+		return nil, err
+	}
+	return pkgs, nil
+}
+
+// ParseAPI parses general api info for given searchDir and mainAPIFile.
+func (p *astParser) ParseAPI(searchDir string, mainAPIFile string, parseDepth int) error {
+	return p.ParseAPIMultiSearchDir([]string{searchDir}, mainAPIFile, parseDepth)
+}
+
+// ParseAPIMultiSearchDir is like ParseAPI but for multiple search dirs.
+func (p *astParser) ParseAPIMultiSearchDir(searchDirs []string, mainAPIFile string, parseDepth int) error {
+	for _, searchDir := range searchDirs {
+		elog.Info("Generate general API Info, search dir", elog.String("searchDir", searchDir))
+
+		packageDir, err := getPkgName(searchDir)
+		fmt.Printf("packageDir--------------->"+"%+v\n", packageDir)
+		if err != nil {
+			elog.Error("warning: failed to get package name", elog.String("searchDir", searchDir), elog.FieldErr(err))
+		}
+
+		err = p.getAllGoFileInfo(packageDir, searchDir)
+		if err != nil {
+			return err
+		}
+	}
+
+	absMainAPIFilePath, err := filepath.Abs(filepath.Join(searchDirs[0], mainAPIFile))
+	if err != nil {
+		return err
+	}
+
+	// Use 'go list' command
+	if p.ParseDependency {
+		pkgs, err := listPackages(context.Background(), filepath.Dir(absMainAPIFilePath), nil, "-deps")
+		if err != nil {
+			return fmt.Errorf("pkg %s cannot find all dependencies, %s", filepath.Dir(absMainAPIFilePath), err)
+		}
+
+		length := len(pkgs)
+		for i := 0; i < length; i++ {
+			err := p.getAllGoFileInfoFromDepsByList(pkgs[i])
+			if err != nil {
+				return err
+			}
+		}
+	}
+	//
+	//err = p.ParseGeneralAPIInfo(absMainAPIFilePath)
+	//if err != nil {
+	//	return err
+	//}
+
+	p.parsedSchemas, err = p.packages.ParseTypes()
+	if err != nil {
+		return err
+	}
+	fmt.Printf("p.parsedSchemas--------------->"+"%+v\n", p.parsedSchemas)
+	fmt.Printf("	p.parsedSchemas--------------->"+"%+v\n", len(p.packages.files))
+	for _, value := range p.packages.files {
+		fmt.Printf("value--------------->"+"%+v\n", value)
+	}
+	//err = rangeFiles(p.packages.files, p.ParseRouterAPIInfo)
+	//if err != nil {
+	//	return err
+	//}
+
+	//parser.renameRefSchemas()
+	//
+	//return parser.checkOperationIDUniqueness()
+	return nil
+}
+
+// ParseRouterAPIInfo parses router api info for given astFile.
+//func (p *astParser) ParseRouterAPIInfo(fileName string, astFile *ast.File) error {
+//	for _, astDescription := range astFile.Decls {
+//		astDeclaration, ok := astDescription.(*ast.FuncDecl)
+//		if ok && astDeclaration.Doc != nil && astDeclaration.Doc.List != nil {
+//			// for per 'function' comment, create a new 'Operation' object
+//			operation := NewOperation(p, SetCodeExampleFilesDirectory(parser.codeExampleFilesDir))
+//			for _, comment := range astDeclaration.Doc.List {
+//				err := operation.ParseComment(comment.Text, astFile)
+//				if err != nil {
+//					return fmt.Errorf("ParseComment error in file %s :%+v", fileName, err)
+//				}
+//			}
+//
+//			err := processRouterOperation(parser, operation)
+//			if err != nil {
+//				return err
+//			}
+//		}
+//	}
+//
+//	return nil
+//}
+
+// GetAllGoFileInfo gets all Go source files information for given searchDir.
+func (p *astParser) getAllGoFileInfo(packageDir, searchDir string) error {
+	return filepath.Walk(searchDir, func(path string, f os.FileInfo, _ error) error {
+		err := p.Skip(path, f)
+		if err != nil {
+			return err
+		}
+
+		if f.IsDir() {
+			return nil
+		}
+
+		relPath, err := filepath.Rel(searchDir, path)
+		if err != nil {
+			return err
+		}
+		// pkg/shop/shop.go
+		fmt.Printf("relPath--------------->"+"%+v\n", relPath)
+
+		return p.parseFile(filepath.ToSlash(filepath.Dir(filepath.Clean(filepath.Join(packageDir, relPath)))), path, nil)
+	})
+}
+
+// Skip returns filepath.SkipDir error if match vendor and hidden folder.
+func (p *astParser) Skip(path string, f os.FileInfo) error {
+	return walkWith(p.excludes, p.ParseVendor)(path, f)
+}
+
+func walkWith(excludes map[string]struct{}, parseVendor bool) func(path string, fileInfo os.FileInfo) error {
+	return func(path string, f os.FileInfo) error {
+		if f.IsDir() {
+			if !parseVendor && f.Name() == "vendor" || // ignore "vendor"
+				f.Name() == "docs" || // exclude docs
+				len(f.Name()) > 1 && f.Name()[0] == '.' { // exclude all hidden folder
+				return filepath.SkipDir
+			}
+
+			if excludes != nil {
+				if _, ok := excludes[path]; ok {
+					return filepath.SkipDir
+				}
+			}
+		}
+
+		return nil
+	}
+}
+func getPkgName(searchDir string) (string, error) {
+	cmd := exec.Command("go", "list", "-f={{.PackagePath}}")
+	cmd.Dir = searchDir
+
+	var stdout, stderr strings.Builder
+
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("execute go list command, %s, stdout:%s, stderr:%s", err, stdout.String(), stderr.String())
+	}
+
+	outStr, _ := stdout.String(), stderr.String()
+
+	if outStr[0] == '_' { // will shown like _/{GOPATH}/src/{YOUR_PACKAGE} when NOT enable GO MODULE.
+		outStr = strings.TrimPrefix(outStr, "_"+build.Default.GOPATH+"/src/")
+	}
+
+	f := strings.Split(outStr, "\n")
+
+	outStr = f[0]
+
+	return outStr, nil
+}
+
+// ParseGeneralAPIInfo parses general api info for given mainAPIFile path.
+func (p *astParser) ParseGeneralAPIInfo(mainAPIFile string) error {
+	fileTree, err := parser.ParseFile(token.NewFileSet(), mainAPIFile, nil, parser.ParseComments)
+	if err != nil {
+		return fmt.Errorf("cannot parse source files %s: %s", mainAPIFile, err)
+	}
+
+	for _, comment := range fileTree.Comments {
+		comments := strings.Split(comment.Text(), "\n")
+		if !isGeneralAPIComment(comments) {
+			continue
+		}
+
+		err = parseGeneralAPIInfo(p, comments)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func isGeneralAPIComment(comments []string) bool {
+	//for _, commentLine := range comments {
+	//	attribute := strings.ToLower(strings.Split(commentLine, " ")[0])
+	//	switch attribute {
+	//	// The @summary, @router, @success, @failure annotation belongs to Operation
+	//	case summaryAttr, routerAttr, successAttr, failureAttr, responseAttr:
+	//		return false
+	//	}
+	//}
+
+	return true
+}
+func parseGeneralAPIInfo(parser *astParser, comments []string) error {
+	//previousAttribute := ""
+
+	// parsing classic meta data model
+	//for line := 0; line < len(comments); line++ {
+	//	commentLine := comments[line]
+	//	attribute := strings.Split(commentLine, " ")[0]
+	//	value := strings.TrimSpace(commentLine[len(attribute):])
+	//
+	//	multilineBlock := false
+	//	if previousAttribute == attribute {
+	//		multilineBlock = true
+	//	}
+	//
+	//	switch attr := strings.ToLower(attribute); attr {
+	//	case versionAttr, titleAttr, tosAttr, licNameAttr, licURLAttr, conNameAttr, conURLAttr, conEmailAttr:
+	//		setSwaggerInfo(parser.swagger, attr, value)
+	//	case descriptionAttr:
+	//		if multilineBlock {
+	//			parser.swagger.Info.Description += "\n" + value
+	//
+	//			continue
+	//		}
+	//
+	//		setSwaggerInfo(parser.swagger, attr, value)
+	//	case descriptionMarkdownAttr:
+	//		commentInfo, err := getMarkdownForTag("api", parser.markdownFileDir)
+	//		if err != nil {
+	//			return err
+	//		}
+	//
+	//		setSwaggerInfo(parser.swagger, descriptionAttr, string(commentInfo))
+	//
+	//	case "@host":
+	//		parser.swagger.Host = value
+	//	case "@basepath":
+	//		parser.swagger.BasePath = value
+	//
+	//	case acceptAttr:
+	//		err := parser.ParseAcceptComment(value)
+	//		if err != nil {
+	//			return err
+	//		}
+	//	case produceAttr:
+	//		err := parser.ParseProduceComment(value)
+	//		if err != nil {
+	//			return err
+	//		}
+	//	case "@schemes":
+	//		parser.swagger.Schemes = strings.Split(value, " ")
+	//	case "@tag.name":
+	//		parser.swagger.Tags = append(parser.swagger.Tags, spec.Tag{
+	//			TagProps: spec.TagProps{
+	//				Name: value,
+	//			},
+	//		})
+	//	case "@tag.description":
+	//		tag := parser.swagger.Tags[len(parser.swagger.Tags)-1]
+	//		tag.TagProps.Description = value
+	//		replaceLastTag(parser.swagger.Tags, tag)
+	//	case "@tag.description.markdown":
+	//		tag := parser.swagger.Tags[len(parser.swagger.Tags)-1]
+	//
+	//		commentInfo, err := getMarkdownForTag(tag.TagProps.Name, parser.markdownFileDir)
+	//		if err != nil {
+	//			return err
+	//		}
+	//
+	//		tag.TagProps.Description = string(commentInfo)
+	//		replaceLastTag(parser.swagger.Tags, tag)
+	//	case "@tag.docs.url":
+	//		tag := parser.swagger.Tags[len(parser.swagger.Tags)-1]
+	//		tag.TagProps.ExternalDocs = &spec.ExternalDocumentation{
+	//			URL:         value,
+	//			Description: "",
+	//		}
+	//
+	//		replaceLastTag(parser.swagger.Tags, tag)
+	//	case "@tag.docs.description":
+	//		tag := parser.swagger.Tags[len(parser.swagger.Tags)-1]
+	//		if tag.TagProps.ExternalDocs == nil {
+	//			return fmt.Errorf("%s needs to come after a @tags.docs.url", attribute)
+	//		}
+	//
+	//		tag.TagProps.ExternalDocs.Description = value
+	//		replaceLastTag(parser.swagger.Tags, tag)
+	//
+	//	case secBasicAttr, secAPIKeyAttr, secApplicationAttr, secImplicitAttr, secPasswordAttr, secAccessCodeAttr:
+	//		scheme, err := parseSecAttributes(attribute, comments, &line)
+	//		if err != nil {
+	//			return err
+	//		}
+	//
+	//		parser.swagger.SecurityDefinitions[value] = scheme
+	//
+	//	case "@query.collection.format":
+	//		parser.collectionFormatInQuery = value
+	//	default:
+	//		prefixExtension := "@x-"
+	//		// Prefix extension + 1 char + 1 space  + 1 char
+	//		if len(attribute) > 5 && attribute[:len(prefixExtension)] == prefixExtension {
+	//			extExistsInSecurityDef := false
+	//			// for each security definition
+	//			for _, v := range parser.swagger.SecurityDefinitions {
+	//				// check if extension exists
+	//				_, extExistsInSecurityDef = v.VendorExtensible.Extensions.GetString(attribute[1:])
+	//				// if it exists in at least one, then we stop iterating
+	//				if extExistsInSecurityDef {
+	//					break
+	//				}
+	//			}
+	//
+	//			// if it is present on security def, don't add it again
+	//			if extExistsInSecurityDef {
+	//				break
+	//			}
+	//
+	//			var valueJSON interface{}
+	//
+	//			split := strings.SplitAfter(commentLine, attribute+" ")
+	//			if len(split) < 2 {
+	//				return fmt.Errorf("annotation %s need a value", attribute)
+	//			}
+	//
+	//			extensionName := "x-" + strings.SplitAfter(attribute, prefixExtension)[1]
+	//
+	//			err := json.Unmarshal([]byte(split[1]), &valueJSON)
+	//			if err != nil {
+	//				return fmt.Errorf("annotation %s need a valid json value", attribute)
+	//			}
+	//
+	//			if strings.Contains(extensionName, "logo") {
+	//				parser.swagger.Info.Extensions.Add(extensionName, valueJSON)
+	//			} else {
+	//				if parser.swagger.Extensions == nil {
+	//					parser.swagger.Extensions = make(map[string]interface{})
+	//				}
+	//
+	//				parser.swagger.Extensions[attribute[1:]] = valueJSON
+	//			}
+	//		}
+	//	}
+	//
+	//	previousAttribute = attribute
+	//}
+
+	return nil
+}
+
+// GetSchemaTypePath get Path of schema type.
+func (p *astParser) GetSchemaTypePath(schema *spec.Schema, depth int) []string {
+	if schema == nil || depth == 0 {
+		return nil
+	}
+	name := schema.Ref.String()
+	if name != "" {
+		if pos := strings.LastIndexByte(name, '/'); pos >= 0 {
+			name = name[pos+1:]
+			if schema, ok := p.swagger.Definitions[name]; ok {
+				return p.GetSchemaTypePath(&schema, depth)
+			}
+		}
+
+		return nil
+	}
+	if len(schema.Type) > 0 {
+		switch schema.Type[0] {
+		case ARRAY:
+			depth--
+			s := []string{schema.Type[0]}
+
+			return append(s, p.GetSchemaTypePath(schema.Items.Schema, depth)...)
+		case OBJECT:
+			if schema.AdditionalProperties != nil && schema.AdditionalProperties.Schema != nil {
+				// for map
+				depth--
+				s := []string{schema.Type[0]}
+
+				return append(s, p.GetSchemaTypePath(schema.AdditionalProperties.Schema, depth)...)
+			}
+		}
+
+		return []string{schema.Type[0]}
+	}
+
+	return []string{ANY}
 }
