@@ -6,8 +6,9 @@ import (
 
 func Test_astParser_parserStruct(t *testing.T) {
 	AstParserBuild(UserOption{
-		GoMod:     "bff",
-		RouterMod: "bff/pkg/router",
-		RootFile:  "testdata/bff/pkg/router/router_web.go",
+		RootMainGo: "main.go",
+		RootPath:   "testdata/bff",
+		GoMod:      "bff",
+		RootFile:   "testdata/bff/pkg/router/router_web.go",
 	})
 }

@@ -10,7 +10,6 @@ import (
 	"go/build"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"os/exec"
@@ -19,6 +18,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/spec"
 	"github.com/gotomicro/ego/core/elog"
 	"github.com/samber/lo"
@@ -33,6 +33,7 @@ type Swagger struct {
 type astParser struct {
 	readContent string // 读取原文件数据
 	userOption  UserOption
+	GoMod       string
 	importMap   map[string]ImportInfo
 	routerFunc  *ast.FuncDecl
 	routerParam string // router的变量名
@@ -123,12 +124,11 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 		fieldParserFactory: newTagBaseFieldParser,
 		packages:           NewPackagesDefinitions(),
 	}
-	err := a.initReadContent()
-	if err != nil {
-		return nil, err
-	}
 
-	err = a.ParseAPI("testdata/bff", "main.go", 100)
+	// 初始化配置，校验数据
+	a.initOption()
+
+	err := a.ParseAPI(a.userOption.RootPath, a.userOption.RootMainGo, 100)
 	if err != nil {
 		panic("parse api fail" + err.Error())
 	}
@@ -201,7 +201,8 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 							if err != nil {
 								fmt.Printf("err--------------->"+"%+v\n", err)
 							}
-							//defInfo := a.packages.FindTypeSpec(reqInfo.ParamName, file, false)
+							spew.Dump(schemaInfo)
+							// {"type":"object","properties":{"arr":{"type":"array","items":{"type":"string"}},"cover":{"type":"string"},"subTitle":{"type":"string"},"title":{"type":"string"}}}
 							jsonBytes, err := schemaInfo.MarshalJSON()
 							fmt.Printf("defInfo--------------->"+"%+v\n", string(jsonBytes))
 							// 说明在go其他包里
@@ -219,26 +220,8 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 						}
 					}
 				}
-
-				//for _, value := range funcValue.Body.List {
-				//
-				//}
-
-				//ast.Inspect(funcValue, func(n ast.Node) bool {
-				//	if !funcValue.Name.IsExported() {
-				//		return true
-				//	}
-				//	fmt.Printf("n--------------->"+"%+v\n", n)
-				//	return true
-				//})
-
-				// 找到函数
-				//funcValue.Body.List
 				break
 			}
-
-			fmt.Printf("filename--------------->"+"%+v\n", filename)
-			fmt.Printf("file--------------->"+"%+v\n", file)
 			return nil
 		})
 	}
@@ -627,23 +610,24 @@ func (p *astParser) isInStructStack(typeSpecDef *TypeSpecDef) bool {
 	return false
 }
 
-func (a *astParser) initReadContent() error {
-	if a.userOption.ScaffoldDSLContent == "" {
-		if a.userOption.RootFile == "" {
-			return fmt.Errorf("content and file is empty")
-		}
-		contentByte, err := ioutil.ReadFile(a.userOption.RootFile)
-		if err != nil {
-			panic("initReadContent: " + err.Error())
-		}
-		a.userOption.ScaffoldDSLContent = string(contentByte)
-		if a.userOption.ScaffoldDSLContent == "" {
-			return fmt.Errorf("内容不能为空")
-		}
-	}
-	a.readContent = a.userOption.ScaffoldDSLContent
-	return nil
-}
+//
+//func (a *astParser) initReadContent() error {
+//	//if a.userOption.ScaffoldDSLContent == "" {
+//	//	if a.userOption.RootFile == "" {
+//	//		return fmt.Errorf("content and file is empty")
+//	//	}
+//	//	//contentByte, err := ioutil.ReadFile(a.userOption.RootFile)
+//	//	//if err != nil {
+//	//	//	panic("initReadContent: " + err.Error())
+//	//	//}
+//	//	//a.userOption.ScaffoldDSLContent = string(contentByte)
+//	//	//if a.userOption.ScaffoldDSLContent == "" {
+//	//	//	return fmt.Errorf("内容不能为空")
+//	//	//}
+//	//}
+//	//a.readContent = a.userOption.ScaffoldDSLContent
+//	return nil
+//}
 
 /**
 *ast.File {
@@ -870,23 +854,23 @@ func (a *astParser) initReadContent() error {
    221  .  }
    222  }
 */
-func (p *astParser) parserStruct() error {
-	fSet := token.NewFileSet()
 
-	// strings.NewReader
-	f, err := parser.ParseFile(fSet, "", strings.NewReader(p.readContent), parser.ParseComments)
+func (p *astParser) findEgoComponentFile() (*ast.File, error) {
+	return p.packages.findFile(func(filename string, file *ast.File) (bool, error) {
+		info, _ := p.findEginRouter(file)
+		if info != nil {
+			return false, nil
+		}
+		return true, nil
+	})
+}
+
+func (p *astParser) parserStruct() error {
+
+	f, err := p.findEgoComponentFile()
 	if err != nil {
 		panic(err)
 	}
-	// Print the AST.
-	var bf bytes.Buffer
-	ast.Fprint(&bf, fSet, f, func(string, reflect.Value) bool {
-		return true
-	})
-
-	//commentMap := ast.NewCommentMap(fSet, f, f.Comments)
-	//fmt.Printf("commentMap--------------->"+"%+v\n", commentMap)
-	//f.Comments = commentMap.Filter(f).Comments()
 
 	funcValue, orderNum := p.findEginRouter(f)
 	p.findRouterParam(funcValue, orderNum)
@@ -956,37 +940,40 @@ func (p *astParser) parserStruct() error {
 在然后通过解析这个函数里数据，如果是这个变量名，并且是函数调用方法，使用的Group、GET、POST等名称，那么就是我们的方法
 再然后通过import找到对应的文件路径，解析他的dto
 */
-func (p *astParser) findEginRouter(f *ast.File) (*ast.FuncDecl, int) {
-	//  f.Decls
+func (p *astParser) findEginRouter(f *ast.File) (funcValue *ast.FuncDecl, outputOrderNum int) {
 	for _, value := range f.Decls {
-		// *ast.FuncDecl
-		// 拿到函数
-		valueData, flag := value.(*ast.FuncDecl)
-		if !flag {
-			continue
-		}
-		// HttpServer
-		// valueData.Name
-		// 这里放着参数、返回值
-		// orderNum是第几个顺序
-		// 因为是多个返回值，所以我们需要遍历*ast.Field，我们认为*egin.Component，就是我们的所有router项目
-		for orderNum, fieldValue := range valueData.Type.Results.List {
-			resultFieldPointer, flag := fieldValue.Type.(*ast.StarExpr)
-			if !flag {
-				continue
-			}
-			name := resultFieldPointer.X.(*ast.SelectorExpr).X.(*ast.Ident).Name
-			if name == "egin" {
-				// 这个才是函数router
-				if resultFieldPointer.X.(*ast.SelectorExpr).Sel.Name == "Component" {
-					p.routerFunc = valueData
-					return valueData, orderNum
+		ast.Inspect(value, func(n ast.Node) bool {
+			switch nn := n.(type) {
+			case *ast.FuncDecl:
+				// HttpServer
+				// valueData.Name
+				// 这里放着参数、返回值
+				// orderNum是第几个顺序
+				// 因为是多个返回值，所以我们需要遍历*ast.Field，我们认为*egin.Component，就是我们的所有router项目
+				if nn.Type.Results == nil {
+					return true
+				}
+				for orderNum, fieldValue := range nn.Type.Results.List {
+					resultFieldPointer, flag := fieldValue.Type.(*ast.StarExpr)
+					if !flag {
+						continue
+					}
+					name := resultFieldPointer.X.(*ast.SelectorExpr).X.(*ast.Ident).Name
+					if name == "egin" {
+						// 这个才是函数router
+						if resultFieldPointer.X.(*ast.SelectorExpr).Sel.Name == "Component" {
+							p.routerFunc = nn
+							funcValue = nn
+							outputOrderNum = orderNum
+							return false
+						}
+					}
 				}
 			}
-		}
+			return true
+		})
 	}
-	panic("no ego component")
-	return nil, 0
+	return
 }
 
 // 找到变量名
@@ -1032,7 +1019,7 @@ func (p *astParser) getImport(f *ast.File) map[string]ImportInfo {
 				continue
 			}
 			importPath := trimPath(importSpec.Path.Value)
-			importPath = strings.Trim(importPath, p.userOption.GoMod+"/")
+			importPath = strings.Trim(importPath, p.GoMod+"/")
 			// 如果不等于nil，说明import 有别名
 			if importSpec.Name != nil {
 				output[importSpec.Name.String()] = ImportInfo{

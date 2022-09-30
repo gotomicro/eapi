@@ -2,8 +2,12 @@ package parser
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
+
+	"github.com/gotomicro/ego/core/elog"
 )
 
 // defineTypeOfExample example value define the type (object and array unsupported)
@@ -97,4 +101,39 @@ func defineType(schemaType string, value string) (v interface{}, err error) {
 	}
 
 	return v, nil
+}
+
+func getPackagePath(projectPath string) (packagePath string) {
+	f, err := os.Open(projectPath + "/go.mod")
+	if err != nil {
+		elog.Error("get packagePath err", elog.FieldErr(err))
+		return
+	}
+	defer f.Close()
+	var contentByte []byte
+	contentByte, err = ioutil.ReadAll(f)
+	if err != nil {
+		return
+	}
+	for _, s := range strings.Split(string(contentByte), "\n") {
+		packagePath = strings.TrimSpace(strings.TrimPrefix(s, "module"))
+		return
+	}
+	return
+}
+
+// 初始化用户配置
+func (p *astParser) initOption() {
+	// 如果是Go语言，那么就需要判断是否有go.mod，因为需要go.mod里的数据
+	if !IsExist(p.userOption.RootPath + "/go.mod") {
+		panic(fmt.Errorf("请在%s目录下创建go.mod文件", p.userOption.RootPath))
+		return
+	}
+	p.GoMod = getPackagePath(p.userOption.RootPath)
+}
+
+// IsExist returns whether a file or directory exists.
+func IsExist(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil || os.IsExist(err)
 }
