@@ -149,6 +149,11 @@ func RefSchema(refType string) *spec.Schema {
 	return spec.RefSchema("#/definitions/" + refType)
 }
 
+// GetSchemaDefinitionName build a reference schema.
+func GetSchemaDefinitionName(refType string) string {
+	return strings.TrimPrefix(refType, "#/definitions/")
+}
+
 // PrimitiveSchema build a primitive schema.
 func PrimitiveSchema(refType string) *spec.Schema {
 	return &spec.Schema{SchemaProps: spec.SchemaProps{Type: []string{refType}}}

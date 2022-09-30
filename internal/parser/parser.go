@@ -18,7 +18,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/spec"
 	"github.com/gotomicro/ego/core/elog"
 	"github.com/samber/lo"
@@ -34,9 +33,12 @@ type astParser struct {
 	readContent string // 读取原文件数据
 	userOption  UserOption
 	GoMod       string
-	importMap   map[string]ImportInfo
-	routerFunc  *ast.FuncDecl
-	routerParam string // router的变量名
+	// ParseDependencies whether swag should be parse outside dependency folder
+	ParseAllDependency bool
+	Dependences        []string
+	importMap          map[string]ImportInfo
+	routerFunc         *ast.FuncDecl
+	routerParam        string // router的变量名
 	// 存储group信息
 	groupMap map[string]GroupInfo
 	// 存储url信息
@@ -51,8 +53,7 @@ type astParser struct {
 	excludes map[string]struct{}
 	// ParseVendor parse vendor folder
 	ParseVendor bool
-	// ParseDependencies whether swag should be parse outside dependency folder
-	ParseDependency bool
+
 	// structStack stores full names of the structures that were already parsed or are being parsed now
 	structStack []*TypeSpecDef
 	// fieldParserFactory create FieldParser
@@ -103,14 +104,13 @@ type GroupInfo struct {
 
 func AstParserBuild(userOption UserOption) (*astParser, error) {
 	a := &astParser{
-		readContent: "",
-		userOption:  userOption,
-		importMap:   map[string]ImportInfo{},
-		routerParam: "",
-		groupMap:    map[string]GroupInfo{},
-		urlMap:      map[string]UrlInfo{},
-		sortedUrl:   make([]UrlInfo, 0),
-		//ParseDependency: true,
+		readContent:        "",
+		userOption:         userOption,
+		importMap:          map[string]ImportInfo{},
+		routerParam:        "",
+		groupMap:           map[string]GroupInfo{},
+		urlMap:             map[string]UrlInfo{},
+		sortedUrl:          make([]UrlInfo, 0),
 		fieldParserFactory: newTagBaseFieldParser,
 		packages:           NewPackagesDefinitions(),
 		swagger: &spec.SwaggerProps{
@@ -144,11 +144,9 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 	}
 	// 解析group，url
 	a.parserStruct()
-	fmt.Printf("	a.packages.files--------------->"+"%+v\n", a.packages.files)
 	// {FullPath:/api/test/new/goodCreate Method:POST Prefix:/api/test ModuleName:shop FuncName:GoodCreate}
 	// package path: File:0x140003fa200 Path:/Users/askuy/code/github/gotomicro/ego-gen-api/internal/parser/testdata/bff/pkg/shop/shop.go ModName:bff/pkg/shop
 	for _, value := range a.sortedUrl {
-		fmt.Printf("value--------------->"+"%+v\n", value)
 		a.packages.rangeByPkgPath(value.PackagePath, func(filename string, file *ast.File) error {
 			// 先找到有没有名称为value.FuncName的函数
 			for _, declValue := range file.Decls {
@@ -223,15 +221,52 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 							// 说明在go其他包里
 							// 先找到他引用的包
 						} else {
+							fmt.Printf("reqInfo.ModName --------------->"+"%+v\n", reqInfo.ModName)
 							importMapInfo := a.getImport(file)
 							importInfo, flag := importMapInfo[reqInfo.ModName]
 							if !flag {
 								panic("not find import info, modName: " + reqInfo.ModName)
 							}
 							// 遍历去找这个type类型
-							a.packages.rangeByPkgPath(importInfo.PackagePath, func(filename string, file *ast.File) error {
-								return nil
+							structFile, err := a.packages.findFileByRangePackages(importInfo.PackagePath, func(filename string, file *ast.File) (bool, error) {
+								// 循环遍历
+								var isContinueForeach = true
+								ast.Inspect(file, func(n ast.Node) bool {
+									if file.Name.String() == reqInfo.ModName {
+										switch nn := n.(type) {
+										case *ast.GenDecl:
+											// 定义的地方
+											if nn.Tok == token.TYPE {
+												info, flag := nn.Specs[0].(*ast.TypeSpec)
+												if !flag {
+													return true
+												}
+												if info.Name.String() == reqInfo.ParamName {
+													// 找到了，不需要再循环
+													isContinueForeach = false
+													return false
+												}
+											}
+										}
+									}
+									return true
+								})
+
+								return isContinueForeach, nil
 							})
+
+							if err != nil {
+								panic(err)
+							}
+							schemaInfo, err := a.getTypeSchema(reqInfo.ParamName, structFile, true)
+							if err != nil {
+								fmt.Printf("err--------------->"+"%+v\n", err)
+							}
+							value.Swagger = schemaInfo
+							// reqInfo.ModName == "" 说明是跟调用url地方在一个包里
+							value.ReqParam = reqInfo.ModName + "." + reqInfo.ParamName
+							a.urlMap[value.FullPath] = value
+
 						}
 					}
 				}
@@ -241,8 +276,10 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 		})
 	}
 	//fmt.Printf("a.swagger.Definitions--------------->"+"%+v\n", a.swagger.Definitions)
-	spew.Dump(a.swagger.Definitions)
 
+	for key, _ := range a.swagger.Definitions {
+		fmt.Printf("key--------------->"+"%+v\n", key)
+	}
 	return a, nil
 }
 
@@ -268,7 +305,7 @@ func (p *astParser) getTypeSchema(typeName string, file *ast.File, ref bool) (*s
 	//	return PrimitiveSchema(schemaType), nil
 	//}
 
-	typeSpecDef := p.packages.FindTypeSpec(typeName, file, p.ParseDependency)
+	typeSpecDef := p.packages.FindTypeSpec(typeName, file, p.ParseAllDependency)
 	if typeSpecDef == nil {
 		return nil, fmt.Errorf("cannot find type definition: %s", typeName)
 	}
@@ -887,7 +924,7 @@ func (p *astParser) isInStructStack(typeSpecDef *TypeSpecDef) bool {
 */
 
 func (p *astParser) findEgoComponentFile() (*ast.File, error) {
-	return p.packages.findFile(func(filename string, file *ast.File) (bool, error) {
+	return p.packages.findFileByRangeFiles(func(filename string, file *ast.File) (bool, error) {
 		info, _ := p.findEginRouter(file)
 		if info != nil {
 			return false, nil
@@ -989,10 +1026,14 @@ func (p *astParser) findEginRouter(f *ast.File) (funcValue *ast.FuncDecl, output
 					if !flag {
 						continue
 					}
-					name := resultFieldPointer.X.(*ast.SelectorExpr).X.(*ast.Ident).Name
+					selectorExpr, flag := resultFieldPointer.X.(*ast.SelectorExpr)
+					if !flag {
+						continue
+					}
+					name := selectorExpr.X.(*ast.Ident).Name
 					if name == "egin" {
 						// 这个才是函数router
-						if resultFieldPointer.X.(*ast.SelectorExpr).Sel.Name == "Component" {
+						if selectorExpr.Sel.Name == "Component" {
 							p.routerFunc = nn
 							funcValue = nn
 							outputOrderNum = orderNum
@@ -1382,19 +1423,39 @@ func (p *astParser) ParseAPIMultiSearchDir(searchDirs []string, mainAPIFile stri
 	}
 
 	// Use 'go list' command
-	if p.ParseDependency {
+	if p.ParseAllDependency {
 		pkgs, err := listPackages(context.Background(), filepath.Dir(absMainAPIFilePath), nil, "-deps")
 		if err != nil {
 			return fmt.Errorf("pkg %s cannot find all dependencies, %s", filepath.Dir(absMainAPIFilePath), err)
 		}
-
-		length := len(pkgs)
-		for i := 0; i < length; i++ {
-			err := p.getAllGoFileInfoFromDepsByList(pkgs[i])
+		for _, value := range pkgs {
+			err := p.getAllGoFileInfoFromDepsByList(value)
 			if err != nil {
 				return err
 			}
 		}
+	} else {
+		if len(p.Dependences) > 0 {
+			pkgs, err := listPackages(context.Background(), filepath.Dir(absMainAPIFilePath), nil, "-deps")
+			if err != nil {
+				return fmt.Errorf("pkg %s cannot find all dependencies, %s", filepath.Dir(absMainAPIFilePath), err)
+			}
+			for _, value := range pkgs {
+				for _, prefix := range p.Dependences {
+					//如果不在这个依赖里面直接过滤吊
+					if !strings.HasPrefix(value.ImportPath, prefix) {
+						continue
+					}
+					fmt.Printf("value.ImportPath--------------->"+"%+v\n", value.ImportPath)
+					err := p.getAllGoFileInfoFromDepsByList(value)
+					if err != nil {
+						return err
+					}
+				}
+
+			}
+		}
+
 	}
 	//
 	//err = p.ParseGeneralAPIInfo(absMainAPIFilePath)

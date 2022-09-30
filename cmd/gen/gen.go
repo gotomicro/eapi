@@ -29,11 +29,13 @@ var path string
 var tmplPath string
 var main string
 var flushSuffix string
+var dependences string
 
 func init() {
 	CmdRun.InheritedFlags()
 	CmdRun.PersistentFlags().StringVarP(&path, "path", "p", "", "指定路径")
 	CmdRun.PersistentFlags().StringVarP(&tmplPath, "tmpl", "t", "testdata/tmpls/api.tmpl", "指定路径")
+	CmdRun.PersistentFlags().StringVarP(&dependences, "dependences", "d", "git.gocn.vip/of/pb", "指定依赖路径")
 	CmdRun.PersistentFlags().StringVarP(&flushSuffix, "flushSuffix", "f", ".gen.ts", "指定路径")
 	CmdRun.PersistentFlags().StringVarP(&main, "main", "m", "main.go", "指定main文件")
 	cmd.RootCommand.AddCommand(CmdRun)
@@ -46,8 +48,9 @@ func CmdFunc(cmd *cobra.Command, args []string) {
 	}
 
 	p, err := parser.AstParserBuild(parser.UserOption{
-		RootMainGo: main,
-		RootPath:   path,
+		RootMainGo:  main,
+		RootPath:    path,
+		Dependences: dependences,
 	})
 	if err != nil {
 		fmt.Println("parser fail, err: " + err.Error())
@@ -68,7 +71,6 @@ func Exec(render *pongo2render.Render, tmplName string, data []parser.UrlInfo, d
 		buf string
 		err error
 	)
-	fmt.Printf(" filepath.Base(tmplName)--------------->"+"%+v\n", filepath.Base(tmplName))
 
 	flushFile := filepath.Dir(tmplName) + "/dist/" + strings.TrimRight(filepath.Base(tmplName), filepath.Ext(filepath.Base(tmplName))) + flushSuffix
 	ctx := make(pongo2.Context)

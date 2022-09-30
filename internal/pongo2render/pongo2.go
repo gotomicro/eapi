@@ -1,9 +1,11 @@
 package pongo2render
 
 import (
+	"fmt"
 	"strings"
 	"unicode/utf8"
 
+	"ego-gen-api/internal/parser"
 	"ego-gen-api/internal/pongo2"
 	"ego-gen-api/internal/utils"
 	"github.com/go-openapi/spec"
@@ -16,6 +18,7 @@ func init() {
 	_ = pongo2.RegisterFilter("camelString", pongo2CamelString)
 	_ = pongo2.RegisterFilter("getType", getType)
 	_ = pongo2.RegisterFilter("getDefinitionName", getDefinitionName)
+	_ = pongo2.RegisterFilter("getFieldTypescriptType", getFieldTypescriptType)
 
 }
 
@@ -74,10 +77,53 @@ func getDefinitionName(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *p
 	if in.Len() <= 0 {
 		return pongo2.AsSafeValue(""), nil
 	}
-	defi := in.String()
-	arr := strings.Split(defi, ".")
-	if len(arr) == 2 {
-		return pongo2.AsSafeValue(upperFirst(arr[0]) + upperFirst(arr[1])), nil
+	return pongo2.AsSafeValue(getInnerDefinitionName(in.String())), nil
+}
+
+func getFieldTypescriptType(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
+	props := in.Interface().(spec.Schema)
+	var str string
+	str = getTsType(props)
+	return pongo2.AsSafeValue(str), nil
+}
+
+func getTsType(props spec.Schema) string {
+	var str string
+	// 存在引用
+	if props.Ref.String() != "" {
+		str = getInnerDefinitionName(parser.GetSchemaDefinitionName(props.Ref.String()))
+	} else {
+		//fmt.Printf("props.Type[0]--------------->"+"%+v\n", props)
+		switch props.Type[0] {
+		case parser.ARRAY:
+			if props.Items.Schema.Ref.String() != "" {
+				fmt.Printf("props.Items.Schema.Ref.String()--------------->"+"%+v\n", props.Items.Schema.Ref.String())
+				str = getInnerDefinitionName(parser.GetSchemaDefinitionName(props.Items.Schema.Ref.String())) + "[]"
+			} else {
+
+				switch props.Items.Schema.Type[0] {
+				case parser.INTEGER:
+					str = "number[]"
+				case parser.STRING:
+					str = "string[]"
+				}
+			}
+		case parser.OBJECT:
+
+		case parser.STRING:
+			str = "string"
+		case parser.INTEGER:
+			str = "number"
+		}
 	}
-	return pongo2.AsSafeValue(upperFirst(arr[0])), nil
+	return str
+}
+
+// shop.CreateReq => ShopCreateReq
+func getInnerDefinitionName(req string) string {
+	arr := strings.Split(req, ".")
+	if len(arr) == 2 {
+		return upperFirst(arr[0]) + upperFirst(arr[1])
+	}
+	return upperFirst(arr[0])
 }

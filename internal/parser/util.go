@@ -130,6 +130,11 @@ func (p *astParser) initOption() {
 		return
 	}
 	p.GoMod = getPackagePath(p.userOption.RootPath)
+	if p.userOption.Dependences == "*" {
+		p.ParseAllDependency = true
+	} else {
+		p.Dependences = strings.Split(p.userOption.Dependences, ",")
+	}
 }
 
 // IsExist returns whether a file or directory exists.

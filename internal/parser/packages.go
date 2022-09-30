@@ -154,7 +154,7 @@ func (pkgDefs *PackagesDefinitions) findTypeSpec(pkgPath string, typeName string
 	return nil
 }
 
-func (pkgDefs *PackagesDefinitions) findFile(handle func(filename string, file *ast.File) (bool, error)) (file *ast.File, err error) {
+func (pkgDefs *PackagesDefinitions) findFileByRangeFiles(handle func(filename string, file *ast.File) (bool, error)) (file *ast.File, err error) {
 	if pkgDefs.files == nil {
 		return nil, fmt.Errorf("files is empty")
 	}
@@ -171,6 +171,29 @@ func (pkgDefs *PackagesDefinitions) findFile(handle func(filename string, file *
 	}
 
 	return nil, fmt.Errorf("not found")
+}
+
+func (pkgDefs *PackagesDefinitions) findFileByRangePackages(pkgPath string, handle func(filename string, file *ast.File) (bool, error)) (file *ast.File, err error) {
+	if pkgDefs.packages == nil {
+		return nil, fmt.Errorf("files is empty")
+	}
+	pd, found := pkgDefs.packages[pkgPath]
+	if !found {
+		return nil, fmt.Errorf("not packages found")
+	}
+
+	for key, file := range pd.Files {
+		flag, err := handle(key, file)
+		if err != nil {
+			return nil, fmt.Errorf("handle file %s error: %w", key, err)
+		}
+		// 说明找到了
+		if !flag {
+			return file, nil
+		}
+	}
+
+	return nil, fmt.Errorf("not file found")
 }
 
 // rangeByPkgPath 根据路径遍历，使用函数处理
