@@ -1,0 +1,3384 @@
+import { request } from 'umi';
+
+
+
+
+export async function PostApiCallbacksWechat (options?: { [key: string]: any }) {
+  return request('/api/callbacks/wechat', {
+    method: 'POST',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiCallbacksOss (req: CommonOssCallbackReq,options?: { [key: string]: any }) {
+  return request('/api/callbacks/oss', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiGithubWebhook (options?: { [key: string]: any }) {
+  return request('/api/github/webhook', {
+    method: 'POST',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiGithubSetup (options?: { [key: string]: any }) {
+  return request('/api/github/setup', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiOauthUser (options?: { [key: string]: any }) {
+  return request('/api/oauth/user', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiOauthAppUser (options?: { [key: string]: any }) {
+  return request('/api/oauth/appUser', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCmtDetail (options?: { [key: string]: any }) {
+  return request('/api/cmt/detail', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiHomePage (options?: { [key: string]: any }) {
+  return request('/api/home/page', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCmtSpaceTrees (options?: { [key: string]: any }) {
+  return request('/api/cmt/space-trees', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCmtManagers (options?: { [key: string]: any }) {
+  return request('/api/cmt/managers', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiArticlesMyEmojis (req: ArticleMyEmojisRequest,options?: { [key: string]: any }) {
+  return request('/api/articles/-/myEmojis', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiSpacesGuidPermission (options?: { [key: string]: any }) {
+  return request('/api/spaces/:guid/permission', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiReferralsState (req: CommunityRefStateReq,options?: { [key: string]: any }) {
+  return request('/api/referrals/state', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiMyCommunityList (options?: { [key: string]: any }) {
+  return request('/api/my/community/list', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiMyCommunityApply (req: CommunityApplyRequest,options?: { [key: string]: any }) {
+  return request('/api/my/community/apply', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyCommunitiesGuid (req: CommunityUpdateRequest,options?: { [key: string]: any }) {
+  return request('/api/my/communities/:guid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyCommunitiesGuidPrice (req: CommunityUpdatePriceRequest,options?: { [key: string]: any }) {
+  return request('/api/my/communities/:guid/price', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyCommunitiesGuidBanner (req: CommunityUpdateBannerRequest,options?: { [key: string]: any }) {
+  return request('/api/my/communities/:guid/banner', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyCommunitiesGuid (req: CommunityUpdateRequest,options?: { [key: string]: any }) {
+  return request('/api/my/communities/:guid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiMyCommunitiesGuidMembers (req: CommunityMemberListRequest,options?: { [key: string]: any }) {
+  return request('/api/my/communities/:guid/members', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiMyCommunitiesGuidUploadBannerToken (req: CommunityUploadTokenRequest,options?: { [key: string]: any }) {
+  return request('/api/my/communities/:guid/uploadBannerToken', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiMyCommunityUploadPicToken (req: CommunityUploadTokenRequest,options?: { [key: string]: any }) {
+  return request('/api/my/community/uploadPicToken', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiMyCommunityApplyCreateAudit (options?: { [key: string]: any }) {
+  return request('/api/my/community/applyCreateAudit', {
+    method: 'POST',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyCommunityUsersUid (options?: { [key: string]: any }) {
+  return request('/api/my/community/users/:uid', {
+    method: 'PUT',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyCommunityUsersUid (options?: { [key: string]: any }) {
+  return request('/api/my/community/users/:uid', {
+    method: 'PUT',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiMyJoinedCommunities (req: CommunityJoinCommunityWithRefReq,options?: { [key: string]: any }) {
+  return request('/api/my/joined-communities', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiMyJoinedCommunities (req: CommunityJoinCommunityWithRefReq,options?: { [key: string]: any }) {
+  return request('/api/my/joined-communities', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiMyJoinedCommunitiesGuid (options?: { [key: string]: any }) {
+  return request('/api/my/joined-communities/:guid', {
+    method: 'DELETE',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiMyFollowingUid (req: MyFollowingCreateReq,options?: { [key: string]: any }) {
+  return request('/api/my/following/:uid', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiMyFollowingUid (req: MyFollowingCreateReq,options?: { [key: string]: any }) {
+  return request('/api/my/following/:uid', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiMyBlocks (req: MyBlockListReq,options?: { [key: string]: any }) {
+  return request('/api/my/blocks', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiMyBlocksUid (req: MyBlockCreateReq,options?: { [key: string]: any }) {
+  return request('/api/my/blocks/:uid', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiMyBlocksUid (req: MyBlockCreateReq,options?: { [key: string]: any }) {
+  return request('/api/my/blocks/:uid', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyNotifications (req: MyNotificationUpdateAllReq,options?: { [key: string]: any }) {
+  return request('/api/my/notifications', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyNotifications (req: MyNotificationUpdateAllReq,options?: { [key: string]: any }) {
+  return request('/api/my/notifications', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiMyNotificationsAudits (req: MyNotificationAuditListRequest,options?: { [key: string]: any }) {
+  return request('/api/my/notifications/-/audits', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyNotificationsAuditsAuditIdPass (req: MyNotificationAuditPassRequest,options?: { [key: string]: any }) {
+  return request('/api/my/notifications/-/audits/:auditId/pass', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyNotificationsAuditsAuditIdReject (req: MyNotificationAuditRejectRequest,options?: { [key: string]: any }) {
+  return request('/api/my/notifications/-/audits/:auditId/reject', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyNotifications (req: MyNotificationUpdateAllReq,options?: { [key: string]: any }) {
+  return request('/api/my/notifications', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyNotificationsId (options?: { [key: string]: any }) {
+  return request('/api/my/notifications/:id', {
+    method: 'PUT',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiMyNotificationsUnviewed (options?: { [key: string]: any }) {
+  return request('/api/my/notifications/-/unviewed', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiMy (options?: { [key: string]: any }) {
+  return request('/api/my', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyNickname (req: UserUpdateNicknameRequest,options?: { [key: string]: any }) {
+  return request('/api/my/nickname', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyAvatar (req: UserUpdateAvatarRequest,options?: { [key: string]: any }) {
+  return request('/api/my/avatar', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiMyAvatarToken (req: UserUploadTokenRequest,options?: { [key: string]: any }) {
+  return request('/api/my/avatarToken', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyPhone (req: UserUpdatePhoneRequest,options?: { [key: string]: any }) {
+  return request('/api/my/phone', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyEmail (req: UserUpdateEmailRequest,options?: { [key: string]: any }) {
+  return request('/api/my/email', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiMyManageCommunity (req: UserManageCommunityReq,options?: { [key: string]: any }) {
+  return request('/api/my/manageCommunity', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiMyReferrals (req: MyReferralsReq,options?: { [key: string]: any }) {
+  return request('/api/my/referrals', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiMyReferralsSend (req: MyReferralsSendReq,options?: { [key: string]: any }) {
+  return request('/api/my/referrals/send', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiUsersNameTotal (options?: { [key: string]: any }) {
+  return request('/api/users/:name/total', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiUsersNameFollowers (req: ProfileFollowersListReq,options?: { [key: string]: any }) {
+  return request('/api/users/:name/followers', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiUsersNameFollowing (req: ProfileFollowingListReq,options?: { [key: string]: any }) {
+  return request('/api/users/:name/following', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiUsersNameMedals (req: MedalUserMedalListRequest,options?: { [key: string]: any }) {
+  return request('/api/users/:name/medals', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiUsersNameArticles (req: ProfileArticlesListReq,options?: { [key: string]: any }) {
+  return request('/api/users/:name/articles', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiUsersNameQuestions (req: ProfileQAListReq,options?: { [key: string]: any }) {
+  return request('/api/users/:name/questions', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiUsersName (options?: { [key: string]: any }) {
+  return request('/api/users/:name', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCommunitiesRecommendLogos (options?: { [key: string]: any }) {
+  return request('/api/communities/recommendLogos', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCommunitiesRecommendCovers (options?: { [key: string]: any }) {
+  return request('/api/communities/recommendCovers', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCommunitiesGuidManagers (options?: { [key: string]: any }) {
+  return request('/api/communities/:guid/managers', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCommunities (options?: { [key: string]: any }) {
+  return request('/api/communities', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCommunitiesTemplates (options?: { [key: string]: any }) {
+  return request('/api/communities/-/templates', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiCommunitiesGuidBuyMember (req: CommunityBuyMemberRequest,options?: { [key: string]: any }) {
+  return request('/api/communities/:guid/buy-member', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCommunitiesGuidUserInfo (options?: { [key: string]: any }) {
+  return request('/api/communities/:guid/user-info', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiCmtSpaceTreesChangeSort (req: SpaceTreeChangeSortRequest,options?: { [key: string]: any }) {
+  return request('/api/cmt/space-trees/change-sort', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiCmtSpaceTreesChangeGroup (req: SpaceTreeChangeGroupRequest,options?: { [key: string]: any }) {
+  return request('/api/cmt/space-trees/change-group', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCmtRecommendList (options?: { [key: string]: any }) {
+  return request('/api/cmt/recommendList', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiMyCollectionGroups (req: MyCollectionGroupCreateReq,options?: { [key: string]: any }) {
+  return request('/api/my/collection-groups', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiMyCollectionGroups (req: MyCollectionGroupCreateReq,options?: { [key: string]: any }) {
+  return request('/api/my/collection-groups', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyCollectionGroupsCgid (req: MyCollectionGroupUpdateReq,options?: { [key: string]: any }) {
+  return request('/api/my/collection-groups/:cgid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyCollectionGroupsCgid (req: MyCollectionGroupUpdateReq,options?: { [key: string]: any }) {
+  return request('/api/my/collection-groups/:cgid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiMyCollectionGroupsCgidCollections (req: MyCollectionListReq,options?: { [key: string]: any }) {
+  return request('/api/my/collection-groups/:cgid/collections', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiMyCollectionGroupsCollections (req: MyCollectionDeleteReq,options?: { [key: string]: any }) {
+  return request('/api/my/collection-groups/-/collections', {
+    method: 'DELETE',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiMyCollectionGroupsCollections (req: MyCollectionDeleteReq,options?: { [key: string]: any }) {
+  return request('/api/my/collection-groups/-/collections', {
+    method: 'DELETE',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCommunitiesSearchMembers (req: CommunitySearchMemberReq,options?: { [key: string]: any }) {
+  return request('/api/communities/-/searchMembers', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiCommunitiesUpgradeEdition (req: EditionUpgradeReq,options?: { [key: string]: any }) {
+  return request('/api/communities/-/upgrade-edition', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiSpacesGroups (req: SpaceCreateOrUpdateGroupRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/-/groups', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiSpacesGroupsGuid (req: SpaceCreateOrUpdateGroupRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/-/groups/:guid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiSpacesGroupsGuid (req: SpaceCreateOrUpdateGroupRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/-/groups/:guid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiSpacesGroupsGuidSort (req: SpaceChangeGroupSortRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/-/groups/:guid/sort', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiSpacesGroupsGuid (req: SpaceCreateOrUpdateGroupRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/-/groups/:guid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiSpacesGroupsGuidMembers (req: SpaceDeleteMemberRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/-/groups/:guid/members', {
+    method: 'DELETE',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiSpacesGroupsGuidSearchMembers (req: SpaceSearchMemberRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/-/groups/:guid/searchMembers', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiSpacesGroupsGuidMembers (req: SpaceDeleteMemberRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/-/groups/:guid/members', {
+    method: 'DELETE',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiSpacesGroupsGuidMembers (req: SpaceDeleteMemberRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/-/groups/:guid/members', {
+    method: 'DELETE',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiSpacesGroupsGuidApply (req: SpaceApplyGroupMemberRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/-/groups/:guid/apply', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiSpacesGroupsGuidPermission (options?: { [key: string]: any }) {
+  return request('/api/spaces/-/groups/:guid/permission', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiSpaces (req: SpaceCreateRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiSpacesGuid (req: SpaceUpdateRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/:guid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiSpacesGuid (req: SpaceUpdateRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/:guid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiSpacesGuidUpdateAttrName (req: SpaceUpdateAttrRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/:guid/updateAttrName', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiSpacesGuidUpdateAttrIcon (req: SpaceUpdateAttrRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/:guid/updateAttrIcon', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiSpacesGuidUpdateAttrGroup (req: SpaceUpdateAttrRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/:guid/updateAttrGroup', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiSpacesGuidSort (req: SpaceChangeSortRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/:guid/sort', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiSpacesGuid (req: SpaceUpdateRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/:guid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiSpacesGuidMembers (req: SpaceDeleteMemberRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/:guid/members', {
+    method: 'DELETE',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiSpacesGuidSearchMembers (req: SpaceSearchMemberRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/:guid/searchMembers', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiSpacesGuidMembers (req: SpaceDeleteMemberRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/:guid/members', {
+    method: 'DELETE',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiSpacesGuidMembers (req: SpaceDeleteMemberRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/:guid/members', {
+    method: 'DELETE',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiSpacesGuidEmojis (options?: { [key: string]: any }) {
+  return request('/api/spaces/:guid/emojis', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiSpacesGuidUploadPicToken (req: SpaceUploadTokenRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/:guid/uploadPicToken', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiSpacesGuidImUpload (req: SpaceImUploadRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/:guid/imUpload', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiSpacesGuidApply (req: SpaceApplyMemberRequest,options?: { [key: string]: any }) {
+  return request('/api/spaces/:guid/apply', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiArticles (req: ArticleCreateArticleRequest,options?: { [key: string]: any }) {
+  return request('/api/articles', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiArticlesRecommends (req: ArticleListArticleRequest,options?: { [key: string]: any }) {
+  return request('/api/articles/-/recommends', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiArticlesSpaceTops (req: ArticleSpaceTopsRequest,options?: { [key: string]: any }) {
+  return request('/api/articles/-/spaceTops', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiArticlesPermissions (req: ArticleListPermissionRequest,options?: { [key: string]: any }) {
+  return request('/api/articles/-/permissions', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiArticlesRecommendCovers (options?: { [key: string]: any }) {
+  return request('/api/articles/-/recommendCovers', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiArticles (req: ArticleCreateArticleRequest,options?: { [key: string]: any }) {
+  return request('/api/articles', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiArticlesGuid (req: ArticleUpdateArticleRequest,options?: { [key: string]: any }) {
+  return request('/api/articles/:guid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiArticlesGuidContent (options?: { [key: string]: any }) {
+  return request('/api/articles/:guid/content', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiArticlesGuidPermission (options?: { [key: string]: any }) {
+  return request('/api/articles/:guid/permission', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiArticlesGuidContentByCreator (options?: { [key: string]: any }) {
+  return request('/api/articles/:guid/contentByCreator', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiArticlesGuid (req: ArticleUpdateArticleRequest,options?: { [key: string]: any }) {
+  return request('/api/articles/:guid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiArticlesGuid (req: ArticleUpdateArticleRequest,options?: { [key: string]: any }) {
+  return request('/api/articles/:guid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiArticlesGuidSpaceTop (options?: { [key: string]: any }) {
+  return request('/api/articles/:guid/spaceTop', {
+    method: 'PUT',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiArticlesGuidCancelSpaceTop (options?: { [key: string]: any }) {
+  return request('/api/articles/:guid/cancelSpaceTop', {
+    method: 'PUT',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiArticlesGuidRecommend (options?: { [key: string]: any }) {
+  return request('/api/articles/:guid/recommend', {
+    method: 'PUT',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiArticlesGuidCancelRecommend (options?: { [key: string]: any }) {
+  return request('/api/articles/:guid/cancelRecommend', {
+    method: 'PUT',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiArticlesGuidOpenComment (options?: { [key: string]: any }) {
+  return request('/api/articles/:guid/openComment', {
+    method: 'PUT',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiArticlesGuidCloseComment (options?: { [key: string]: any }) {
+  return request('/api/articles/:guid/closeComment', {
+    method: 'PUT',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiArticlesGuidIncreaseEmoji (req: ArticleIncreaseEmojiRequest,options?: { [key: string]: any }) {
+  return request('/api/articles/:guid/increaseEmoji', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiArticlesGuidDecreaseEmoji (req: ArticleDecreaseEmojiRequest,options?: { [key: string]: any }) {
+  return request('/api/articles/:guid/decreaseEmoji', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiArticlesComments (req: ArticleCreateCommentRequest,options?: { [key: string]: any }) {
+  return request('/api/articles/-/comments', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiArticlesGuidCommentsCommentGuid (options?: { [key: string]: any }) {
+  return request('/api/articles/:guid/comments/:commentGuid', {
+    method: 'DELETE',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiArticlesGuidComments (req: ArticleTopicCommentListRequest,options?: { [key: string]: any }) {
+  return request('/api/articles/:guid/comments', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiArticlesGuidCommentsCommentGuidChildComment (req: ArticleTopicChildCommentListRequest,options?: { [key: string]: any }) {
+  return request('/api/articles/:guid/comments/:commentGuid/childComment', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiQuestions (req: QuestionListRequest,options?: { [key: string]: any }) {
+  return request('/api/questions', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiQuestions (req: QuestionListRequest,options?: { [key: string]: any }) {
+  return request('/api/questions', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiQuestionsMyEmojis (req: QuestionMyEmojisRequest,options?: { [key: string]: any }) {
+  return request('/api/questions/-/myEmojis', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiQuestionsGuid (req: QuestionUpdateArticleRequest,options?: { [key: string]: any }) {
+  return request('/api/questions/:guid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiQuestionsGuid (req: QuestionUpdateArticleRequest,options?: { [key: string]: any }) {
+  return request('/api/questions/:guid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiQuestionsGuid (req: QuestionUpdateArticleRequest,options?: { [key: string]: any }) {
+  return request('/api/questions/:guid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiQuestionsGuidAnswers (req: QuestionListRequest,options?: { [key: string]: any }) {
+  return request('/api/questions/:guid/answers', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiQuestionsGuidAnswers (req: QuestionListRequest,options?: { [key: string]: any }) {
+  return request('/api/questions/:guid/answers', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiQuestionsAnswersAnswerGuid (req: QuestionUpdateArticleRequest,options?: { [key: string]: any }) {
+  return request('/api/questions/-/answers/:answerGuid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiQuestionsAnswersAnswerGuidIncreaseEmoji (req: QuestionIncreaseEmojiRequest,options?: { [key: string]: any }) {
+  return request('/api/questions/-/answers/:answerGuid/increaseEmoji', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiQuestionsAnswersAnswerGuidDecreaseEmoji (req: QuestionDecreaseEmojiRequest,options?: { [key: string]: any }) {
+  return request('/api/questions/-/answers/:answerGuid/decreaseEmoji', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiQuestionsAnswersAnswerGuid (req: QuestionUpdateArticleRequest,options?: { [key: string]: any }) {
+  return request('/api/questions/-/answers/:answerGuid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiQuestionsAnswersAnswerGuid (req: QuestionUpdateArticleRequest,options?: { [key: string]: any }) {
+  return request('/api/questions/-/answers/:answerGuid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiQuestionsAnswersAnswerGuidComments (req: QuestionCommentListRequest,options?: { [key: string]: any }) {
+  return request('/api/questions/-/answers/:answerGuid/comments', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiQuestionsAnswersAnswerGuidComments (req: QuestionCommentListRequest,options?: { [key: string]: any }) {
+  return request('/api/questions/-/answers/:answerGuid/comments', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiQuestionsAnswersAnswerGuidCommentsCommentGuidChildComment (req: QuestionChildCommentListRequest,options?: { [key: string]: any }) {
+  return request('/api/questions/-/answers/:answerGuid/comments/:commentGuid/childComment', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiQuestionsAnswersAnswerGuidCommentsCommentGuid (options?: { [key: string]: any }) {
+  return request('/api/questions/-/answers/:answerGuid/comments/:commentGuid', {
+    method: 'DELETE',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiQuestionsGuidLike (options?: { [key: string]: any }) {
+  return request('/api/questions/:guid/like', {
+    method: 'DELETE',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiQuestionsGuidLike (options?: { [key: string]: any }) {
+  return request('/api/questions/:guid/like', {
+    method: 'DELETE',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiQuestionsAnswersAnswerGuidLike (options?: { [key: string]: any }) {
+  return request('/api/questions/-/answers/:answerGuid/like', {
+    method: 'DELETE',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiQuestionsAnswersAnswerGuidLike (options?: { [key: string]: any }) {
+  return request('/api/questions/-/answers/:answerGuid/like', {
+    method: 'DELETE',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiQuestionsAnswersAnswerGuidCommentsCommentGuidLike (options?: { [key: string]: any }) {
+  return request('/api/questions/-/answers/:answerGuid/comments/:commentGuid/like', {
+    method: 'DELETE',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiQuestionsAnswersAnswerGuidCommentsCommentGuidLike (options?: { [key: string]: any }) {
+  return request('/api/questions/-/answers/:answerGuid/comments/:commentGuid/like', {
+    method: 'DELETE',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiActivities (req: ActivityListReq,options?: { [key: string]: any }) {
+  return request('/api/activities', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiActivitiesRecommendCovers (options?: { [key: string]: any }) {
+  return request('/api/activities/-/recommendCovers', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiActivitiesGuid (req: ActivityUpdateReq,options?: { [key: string]: any }) {
+  return request('/api/activities/:guid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiActivitiesGuid (req: ActivityUpdateReq,options?: { [key: string]: any }) {
+  return request('/api/activities/:guid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiActivities (req: ActivityListReq,options?: { [key: string]: any }) {
+  return request('/api/activities', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiActivitiesGuid (req: ActivityUpdateReq,options?: { [key: string]: any }) {
+  return request('/api/activities/:guid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiActivitiesGuidUsers (req: ActivityListJoinedUsersReq,options?: { [key: string]: any }) {
+  return request('/api/activities/:guid/users', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiJoinedActivities (options?: { [key: string]: any }) {
+  return request('/api/joined-activities', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiJoinedActivitiesGuid (req: ActivityQuitReq,options?: { [key: string]: any }) {
+  return request('/api/joined-activities/:guid', {
+    method: 'DELETE',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiJoinedActivitiesGuid (req: ActivityQuitReq,options?: { [key: string]: any }) {
+  return request('/api/joined-activities/:guid', {
+    method: 'DELETE',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiSearch (req: SearchQueryReq,options?: { [key: string]: any }) {
+  return request('/api/search', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiMedals (req: MedalMedalListRequest,options?: { [key: string]: any }) {
+  return request('/api/medals', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMedalsMedalId (req: MedalUpdateRequest,options?: { [key: string]: any }) {
+  return request('/api/medals/:medalId', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMedalsMedalId (req: MedalUpdateRequest,options?: { [key: string]: any }) {
+  return request('/api/medals/:medalId', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiMedals (req: MedalMedalListRequest,options?: { [key: string]: any }) {
+  return request('/api/medals', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiMedalsMedalIdMembers (req: MedalMemberListRequest,options?: { [key: string]: any }) {
+  return request('/api/medals/:medalId/members', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiMedalsMedalIdMembers (req: MedalMemberListRequest,options?: { [key: string]: any }) {
+  return request('/api/medals/:medalId/members', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMedalsUsersMedalMemberId (req: MedalUpdateMemberRequest,options?: { [key: string]: any }) {
+  return request('/api/medals/-/users/:medalMemberId', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMedalsUsersMedalMemberId (req: MedalUpdateMemberRequest,options?: { [key: string]: any }) {
+  return request('/api/medals/-/users/:medalMemberId', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiMedalsUploadPicToken (req: MedalUploadTokenRequest,options?: { [key: string]: any }) {
+  return request('/api/medals/-/uploadPicToken', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiGoods (req: ShopGoodListReq,options?: { [key: string]: any }) {
+  return request('/api/goods', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiGoods (req: ShopGoodListReq,options?: { [key: string]: any }) {
+  return request('/api/goods', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiGoodsId (req: ShopGoodUpdateReq,options?: { [key: string]: any }) {
+  return request('/api/goods/:id', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiGoodsId (req: ShopGoodUpdateReq,options?: { [key: string]: any }) {
+  return request('/api/goods/:id', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiGoodsId (req: ShopGoodUpdateReq,options?: { [key: string]: any }) {
+  return request('/api/goods/:id', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiMyOrders (req: ShopOrderListReq,options?: { [key: string]: any }) {
+  return request('/api/my/orders', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiMyOrders (req: ShopOrderListReq,options?: { [key: string]: any }) {
+  return request('/api/my/orders', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyOrdersSn (req: ShopOrderUpdateReq,options?: { [key: string]: any }) {
+  return request('/api/my/orders/:sn', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyOrdersSn (req: ShopOrderUpdateReq,options?: { [key: string]: any }) {
+  return request('/api/my/orders/:sn', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyOrdersSn (req: ShopOrderUpdateReq,options?: { [key: string]: any }) {
+  return request('/api/my/orders/:sn', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiMyCharges (req: ShopChargeCreateReq,options?: { [key: string]: any }) {
+  return request('/api/my/charges', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiMyChargesSn (options?: { [key: string]: any }) {
+  return request('/api/my/charges/:sn', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiMyChargesSn (options?: { [key: string]: any }) {
+  return request('/api/my/charges/:sn', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiMyRefunds (req: ShopRefundCreateReq,options?: { [key: string]: any }) {
+  return request('/api/my/refunds', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiMyRefundsSn (req: ShopRefundInfoReq,options?: { [key: string]: any }) {
+  return request('/api/my/refunds/:sn', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyCmtUser (req: CommunityUpdateUserInfoRequest,options?: { [key: string]: any }) {
+  return request('/api/my/cmt/user', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiMyCmtUser (req: CommunityUpdateUserInfoRequest,options?: { [key: string]: any }) {
+  return request('/api/my/cmt/user', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiEditions (options?: { [key: string]: any }) {
+  return request('/api/editions', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiDriveNodes (req: DriveListNodeReq,options?: { [key: string]: any }) {
+  return request('/api/drive/nodes', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiDriveNodes (req: DriveListNodeReq,options?: { [key: string]: any }) {
+  return request('/api/drive/nodes', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiDriveNodesNguid (req: DriveUpdateNodeReq,options?: { [key: string]: any }) {
+  return request('/api/drive/nodes/:nguid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiDriveNodesNguid (req: DriveUpdateNodeReq,options?: { [key: string]: any }) {
+  return request('/api/drive/nodes/:nguid', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiDriveAllDescendantNodes (req: DriveListDescendantNodeReq,options?: { [key: string]: any }) {
+  return request('/api/drive/all-descendant-nodes', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiCmtAdminPmsManagersMembers (req: PmsCreateManagerMemberReq,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/pms/managers/members', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiCmtAdminPmsManagersMembers (req: PmsCreateManagerMemberReq,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/pms/managers/members', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiCmtAdminPmsManagersMembersUid (options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/pms/managers/members/:uid', {
+    method: 'DELETE',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiCmtAdminPmsRoles (req: PmsCreateRoleRequest,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/pms/roles', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCmtAdminPmsRolesUsersUidRoleIds (options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/pms/roles/-/users/:uid/roleIds', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PostApiCmtAdminPmsRoles (req: PmsCreateRoleRequest,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/pms/roles', {
+    method: 'POST',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiCmtAdminPmsRolesRoleId (req: PmsCreateRoleRequest,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/pms/roles/:roleId', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiCmtAdminPmsRolesRoleId (req: PmsCreateRoleRequest,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/pms/roles/:roleId', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiCmtAdminPmsRolesRoleIdMembers (req: PmsDeleteRoleMemberRequest,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/pms/roles/:roleId/members', {
+    method: 'DELETE',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiCmtAdminPmsRolesRoleIdPermissions (req: PmsPutRolePermissionRequest,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/pms/roles/:roleId/permissions', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiCmtAdminPmsRolesRoleIdSpaceGroupPermissions (req: PmsPutRoleSpaceGroupPermissionRequest,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/pms/roles/:roleId/spaceGroupPermissions', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiCmtAdminPmsRolesRoleIdSpacePermissions (req: PmsPutRoleSpacePermissionRequest,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/pms/roles/:roleId/spacePermissions', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCmtAdminPmsRolesRoleIdSpacesGuidInitPermissions (options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/pms/roles/:roleId/spaces/:guid/initPermissions', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCmtAdminPmsRolesRoleIdSpaceGroupsGuidInitPermissions (options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/pms/roles/:roleId/spaceGroups/:guid/initPermissions', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiCmtAdminPmsRolesRoleIdPermissions (req: PmsPutRolePermissionRequest,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/pms/roles/:roleId/permissions', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiCmtAdminPmsRolesRoleIdSpaceGroupPermissions (req: PmsPutRoleSpaceGroupPermissionRequest,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/pms/roles/:roleId/spaceGroupPermissions', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiCmtAdminPmsRolesRoleIdSpacePermissions (req: PmsPutRoleSpacePermissionRequest,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/pms/roles/:roleId/spacePermissions', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiCmtAdminPmsRolesRoleIdMembers (req: PmsDeleteRoleMemberRequest,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/pms/roles/:roleId/members', {
+    method: 'DELETE',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function DeleteApiCmtAdminPmsRolesRoleIdMembers (req: PmsDeleteRoleMemberRequest,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/pms/roles/:roleId/members', {
+    method: 'DELETE',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCmtAdminTotalCommunityKey (options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/total/community/:key', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCmtAdminTotalSpaceSpaceGuidKey (options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/total/space/:spaceGuid/:key', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCmtAdminLoggerListPage (req: LoggerListPageRequest,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/logger/listPage', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCmtAdminLoggerEventAndGroupList (options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/logger/eventAndGroupList', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCmtAdminBillingEquityData (options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/billing/equityData', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCmtAdminCmtGuidBillingListPage (req: BillingListPageRequest,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/:cmtGuid/billing/listPage', {
+    method: 'GET',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function GetApiCmtAdminApps (options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/apps', {
+    method: 'GET',
+    
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiCmtAdminAppsAppId (req: AppPutRequest,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/apps/:appId', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiCmtAdminHome (req: HomePutReq,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/home', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiCmtAdminHome (req: HomePutReq,options?: { [key: string]: any }) {
+  return request('/api/cmtAdmin/home', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiIntgsGithubAppId (req: AppPutRequest,options?: { [key: string]: any }) {
+  return request('/api/intgs/github/appId', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+export async function PutApiIntgsFigures (req: ThirdQueryFiguresReq,options?: { [key: string]: any }) {
+  return request('/api/intgs/figures', {
+    method: 'PUT',
+    body: req ,
+    ...(options || {}),
+  });
+}
+
+
+
+
+type CommunityApplyRequest = {
+    
+    name: string; // 
+    
+    visibilityLevel: number; // 
+    
+    templateId: number; // 
+    
+}
+
+type MyBlockCreateReq = {
+    
+    pagination: Commonv1Pagination; // 
+    
+}
+
+type EditionUpgradeReq = {
+    
+    editionId: number; // 需要升级的版本ID，如果无需升级Edition，则可以此字段可以为零值
+    
+    chargeMethod: number; // 支付方式，不能为空
+    
+    duration: number; // 需要Increase或Decrease的Duration，如果无需续期，则此字段可以为零值，暂时只允许Increase
+    
+    durationUnit: number; // 时长单位,天、月、年，如无需续期，则此字段可以为零值
+    
+}
+
+type SpaceChangeGroupSortRequest = {
+    
+    afterSpaceGroupGuid: string; // 
+    
+    spaceGroupGuid: string; // 
+    
+}
+
+type SpaceUploadTokenRequest = {
+    
+    fileName: string; // 
+    
+    type: number; // 
+    
+    size: number; // 
+    
+}
+
+type QuestionCreateRequest = {
+    
+    name: string; // 
+    
+    spaceGuid: string; // 
+    
+    content: string; // 
+    
+    imageUrls: string[]; // 
+    
+}
+
+type DriveDeleteNodeReq = {
+    
+    spaceGuid: string; // 
+    
+}
+
+type CommunityMemberListRequest = {
+    
+    currentPage: number; // 当前页数
+    
+}
+
+type MyFollowingCreateReq = {
+    
+    currentPage: number; // 当前页数
+    
+    pageSize: number; // 每页总数
+    
+    sort: string; // 排序字符串
+    
+}
+
+type UserUpdateAvatarRequest = {
+    
+    url: string; // 
+    
+}
+
+type ArticleListArticleRequest = {
+    
+    spaceGuid: string; // 
+    
+    currentPage: number; // 当前页数
+    
+    sort: number; // 排序值
+    
+}
+
+type ArticleTopicChildCommentListRequest = {
+    
+    currentPage: number; // 
+    
+}
+
+type QuestionUpdateArticleRequest = {
+    
+    name: string; // 
+    
+    content: string; // 
+    
+    imageUrls: string[]; // 
+    
+}
+
+type ActivityListReq = {
+    
+    currentPage: number; // 当前页数
+    
+    creatorUid: string; // 活动创建人，为空表示不限定创建人
+    
+}
+
+type PmsPutRoleSpacePermissionRequest = {
+    
+    list: Pmsv1SpacePmsItem[]; // 
+    
+}
+
+type MyReferralsSendChannel = {
+    
+    channel: string; // 发送通道，email、sms
+    
+    ref: string; // 邀请码
+    
+    receiver: string; // 邮箱或电话
+    
+}
+
+type ShopRefundInfoReq = {
+    
+    chargeSn: string; // 
+    
+    refundSn: string; // 
+    
+}
+
+type DriveCreateNodeReq = {
+    
+    spaceGuid: string; // 不能为空
+    
+    type: number; // 不能为空
+    
+    nodes: DriveCreateNodeReqItem[]; // 不能为空
+    
+    parentGuid: string; // 不能和SpaceGuid同时为空
+    
+}
+
+type PmsCreateManagerMemberReq = {
+    
+    uids: number[]; // 
+    
+}
+
+type PmsPutRoleSpaceGroupPermissionRequest = {
+    
+    list: Pmsv1SpaceGroupPmsItem[]; // 
+    
+}
+
+type PmsCreateRoleMemberRequest = {
+    
+    uids: number[]; // 
+    
+}
+
+type MedalUserMedalListRequest = {
+    
+    currentPage: number; // 当前页数
+    
+}
+
+type ArticleIncreaseEmojiRequest = {
+    
+    emojiId: number; // 
+    
+}
+
+type ActivityListJoinedUsersReq = {
+    
+    currentPage: number; // 当前页数
+    
+}
+
+type MedalMedalListRequest = {
+    
+    currentPage: number; // 当前页数
+    
+}
+
+type Goodv1GoodSku = {
+    
+    specList: Goodv1GoodSkuSpecInfo[]; // 
+    
+    cover: string; // 
+    
+    specValueSign: string; // 规格值标识，用于买东西的时候，校验是否选择了所
+    
+    specSign: string; // 规格标识
+    
+    status: number; // 
+    
+    createdUid: number; // 
+    
+    originPrice: number; // 
+    
+    weight: number; // 
+    
+    title: string; // 
+    
+    issueType: number; // 
+    
+    goodId: number; // 
+    
+    price: number; // 
+    
+    stock: number; // 
+    
+    code: string; // 
+    
+    groupSaleNum: number; // 
+    
+    note: string; // 
+    
+    whiteLimitNum: number; // 
+    
+    id: number; // 
+    
+    saleNum: number; // 
+    
+    cmtGuid: string; // 
+    
+    contractId: number; // 
+    
+    updatedUid: number; // 
+    
+}
+
+type MyNotificationAuditPassRequest = {
+    
+    opReason: string; // 管理员理由
+    
+}
+
+type ArticleSpaceTopsRequest = {
+    
+    spaceGuid: string; // 
+    
+}
+
+type ArticleListPermissionRequest = {
+    
+    guids: string[]; // 
+    
+}
+
+type ShopGoodUpdateReq = {
+    
+}
+
+type ShopRefundCreateReq = {
+    
+    orderSn: string; // 
+    
+    chargeSn: string; // 
+    
+    amount: number; // 
+    
+    reason: string; // 
+    
+}
+
+type CommunityUpdateUserInfoRequest = {
+    
+    nickname: string; // 
+    
+    position: string; // 
+    
+}
+
+type CommunityUpdateRequest = {
+    
+    name: string; // 
+    
+    logo: string; // 
+    
+    visibilityLevel: number; // 
+    
+}
+
+type CommunityUpdatePriceRequest = {
+    
+    annualPrice: number; // 
+    
+    annualOriginPrice: number; // 
+    
+    isSetPrice: ; // 
+    
+}
+
+type MyReferralsReq = {
+    
+}
+
+type LoggerListPageRequest = {
+    
+    group: number; // 
+    
+    operateUid: number; // 
+    
+    targetUid: number; // 
+    
+    currentPage: number; // 当前页数
+    
+    event: number; // 
+    
+}
+
+type ArticleUpdateArticleRequest = {
+    
+    contentHtml: string; // 
+    
+    imageUrls: string[]; // 
+    
+    headImage: string; // 
+    
+    name: string; // 
+    
+    content: string; // 
+    
+}
+
+type MyNotificationAuditRejectRequest = {
+    
+    opReason: string; // 管理员理由
+    
+}
+
+type UserUpdatePhoneRequest = {
+    
+    phone: string; // 
+    
+}
+
+type MyCollectionGroupCreateReq = {
+    
+    title: string; // 
+    
+    desc: string; // 
+    
+}
+
+type QuestionListRequest = {
+    
+    spaceGuid: string; // 
+    
+    currentPage: number; // 当前页数
+    
+    sort: number; // 排序值
+    
+}
+
+type MedalMemberListRequest = {
+    
+    currentPage: number; // 当前页数
+    
+}
+
+type PmsCreateRoleRequest = {
+    
+    name: string; // 
+    
+}
+
+type UserManageCommunityReq = {
+    
+    currentPage: number; // 当前页数
+    
+}
+
+type MedalUploadTokenRequest = {
+    
+    fileName: string; // 
+    
+    size: number; // 
+    
+}
+
+type MyBlockListReq = {
+    
+    pagination: Commonv1Pagination; // 
+    
+}
+
+type UserUploadTokenRequest = {
+    
+    fileName: string; // 
+    
+    size: number; // 
+    
+}
+
+type ProfileFollowingListReq = {
+    
+    currentPage: number; // 当前页数
+    
+    pageSize: number; // 每页总数
+    
+    sort: string; // 排序字符串
+    
+}
+
+type SpaceImUploadRequest = {
+    
+    fileName: string; // 
+    
+    type: number; // 
+    
+}
+
+type Goodv1GoodSkuSpecInfo = {
+    
+    name: string; // 
+    
+    valueId: number; // 
+    
+    valueName: string; // 
+    
+    valueImg: string; // 
+    
+    cmtGuid: string; // 
+    
+    id: number; // 
+    
+}
+
+type ShopGoodListReq = {
+    
+    pageSize: number; // 每页总数
+    
+    sort: string; // 排序字符串
+    
+    currentPage: number; // 当前页数
+    
+}
+
+type DriveUpdateNodeReq = {
+    
+    spaceGuid: string; // 
+    
+    name: string; // 新文件名, 如无需修改可不赋值
+    
+    parentGuid: string; // 新父guid, 如无需修改可不赋值
+    
+}
+
+type Commonv1Pagination = {
+    
+    total: number; // 总数
+    
+    currentPage: number; // 当前页数
+    
+    pageSize: number; // 每页总数
+    
+    sort: string; // 排序字符串
+    
+}
+
+type CommunityBuyMemberRequest = {
+    
+    chargeMethod: number; // 支付方式，不能为空
+    
+    memberType: number; // 年度会员 为 1， 月度会员 为 2
+    
+}
+
+type SpaceCreateMemberRequest = {
+    
+    addUids: number[]; // 
+    
+}
+
+type SpaceApplyGroupMemberRequest = {
+    
+    reason: string; // 
+    
+}
+
+type SpaceApplyMemberRequest = {
+    
+    reason: string; // 
+    
+}
+
+type ArticleCreateCommentRequest = {
+    
+    guid: string; // 
+    
+    commentGuid: string; // 
+    
+    content: string; // 
+    
+}
+
+type Commonv1PmsItem = {
+    
+    actionName: string; // 标识
+    
+    title: string; // 标题
+    
+    desc: string; // 描述
+    
+    flag: number; // 符号，现在是switch，也可能后续是select
+    
+    needUpgrade: number; // 是否需要升级
+    
+    upgradeDesc: string; // 升级描述
+    
+}
+
+type ActivityUpdateReq = {
+    
+    location: string; // 
+    
+    fee: number; // 
+    
+    content: string; // 
+    
+    startTime: number; // 
+    
+    guestUids: number[]; // 
+    
+    address: string; // 
+    
+    isOnline: number; // 
+    
+    isFree: number; // 
+    
+    name: string; // 
+    
+    description: string; // 
+    
+    cover: string; // 
+    
+    endTime: number; // 
+    
+    signUpStartTime: number; // 
+    
+    signUpEndTime: number; // 
+    
+}
+
+type CommonOssCallbackReq = {
+    
+    size: number; // 
+    
+    cmtGuid: string; // 
+    
+    spaceGuid: string; // 
+    
+    fileGuid: string; // 
+    
+    uid: number; // 
+    
+    fileType: number; // 
+    
+    bucket: string; // 
+    
+    object: string; // 
+    
+}
+
+type MedalUpdateMemberRequest = {
+    
+    endTime: number; // 
+    
+    type: number; // 
+    
+    startTime: number; // 
+    
+}
+
+type CommunityJoinCommunityWithRefReq = {
+    
+    ref: string; // 邀请码
+    
+}
+
+type SpaceTreeChangeSortRequest = {
+    
+    type: number; // 
+    
+    afterSpaceGuid: string; // 
+    
+    spaceGuid: string; // 
+    
+    afterSpaceGroupGuid: string; // 
+    
+    spaceGroupGuid: string; // 
+    
+}
+
+type SpaceGroupMemberListRequest = {
+    
+    currentPage: number; // 当前页数
+    
+}
+
+type SpaceDeleteMemberRequest = {
+    
+    delUids: number[]; // 
+    
+}
+
+type QuestionMyEmojisRequest = {
+    
+    guids: string[]; // 
+    
+}
+
+type QuestionIncreaseEmojiRequest = {
+    
+    emojiId: number; // 
+    
+}
+
+type ActivityQuitReq = {
+    
+    uid: number; // 
+    
+}
+
+type DriveListDescendantNodeReq = {
+    
+    pageSize: number; // 每页总数
+    
+    guid: string; // 自己guid
+    
+    spaceGuid: string; // 空间guid
+    
+    sort: string; // 排序字符串
+    
+    currentPage: number; // 当前页数
+    
+}
+
+type Spacev1SpaceOption = {
+    
+    name: string; // 名称
+    
+    spaceOptionId: number; // 可选项
+    
+    value: number; // 可选项值
+    
+    spaceOptionType: number; // 可选项类型
+    
+}
+
+type ActivityJoinReq = {
+    
+    uid: number; // 
+    
+}
+
+type ShopChargeCreateReq = {
+    
+    amount: number; // 
+    
+    subject: string; // 
+    
+    describe: string; // 
+    
+    orderSn: string; // 
+    
+    chargeMethod: number; // 
+    
+}
+
+type ActivityCreateReq = {
+    
+    fee: number; // 
+    
+    endTime: number; // 
+    
+    signUpStartTime: number; // 
+    
+    isFree: number; // 
+    
+    description: string; // 
+    
+    location: string; // 
+    
+    content: string; // 
+    
+    startTime: number; // 
+    
+    guestUids: number[]; // 
+    
+    address: string; // 
+    
+    cover: string; // 
+    
+    isOnline: number; // 
+    
+    spaceGuid: string; // 
+    
+    name: string; // 
+    
+    signUpEndTime: number; // 
+    
+}
+
+type SearchQueryReq = {
+    
+    pageSize: number; // 每页总数
+    
+    sort: string; // 排序字符串
+    
+    currentPage: number; // 当前页数
+    
+    keyword: string; // Keyword 进行查询字符串
+    
+    bizType: number; // BizType 业务类型，如果为0表示搜索全部业务类型
+    
+}
+
+type ArticleMyEmojisRequest = {
+    
+    guids: string[]; // 
+    
+}
+
+type CommunityRefStateReq = {
+    
+    ref: string; // 邀请码
+    
+}
+
+type CommunityUploadTokenRequest = {
+    
+    fileName: string; // 
+    
+    size: number; // 
+    
+}
+
+type MedalCreateRequest = {
+    
+    name: string; // 
+    
+    icon: string; // 
+    
+    desc: string; // 
+    
+}
+
+type Goodv1GoodSpecInfo = {
+    
+    cmtGuid: string; // 
+    
+    Id: number; // 
+    
+    Name: string; // 
+    
+    ValueList: Goodv1GoodSpecValueInfo[]; // 
+    
+}
+
+type ShopOrderUpdateReq = {
+    
+    state: number; // 订单状态
+    
+}
+
+type DriveCreateNodeReqItem = {
+    
+    name: string; // 
+    
+    size: number; // 
+    
+}
+
+type CommunityUpdateBannerRequest = {
+    
+    img: string; // 
+    
+    title: string; // 
+    
+}
+
+type MyNotificationAuditListRequest = {
+    
+    currentPage: number; // 当前页数
+    
+    pageSize: number; // 每页总数
+    
+    sort: string; // 排序字符串
+    
+}
+
+type MedalUpdateRequest = {
+    
+    name: string; // 
+    
+    icon: string; // 
+    
+    desc: string; // 
+    
+}
+
+type ThirdQueryFiguresReq = {
+    
+    name: string; // 显示名称, 比如 &quot;用户增长&quot;
+    
+    key: string; // 唯一Key名, 比如 &quot;member_growth&quot;
+    
+    st: number; // 开始时间戳, 秒
+    
+    et: number; // 终止时间戳, 秒
+    
+    type: string; // 集成类型
+    
+}
+
+type SpaceSearchMemberRequest = {
+    
+    keyword: string; // 当前页数
+    
+}
+
+type SpaceUpdateRequest = {
+    
+    spaceLayout: number; // 空间布局
+    
+    visibilityLevel: number; // visibilityLevel
+    
+    isAllowReadMemberList: ; // 
+    
+    spaceOptions: Spacev1SpaceOption[]; // 
+    
+    name: string; // SpaceGroupGuid        string                 `json:&quot;spaceGroupGuid&quot; binding:&quot;required&quot; label:&quot;组&quot;`
+    
+    iconType: number; // 
+    
+    icon: string; // 
+    
+    spaceType: number; // 空间类型
+    
+}
+
+type QuestionCreateCommentRequest = {
+    
+    commentGuid: string; // 如果为空，说明是一级评论
+    
+    content: string; // 
+    
+}
+
+type Orderv1OrderGood = {
+    
+    captainPrice: number; // 团长价格 just价格，一般和实际支付价格一致
+    
+    num: number; // 购买数量
+    
+    buyerId: number; // buyerId
+    
+    cmtGuid: string; // 社区Guid
+    
+    goodFreightFee: number; // 商品的运费
+    
+    id: number; // 主键
+    
+    groupPrice: number; // 拼团价格 just价格，一般和实际支付价格一致
+    
+    orderId: number; // 订单ID
+    
+    title: string; // 商品名称
+    
+    payPrice: number; // 商品实际支付价格(拼团商品适用)
+    
+    goodType: number; // 商品类型
+    
+    payTotal: number; // 一般是 payPrice * count - 优惠。目前没有优惠信息
+    
+    priceType: number; // 价格类型
+    
+    goodSkuId: number; // 商品ID
+    
+    goodFreightWay: number; // 商品运费方式
+    
+    specList: string; // 规格
+    
+    price: number; // 商品价格 just价格
+    
+    goodId: number; // 商品主表ID
+    
+    img: string; // 图片
+    
+}
+
+type PmsDeleteRoleMemberRequest = {
+    
+    uids: number[]; // 
+    
+}
+
+type SpaceChangeSortRequest = {
+    
+    afterSpaceGuid: string; // 
+    
+    spaceGuid: string; // 
+    
+}
+
+type Goodv1GoodSpecValueInfo = {
+    
+    Id: number; // 
+    
+    Name: string; // 
+    
+    cmtGuid: string; // 
+    
+}
+
+type BillingListPageRequest = {
+    
+    currentPage: number; // 当前页数
+    
+}
+
+type PmsPutRolePermissionRequest = {
+    
+    list: Commonv1PmsItem[]; // 
+    
+}
+
+type ProfileQAListReq = {
+    
+    pageSize: number; // 每页总数
+    
+    sort: string; // 排序字符串
+    
+    currentPage: number; // 当前页数
+    
+}
+
+type MyCollectionGroupUpdateReq = {
+    
+    title: string; // 
+    
+    desc: string; // 
+    
+}
+
+type MyCollectionListReq = {
+    
+    currentPage: number; // 当前页数
+    
+    pageSize: number; // 每页总数
+    
+    sort: string; // 排序字符串
+    
+}
+
+type SpaceCreateOrUpdateGroupRequest = {
+    
+    name: string; // 
+    
+    iconType: number; // 
+    
+    icon: string; // 
+    
+    visibilityLevel: number; // 
+    
+    isOpenReadMemberList: ; // 如果打开，属于这个分组下的用户，可以看到用户列表
+    
+}
+
+type ArticleTopicCommentListRequest = {
+    
+    currentPage: number; // 
+    
+}
+
+type ShopGoodCreateReq = {
+    
+    subTitle: string; // 
+    
+    galleryList: string[]; // 
+    
+    saleTime: number; // 
+    
+    payType: number; // 
+    
+    showOriginPrice: number; // 
+    
+    showPrice: number; // 
+    
+    artistDesc: string; // 
+    
+    cover: string; // 
+    
+    originPrice: number; // 
+    
+    cmtGuid: string; // 
+    
+    homeCover: string; // 
+    
+    imageSpecId: number; // 
+    
+    preMarkdown: string; // 
+    
+    html: string; // 
+    
+    endTime: number; // 
+    
+    saleNum: number; // 
+    
+    freightFee: number; // 
+    
+    specList: Goodv1GoodSpecInfo[]; // 
+    
+    onlineTime: number; // 
+    
+    preHtml: string; // 
+    
+    wechatHtml: string; // 
+    
+    skuList: Goodv1GoodSku[]; // 
+    
+    cidList: number[]; // 
+    
+    worksDesc: string; // 
+    
+    stock: number; // 
+    
+    freightId: number; // 
+    
+    baseSaleNum: number; // 
+    
+    price: number; // 
+    
+    markdown: string; // 
+    
+    title: string; // 
+    
+    groupSaleNum: number; // 
+    
+    name: string; // 
+    
+}
+
+type ShopOrderListReq = {
+    
+    start: number; // 
+    
+    limit: number; // 
+    
+    sort: string; // 排序字符串
+    
+    currentPage: number; // 当前页数
+    
+    pageSize: number; // 每页总数
+    
+}
+
+type UserUpdateEmailRequest = {
+    
+    email: string; // 
+    
+}
+
+type ProfileFollowersListReq = {
+    
+    currentPage: number; // 当前页数
+    
+    pageSize: number; // 每页总数
+    
+    sort: string; // 排序字符串
+    
+}
+
+type CommunitySearchMemberReq = {
+    
+    keyword: string; // 当前页数
+    
+    spaceGuid: string; // 空间guid，可以为空
+    
+    currentPage: number; // 当前页数
+    
+    pageSize: number; // 每页总数
+    
+    sort: string; // 排序字符串
+    
+}
+
+type SpaceCreateRequest = {
+    
+    icon: string; // 
+    
+    spaceType: number; // 空间类型
+    
+    spaceThirdType: number; // 空间第三方类型
+    
+    spaceLayout: number; // 空间布局
+    
+    visibilityLevel: number; // visibilityLevel
+    
+    spaceGroupGuid: string; // 
+    
+    name: string; // 
+    
+    iconType: number; // 
+    
+}
+
+type UserUpdateNicknameRequest = {
+    
+    nickname: string; // 
+    
+}
+
+type MyCollectionCreateReq = {
+    
+    guid: string; // 
+    
+    type: number; // 
+    
+    collectionGroupIds: number[]; // 
+    
+}
+
+type Orderv1OrderExtend = {
+    
+    receiverPhone: string; // 收获人手机
+    
+    receiverAddrRegion: string; // 收货人地址地区
+    
+    receiverAddrDetail: string; // 收货人地址地区
+    
+    trackingNo: string; // 物流单号
+    
+    expressId: number; // 物流公司id，默认为0 代表不需要物流
+    
+    expressName: string; // 物流公司
+    
+    orderId: number; // 订单ID
+    
+    receiverName: string; // 收货人姓名
+    
+}
+
+type HomePutReq = {
+    
+    articleHotShowSum: number; // 展示热门帖子的数量
+    
+    activityLatestShowSum: number; // 展示近期的活动数量
+    
+    bannerLink: string; // banner的跳转链接
+    
+    defaultPageByLogin: string; // 登录用户默认访问页面
+    
+    isSetHome: ; // 是否启用首页
+    
+    isSetBanner: ; // 是否启用banner
+    
+    articleHotShowWithLatest: number; // 展示近期多少天内创建的帖子
+    
+    bannerImg: string; // 启用首页banner
+    
+    bannerTitle: string; // banner文案
+    
+    defaultPageByNewUser: string; // 新用户注册默认访问页面
+    
+    defaultPageByNotLogin: string; // 未登录用户默认访问页面
+    
+    articleSortByLogin: number; // 登录用户推荐内容排序规则
+    
+    articleSortByNotLogin: number; // 未登录用户推荐内容排序规则
+    
+}
+
+type MyNotificationListReq = {
+    
+    pageSize: number; // 每页总数
+    
+    sort: string; // 排序字符串
+    
+    currentPage: number; // 当前页数
+    
+}
+
+type ShopOrderCreateReq = {
+    
+    buyerPhone: string; // 买家电话
+    
+    buyerEmail: string; // 买家邮箱
+    
+    prePayAmount: number; // 预付款
+    
+    ext: Orderv1OrderExtend; // 扩展字段
+    
+    buyerName: string; // 买家姓名
+    
+    buyerAvatar: string; // 冗余字段，买家头像
+    
+    remark: string; // 备注
+    
+    totalAmount: number; // 订单总价格
+    
+    goodAmount: number; // 商品合计
+    
+    orderGoodList: Orderv1OrderGood[]; // 商品列表
+    
+}
+
+type Pmsv1SpacePmsItem = {
+    
+    list: Commonv1PmsItem[]; // space里面的权限列表
+    
+    guid: string; // guid 信息
+    
+    name: string; // 名称
+    
+}
+
+type MyNotificationUpdateAllReq = {
+    
+    status: number; // 
+    
+}
+
+type MyCollectionDeleteReq = {
+    
+    collectionGroupIds: number[]; // 
+    
+    guid: string; // 
+    
+    type: number; // 
+    
+}
+
+type QuestionCommentListRequest = {
+    
+    currentPage: number; // 
+    
+}
+
+type QuestionChildCommentListRequest = {
+    
+    currentPage: number; // 
+    
+}
+
+type SpaceTreeChangeGroupRequest = {
+    
+    spaceGuid: string; // 
+    
+    afterSpaceGroupGuid: string; // 
+    
+}
+
+type SpaceUpdateAttrRequest = {
+    
+    icon: string; // 
+    
+    spaceGroupGuid: string; // 
+    
+    name: string; // 
+    
+}
+
+type QuestionDecreaseEmojiRequest = {
+    
+    emojiId: number; // 
+    
+}
+
+type DriveListNodeReq = {
+    
+    sort: string; // 排序字符串
+    
+    currentPage: number; // 当前页数
+    
+    parentGuid: string; // 不能和SpaceGuid同事为空
+    
+    spaceGuid: string; // 空间guid
+    
+    pageSize: number; // 每页总数
+    
+}
+
+type Pmsv1SpaceGroupPmsItem = {
+    
+    guid: string; // guid 信息
+    
+    name: string; // 名称
+    
+    list: Commonv1PmsItem[]; // space group 里面的权限列表
+    
+}
+
+type AppPutRequest = {
+    
+    enable: ; // 
+    
+}
+
+type MyNotificationCreateReq = {
+    
+    type: number; // 消息类型
+    
+    targetType: number; // 对象类型
+    
+    targetId: string; // 对象ID
+    
+    uids: number[]; // 用户ID列表
+    
+    link: string; // 消息外链
+    
+    ctime: number; // 附属数据
+Meta []byte `protobuf:&quot;bytes,7,opt,name=meta,proto3&quot; json:&quot;meta,omitempty&quot;`
+可选. 通知时间. 如果是0值则自动取当前时间
+    
+}
+
+type ProfileArticlesListReq = {
+    
+    sort: string; // 排序字符串
+    
+    currentPage: number; // 当前页数
+    
+    pageSize: number; // 每页总数
+    
+}
+
+type ArticleDecreaseEmojiRequest = {
+    
+    emojiId: number; // 
+    
+}
+
+type MedalAwardRequest = {
+    
+    uids: number[]; // 
+    
+    startTime: number; // 
+    
+    endTime: number; // 
+    
+    type: number; // 
+    
+}

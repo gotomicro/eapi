@@ -32,6 +32,8 @@ const (
 	ANY = "any"
 	// NIL represent a empty value.
 	NIL = "nil"
+	// ANY represent a any value.
+	JSONRAW_MESSAGE = "json.RawMessage"
 )
 
 // CheckSchemaType checks if typeName is not a name of primitive type.
@@ -107,6 +109,7 @@ func IsGolangPrimitiveType(typeName string) bool {
 		"float64",
 		"bool",
 		"string",
+		"json.RawMessage",
 		"any":
 		return true
 	}

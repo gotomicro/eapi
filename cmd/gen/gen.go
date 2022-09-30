@@ -34,8 +34,8 @@ var dependences string
 func init() {
 	CmdRun.InheritedFlags()
 	CmdRun.PersistentFlags().StringVarP(&path, "path", "p", "", "指定路径")
-	CmdRun.PersistentFlags().StringVarP(&tmplPath, "tmpl", "t", "testdata/tmpls/api.tmpl", "指定路径")
-	CmdRun.PersistentFlags().StringVarP(&dependences, "dependences", "d", "git.gocn.vip/of/pb", "指定依赖路径")
+	CmdRun.PersistentFlags().StringVarP(&tmplPath, "tmpl", "t", "", "指定路径")
+	CmdRun.PersistentFlags().StringVarP(&dependences, "dependences", "d", "", "指定依赖路径")
 	CmdRun.PersistentFlags().StringVarP(&flushSuffix, "flushSuffix", "f", ".gen.ts", "指定路径")
 	CmdRun.PersistentFlags().StringVarP(&main, "main", "m", "main.go", "指定main文件")
 	cmd.RootCommand.AddCommand(CmdRun)

@@ -1,13 +1,13 @@
 package pongo2render
 
 import (
-	"fmt"
 	"strings"
 	"unicode/utf8"
 
 	"ego-gen-api/internal/parser"
 	"ego-gen-api/internal/pongo2"
 	"ego-gen-api/internal/utils"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/spec"
 )
 
@@ -19,6 +19,8 @@ func init() {
 	_ = pongo2.RegisterFilter("getType", getType)
 	_ = pongo2.RegisterFilter("getDefinitionName", getDefinitionName)
 	_ = pongo2.RegisterFilter("getFieldTypescriptType", getFieldTypescriptType)
+	_ = pongo2.RegisterFilter("getApiName", getApiName)
+	_ = pongo2.RegisterFilter("getDescription", getDescription)
 
 }
 
@@ -93,11 +95,9 @@ func getTsType(props spec.Schema) string {
 	if props.Ref.String() != "" {
 		str = getInnerDefinitionName(parser.GetSchemaDefinitionName(props.Ref.String()))
 	} else {
-		//fmt.Printf("props.Type[0]--------------->"+"%+v\n", props)
 		switch props.Type[0] {
 		case parser.ARRAY:
 			if props.Items.Schema.Ref.String() != "" {
-				fmt.Printf("props.Items.Schema.Ref.String()--------------->"+"%+v\n", props.Items.Schema.Ref.String())
 				str = getInnerDefinitionName(parser.GetSchemaDefinitionName(props.Items.Schema.Ref.String())) + "[]"
 			} else {
 
@@ -106,15 +106,23 @@ func getTsType(props spec.Schema) string {
 					str = "number[]"
 				case parser.STRING:
 					str = "string[]"
+				case parser.BOOLEAN:
+					str = "boolean[]"
 				}
 			}
 		case parser.OBJECT:
-
+		case parser.BOOLEAN:
+			str = "boolean"
 		case parser.STRING:
 			str = "string"
 		case parser.INTEGER:
 			str = "number"
+		case parser.JSONRAW_MESSAGE:
+			str = "any"
 		}
+	}
+	if str == "" {
+		spew.Dump(props)
 	}
 	return str
 }
@@ -126,4 +134,46 @@ func getInnerDefinitionName(req string) string {
 		return upperFirst(arr[0]) + upperFirst(arr[1])
 	}
 	return upperFirst(arr[0])
+}
+
+func getApiName(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
+
+	var str string
+	value := in.Interface().(parser.UrlInfo)
+	arr := strings.Split(value.FullPath, "/")
+	// Get  /api/test/some
+	first := upperFirst(strings.ToLower(value.Method))
+	str = first
+	for _, value := range arr {
+		if value != "" {
+			if strings.Contains(value, "-") {
+				newArr := strings.Split(value, "-")
+				for _, v := range newArr {
+					if v == "" {
+						continue
+					}
+					str += upperFirst(v)
+				}
+			} else if strings.Contains(value, ":") {
+				newArr := strings.Split(value, ":")
+				for _, v := range newArr {
+					if v == "" {
+						continue
+					}
+					str += upperFirst(v)
+				}
+			} else {
+				str += upperFirst(value)
+			}
+		}
+	}
+
+	return pongo2.AsSafeValue(str), nil
+}
+
+func getDescription(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
+	var str string
+	value := in.Interface().(spec.Schema)
+	str = strings.Replace(value.Description, "\n", "\n//", -1)
+	return pongo2.AsSafeValue(str), nil
 }

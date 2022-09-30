@@ -18,6 +18,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/spec"
 	"github.com/gotomicro/ego/core/elog"
 	"github.com/samber/lo"
@@ -207,13 +208,14 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 						if reqInfo.ModName == "" {
 							schemaInfo, err := a.getTypeSchema(reqInfo.ParamName, file, true)
 							if err != nil {
-								fmt.Printf("err--------------->"+"%+v\n", err)
+								panic(err)
+								//fmt.Printf("err--------------->"+"%+v\n", err)
 							}
 							value.Swagger = schemaInfo
 							// reqInfo.ModName == "" 说明是跟调用url地方在一个包里
 							value.ReqParam = value.ModuleName + "." + reqInfo.ParamName
 
-							a.urlMap[value.FullPath] = value
+							a.urlMap[value.UniqueKey] = value
 							//spew.Dump(schemaInfo)
 							// {"type":"object","properties":{"arr":{"type":"array","items":{"type":"string"}},"cover":{"type":"string"},"subTitle":{"type":"string"},"title":{"type":"string"}}}
 							//jsonBytes, err := schemaInfo.MarshalJSON()
@@ -265,7 +267,7 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 							value.Swagger = schemaInfo
 							// reqInfo.ModName == "" 说明是跟调用url地方在一个包里
 							value.ReqParam = reqInfo.ModName + "." + reqInfo.ParamName
-							a.urlMap[value.FullPath] = value
+							a.urlMap[value.UniqueKey] = value
 
 						}
 					}
@@ -276,17 +278,17 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 		})
 	}
 	//fmt.Printf("a.swagger.Definitions--------------->"+"%+v\n", a.swagger.Definitions)
-
-	for key, _ := range a.swagger.Definitions {
-		fmt.Printf("key--------------->"+"%+v\n", key)
-	}
+	//
+	//for _, value := range a.swagger.Definitions {
+	//	fmt.Printf("key--------------->"+"%+v\n", value.SchemaProps.Properties)
+	//}
 	return a, nil
 }
 
 func (p *astParser) GetData() []UrlInfo {
 	output := make([]UrlInfo, 0)
 	for _, value := range p.sortedUrl {
-		output = append(output, p.urlMap[value.FullPath])
+		output = append(output, p.urlMap[value.UniqueKey])
 	}
 	return output
 }
@@ -1268,8 +1270,12 @@ func (p *astParser) getUrl(methodName string, prefix string, callExpr *ast.CallE
 		}
 		urlPath := strings.Trim(urlKey.Value, `"`)
 		fullPath := prefix + urlPath
-		funcInfo := getFuncType(callExpr.Args[length-1])
+		funcInfo, flag := getFuncType(callExpr.Args[length-1])
+		if !flag {
+			return
+		}
 		urlInfo := UrlInfo{
+			UniqueKey:  methodName + "." + fullPath,
 			Method:     methodName,
 			Prefix:     prefix,
 			FullPath:   fullPath,
@@ -1283,7 +1289,13 @@ func (p *astParser) getUrl(methodName string, prefix string, callExpr *ast.CallE
 			panic("cant get import info, module name: " + funcInfo.ModuleName)
 		}
 		urlInfo.PackagePath = importInfo.PackagePath
-		p.urlMap[fullPath] = urlInfo
+		fmt.Printf("urlInfo--------------->"+"%+v\n", urlInfo)
+
+		_, flag = p.urlMap[urlInfo.UniqueKey]
+		if flag {
+			panic("register duplicate, full path: " + urlInfo.UniqueKey)
+		}
+		p.urlMap[urlInfo.UniqueKey] = urlInfo
 		p.sortedUrl = append(p.sortedUrl, urlInfo)
 		return
 	}
@@ -1294,18 +1306,20 @@ type CallApiFunc struct {
 	FuncName   string
 }
 
-func getFuncType(expr ast.Expr) CallApiFunc {
+func getFuncType(expr ast.Expr) (CallApiFunc, bool) {
 	switch v := expr.(type) {
 	case *ast.SelectorExpr:
 		x := v.X
+		spew.Dump(x)
 		xIdent, ok := x.(*ast.Ident)
+		// todo invoker.Test.Create 这种函数的func暂时不好解析
 		if !ok {
-			panic("get func type fail")
+			return CallApiFunc{}, false
 		}
 		return CallApiFunc{
 			ModuleName: xIdent.Name,
 			FuncName:   v.Sel.Name,
-		}
+		}, true
 	case *ast.CallExpr:
 		arg := v.Args[0]
 		return getFuncType(arg)
@@ -1467,11 +1481,11 @@ func (p *astParser) ParseAPIMultiSearchDir(searchDirs []string, mainAPIFile stri
 	if err != nil {
 		return err
 	}
-	fmt.Printf("p.parsedSchemas--------------->"+"%+v\n", p.parsedSchemas)
-	fmt.Printf("	p.parsedSchemas--------------->"+"%+v\n", len(p.packages.files))
-	for _, value := range p.packages.files {
-		fmt.Printf("value--------------->"+"%+v\n", value)
-	}
+	//fmt.Printf("p.parsedSchemas--------------->"+"%+v\n", p.parsedSchemas)
+	//fmt.Printf("	p.parsedSchemas--------------->"+"%+v\n", len(p.packages.files))
+	//for _, value := range p.packages.files {
+	//	fmt.Printf("value--------------->"+"%+v\n", value)
+	//}
 	//err = rangeFiles(p.packages.files, p.ParseRouterAPIInfo)
 	//if err != nil {
 	//	return err

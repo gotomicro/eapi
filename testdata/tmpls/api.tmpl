@@ -1,0 +1,23 @@
+import { request } from 'umi';
+
+
+
+{% for value in data %}
+// {$ value.FuncName $}
+export async function {$value|getApiName $} ({% if value.ReqParam !="" %}req: {$ value.ReqParam|getDefinitionName $},{% endif %}options?: { [key: string]: any }) {
+  return request('{$value.FullPath$}', {
+    method: '{$value.Method$}',
+    {% if value.ReqParam !="" %}body: req ,{% endif %}
+    ...(options || {}),
+  });
+}
+
+{% endfor %}
+
+{% for key, value in definitions %}
+type {$ key|getDefinitionName $} = {
+    {% for key, value in value.SchemaProps.Properties %}
+    {$ key $}: {$ value|getFieldTypescriptType $}; // {$ value |getDescription $}
+    {% endfor %}
+}
+{% endfor %}

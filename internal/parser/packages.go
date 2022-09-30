@@ -556,6 +556,7 @@ type ReqResInfo struct {
 func getStructByParamName(paramName string, list []ast.Stmt) ReqResInfo {
 	var output ReqResInfo
 	for _, value := range list {
+		fmt.Printf("value--------------->"+"%+v\n", value)
 		switch stmtType := value.(type) {
 		case *ast.DeclStmt:
 			if stmtType.Decl.(*ast.GenDecl).Specs[0].(*ast.ValueSpec).Names[0].String() == paramName {
@@ -571,19 +572,37 @@ func getStructByParamName(paramName string, list []ast.Stmt) ReqResInfo {
 			}
 		case *ast.AssignStmt:
 			if stmtType.Lhs[0].(*ast.Ident).String() == paramName {
-				switch specType := stmtType.Rhs[0].(*ast.CompositeLit).Type.(type) {
-				// req :=  GoodCreateReq
-				case *ast.Ident:
-					output.ParamName = specType.Name
-				// req3 :=  dto.Good3Req
-				case *ast.SelectorExpr:
-					output.ModName = specType.X.(*ast.Ident).String()
-					output.ParamName = specType.Sel.String()
+				fmt.Printf("paramName--------------->"+"%+v\n", paramName)
+				fmt.Printf(" stmtType.Rhs[0]--------------->"+"%+v\n", list)
+				switch RhsType := stmtType.Rhs[0].(type) {
+				case *ast.CompositeLit:
+					switch specType := RhsType.Type.(type) {
+					// req :=  GoodCreateReq
+					case *ast.Ident:
+						output.ParamName = specType.Name
+					// req3 :=  dto.Good3Req
+					case *ast.SelectorExpr:
+						output.ModName = specType.X.(*ast.Ident).String()
+						output.ParamName = specType.Sel.String()
+					}
+				case *ast.UnaryExpr:
+					switch rhsTypeXType := RhsType.X.(type) {
+					case *ast.CompositeLit:
+						switch specType := rhsTypeXType.Type.(type) {
+						// req :=  GoodCreateReq
+						case *ast.Ident:
+							output.ParamName = specType.Name
+						// req3 :=  dto.Good3Req
+						case *ast.SelectorExpr:
+							output.ModName = specType.X.(*ast.Ident).String()
+							output.ParamName = specType.Sel.String()
+						}
+					}
 				}
+
 			}
 
 		}
 	}
 	return output
-
 }

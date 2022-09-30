@@ -6,6 +6,7 @@ import (
 
 type UrlInfo struct {
 	CurrentMod  string
+	UniqueKey   string
 	FullPath    string
 	Method      string
 	Prefix      string
