@@ -1,10 +1,19 @@
 package gen
 
 import (
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"ego-gen-api/cmd"
 	"ego-gen-api/internal/parser"
+	"ego-gen-api/internal/pongo2"
+	"ego-gen-api/internal/pongo2render"
+	"ego-gen-api/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -16,11 +25,15 @@ var CmdRun = &cobra.Command{
 }
 
 var path string
+var tmplPath string
 var main string
+var flushSuffix string
 
 func init() {
 	CmdRun.InheritedFlags()
 	CmdRun.PersistentFlags().StringVarP(&path, "path", "p", "", "指定路径")
+	CmdRun.PersistentFlags().StringVarP(&tmplPath, "tmpl", "t", "testdata/tmpls/api.tmpl", "指定路径")
+	CmdRun.PersistentFlags().StringVarP(&flushSuffix, "flushSuffix", "f", ".gen.ts", "指定路径")
 	CmdRun.PersistentFlags().StringVarP(&main, "main", "m", "main.go", "指定main文件")
 	cmd.RootCommand.AddCommand(CmdRun)
 }
@@ -31,8 +44,97 @@ func CmdFunc(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	parser.AstParserBuild(parser.UserOption{
+	p, err := parser.AstParserBuild(parser.UserOption{
 		RootMainGo: main,
 		RootPath:   path,
 	})
+	if err != nil {
+		fmt.Println("parser fail, err: " + err.Error())
+		return
+	}
+	// 获取目录
+
+	render := pongo2render.NewRender(filepath.Dir(tmplPath))
+	err = Exec(render, tmplPath, p.GetData())
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("finish")
+}
+
+func Exec(render *pongo2render.Render, tmplName string, data []parser.UrlInfo) error {
+	var (
+		buf string
+		err error
+	)
+	fmt.Printf(" filepath.Base(tmplName)--------------->"+"%+v\n", filepath.Base(tmplName))
+
+	flushFile := filepath.Dir(tmplName) + "/dist/" + strings.TrimRight(filepath.Base(tmplName), filepath.Ext(filepath.Base(tmplName))) + flushSuffix
+	ctx := make(pongo2.Context)
+	ctx["data"] = data
+	buf, err = render.Template(filepath.Base(tmplName)).Execute(ctx)
+	if err != nil {
+		return fmt.Errorf("Could not create the %s render tmpl , err: %w", tmplName, err)
+	}
+
+	output := []byte(buf)
+	err = write(flushFile, output)
+	if err != nil {
+		return fmt.Errorf("创建文件失败, err: %w", err)
+	}
+	return nil
+}
+
+// write to file
+func write(filename string, buf []byte) (err error) {
+
+	filePath := filepath.Dir(filename)
+	err = createPath(filePath)
+	if err != nil {
+		err = errors.New("write create path " + err.Error())
+		return
+	}
+
+	filePathBak := filePath + "/bak"
+	err = createPath(filePathBak)
+	if err != nil {
+		err = errors.New("write create path bak " + err.Error())
+		return
+	}
+
+	if utils.IsExist(filename) {
+		bakName := fmt.Sprintf("%s/%s.%s.bak", filePathBak, filepath.Base(filename), time.Now().Format("2006.01.02.15.04.05"))
+		if err := os.Rename(filename, bakName); err != nil {
+			err = errors.New("file is bak error, path is " + bakName)
+			return err
+		}
+	}
+
+	file, err := os.Create(filename)
+	defer func() {
+		err = file.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
+	if err != nil {
+		err = errors.New("write create file " + err.Error())
+		return
+	}
+
+	err = ioutil.WriteFile(filename, buf, 0644)
+	if err != nil {
+		err = errors.New("write write file " + err.Error())
+		return
+	}
+	return
+}
+
+// createPath 调用os.MkdirAll递归创建文件夹
+func createPath(filePath string) error {
+	if !utils.IsExist(filePath) {
+		err := os.MkdirAll(filePath, os.ModePerm)
+		return err
+	}
+	return nil
 }

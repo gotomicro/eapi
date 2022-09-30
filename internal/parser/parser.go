@@ -109,6 +109,7 @@ type UrlInfo struct {
 	PackagePath string
 	ModuleName  string
 	FuncName    string
+	Swagger     *spec.Schema
 }
 
 func AstParserBuild(userOption UserOption) (*astParser, error) {
@@ -201,10 +202,12 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 							if err != nil {
 								fmt.Printf("err--------------->"+"%+v\n", err)
 							}
+							value.Swagger = schemaInfo
+							a.urlMap[value.FullPath] = value
 							spew.Dump(schemaInfo)
 							// {"type":"object","properties":{"arr":{"type":"array","items":{"type":"string"}},"cover":{"type":"string"},"subTitle":{"type":"string"},"title":{"type":"string"}}}
-							jsonBytes, err := schemaInfo.MarshalJSON()
-							fmt.Printf("defInfo--------------->"+"%+v\n", string(jsonBytes))
+							//jsonBytes, err := schemaInfo.MarshalJSON()
+							//fmt.Printf("defInfo--------------->"+"%+v\n", string(jsonBytes))
 							// 说明在go其他包里
 							// 先找到他引用的包
 						} else {
@@ -227,6 +230,14 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 	}
 
 	return a, nil
+}
+
+func (p *astParser) GetData() []UrlInfo {
+	output := make([]UrlInfo, 0)
+	for _, value := range p.sortedUrl {
+		output = append(output, p.urlMap[value.FullPath])
+	}
+	return output
 }
 
 func (p *astParser) getTypeSchema(typeName string, file *ast.File, ref bool) (*spec.Schema, error) {
