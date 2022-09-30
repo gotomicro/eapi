@@ -12,4 +12,9 @@
 * 通过import找到对应的文件路径，解析他的dto
 * 根据模板生成接口文档和前端代码，提交到npm中
 
+## 指令
+```bash
+go run main.go --path=testdata/bff
+```
+
 https://yuroyoro.github.io/goast-viewer/index.html
