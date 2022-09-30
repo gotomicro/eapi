@@ -211,6 +211,7 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 								panic(err)
 								//fmt.Printf("err--------------->"+"%+v\n", err)
 							}
+
 							value.Swagger = schemaInfo
 							// reqInfo.ModName == "" 说明是跟调用url地方在一个包里
 							value.ReqParam = value.ModuleName + "." + reqInfo.ParamName
@@ -279,8 +280,10 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 	}
 	//fmt.Printf("a.swagger.Definitions--------------->"+"%+v\n", a.swagger.Definitions)
 	//
-	//for _, value := range a.swagger.Definitions {
-	//	fmt.Printf("key--------------->"+"%+v\n", value.SchemaProps.Properties)
+	//for key, value := range a.swagger.Definitions {
+	//	if key == "shop.ReferralsSendReq" {
+	//		spew.Dump(value.SchemaProps)
+	//	}
 	//}
 	return a, nil
 }
@@ -327,6 +330,10 @@ func (p *astParser) getTypeSchema(typeName string, file *ast.File, ref bool) (*s
 
 	// 如果ref为true，同时是对象类型
 	if ref && len(schema.Schema.Type) > 0 && schema.Schema.Type[0] == OBJECT {
+		return p.getRefTypeSchema(typeSpecDef, schema), nil
+	}
+
+	if ref && len(schema.Schema.Type) > 0 && schema.Schema.Type[0] == ARRAY {
 		return p.getRefTypeSchema(typeSpecDef, schema), nil
 	}
 
@@ -491,7 +498,7 @@ func (p *astParser) parseTypeExpr(file *ast.File, typeExpr ast.Expr, ref bool) (
 }
 
 func (p *astParser) getRefTypeSchema(typeSpecDef *TypeSpecDef, schema *Schema) *spec.Schema {
-	fmt.Printf("typeSpecDef--------------->"+"%+v\n", typeSpecDef)
+	fmt.Printf("typeSpecDef--------------->"+"%+v\n", typeSpecDef.Name())
 	_, ok := p.outputSchemas[typeSpecDef]
 	if !ok {
 		existSchema, ok := p.existSchemaNames[schema.Name]

@@ -38,9 +38,7 @@ func (pkgDefs *PackagesDefinitions) CollectAstFile(packageDir, path string, astF
 		pkgDefs.packages = make(map[string]*PackageDefinitions)
 	}
 	// bff/pkg/shop
-	fmt.Printf("packageDir--------------->"+"%+v\n", packageDir)
 	// testdata/bff/pkg/shop/shop.go
-	fmt.Printf("path--------------->"+"%+v\n", path)
 	// return without storing the file if we lack a packageDir
 	if packageDir == "" {
 		return nil

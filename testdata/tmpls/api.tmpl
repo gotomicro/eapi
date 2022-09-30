@@ -14,10 +14,15 @@ export async function {$value|getApiName $} ({% if value.ReqParam !="" %}req: {$
 
 {% endfor %}
 
-{% for key, value in definitions %}
+{% for key, valueDef in definitions %}
+{% if valueDef| getDefinitionType == "object" %}
 type {$ key|getDefinitionName $} = {
-    {% for key, value in value.SchemaProps.Properties %}
+    {% for key, value in valueDef.SchemaProps.Properties %}
     {$ key $}: {$ value|getFieldTypescriptType $}; // {$ value |getDescription $}
     {% endfor %}
 }
+{% endif %}
+{% if valueDef| getDefinitionType == "array" %}
+type {$ key|getDefinitionName $} = {$ valueDef | getFieldTypescriptType $}
+{% endif %}
 {% endfor %}

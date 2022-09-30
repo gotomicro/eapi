@@ -18,6 +18,7 @@ func init() {
 	_ = pongo2.RegisterFilter("camelString", pongo2CamelString)
 	_ = pongo2.RegisterFilter("getType", getType)
 	_ = pongo2.RegisterFilter("getDefinitionName", getDefinitionName)
+	_ = pongo2.RegisterFilter("getDefinitionType", getDefinitionType)
 	_ = pongo2.RegisterFilter("getFieldTypescriptType", getFieldTypescriptType)
 	_ = pongo2.RegisterFilter("getApiName", getApiName)
 	_ = pongo2.RegisterFilter("getDescription", getDescription)
@@ -76,16 +77,13 @@ func getType(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.Erro
 }
 
 func getDefinitionName(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
-	if in.Len() <= 0 {
-		return pongo2.AsSafeValue(""), nil
-	}
-	return pongo2.AsSafeValue(getInnerDefinitionName(in.String())), nil
+	a := getInnerDefinitionName(in.String())
+	return pongo2.AsSafeValue(a), nil
 }
 
 func getFieldTypescriptType(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
-	props := in.Interface().(spec.Schema)
 	var str string
-	str = getTsType(props)
+	str = getTsType(in.Interface().(spec.Schema))
 	return pongo2.AsSafeValue(str), nil
 }
 
@@ -100,7 +98,6 @@ func getTsType(props spec.Schema) string {
 			if props.Items.Schema.Ref.String() != "" {
 				str = getInnerDefinitionName(parser.GetSchemaDefinitionName(props.Items.Schema.Ref.String())) + "[]"
 			} else {
-
 				switch props.Items.Schema.Type[0] {
 				case parser.INTEGER:
 					str = "number[]"
@@ -169,6 +166,11 @@ func getApiName(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.E
 	}
 
 	return pongo2.AsSafeValue(str), nil
+}
+
+func getDefinitionType(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
+	value := in.Interface().(spec.Schema)
+	return pongo2.AsSafeValue(value.Type[0]), nil
 }
 
 func getDescription(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
