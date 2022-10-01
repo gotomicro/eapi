@@ -4,8 +4,8 @@ import { request } from 'umi';
 
 {% for value in data %}
 // {$ value.FuncName $}
-export async function {$value|getApiName $} ({% if value.ReqParam !="" %}req: {$ value.ReqParam|getDefinitionName $},{% endif %}options?: { [key: string]: any }) {
-  return request('{$value.FullPath$}', {
+export async function {$value|getApiName $} ({$value|getApiParam$} {% if value.ReqParam !="" %}req: {$ value.ReqParam|getDefinitionName $},{% endif %}options?: { [key: string]: any }) {
+  return request<Res<{% if value.ResParam !="" %}{$ value.ResParam|getDefinitionName $}{% else %}any{% endif %}>>({$value|getApiPath$}, {
     method: '{$value.Method$}',
     {% if value.ReqParam !="" %}body: req ,{% endif %}
     ...(options || {}),
@@ -26,3 +26,9 @@ type {$ key|getDefinitionName $} = {
 type {$ key|getDefinitionName $} = {$ valueDef | getFieldTypescriptType $}
 {% endif %}
 {% endfor %}
+
+type Res<T> = {
+    code: number;
+    msg: string;
+    data: T;
+};

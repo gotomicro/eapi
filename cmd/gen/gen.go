@@ -30,6 +30,7 @@ var tmplPath string
 var main string
 var flushSuffix string
 var dependences string
+var resFuncs string
 
 func init() {
 	CmdRun.InheritedFlags()
@@ -37,6 +38,7 @@ func init() {
 	CmdRun.PersistentFlags().StringVarP(&tmplPath, "tmpl", "t", "", "指定路径")
 	CmdRun.PersistentFlags().StringVarP(&dependences, "dependences", "d", "", "指定依赖路径")
 	CmdRun.PersistentFlags().StringVarP(&flushSuffix, "flushSuffix", "f", ".gen.ts", "指定路径")
+	CmdRun.PersistentFlags().StringVarP(&resFuncs, "resFuncs", "r", "JSONOK", "指定路径")
 	CmdRun.PersistentFlags().StringVarP(&main, "main", "m", "main.go", "指定main文件")
 	cmd.RootCommand.AddCommand(CmdRun)
 }
@@ -51,6 +53,7 @@ func CmdFunc(cmd *cobra.Command, args []string) {
 		RootMainGo:  main,
 		RootPath:    path,
 		Dependences: dependences,
+		ResFuncs:    resFuncs,
 	})
 	if err != nil {
 		fmt.Println("parser fail, err: " + err.Error())

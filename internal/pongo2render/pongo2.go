@@ -1,6 +1,7 @@
 package pongo2render
 
 import (
+	"fmt"
 	"strings"
 	"unicode/utf8"
 
@@ -21,6 +22,8 @@ func init() {
 	_ = pongo2.RegisterFilter("getDefinitionType", getDefinitionType)
 	_ = pongo2.RegisterFilter("getFieldTypescriptType", getFieldTypescriptType)
 	_ = pongo2.RegisterFilter("getApiName", getApiName)
+	_ = pongo2.RegisterFilter("getApiPath", getApiPath)
+	_ = pongo2.RegisterFilter("getApiParam", getApiParam)
 	_ = pongo2.RegisterFilter("getDescription", getDescription)
 
 }
@@ -77,6 +80,7 @@ func getType(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.Erro
 }
 
 func getDefinitionName(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
+	fmt.Printf("in.String()--------------->"+"%+v\n", in.String())
 	a := getInnerDefinitionName(in.String())
 	return pongo2.AsSafeValue(a), nil
 }
@@ -105,6 +109,8 @@ func getTsType(props spec.Schema) string {
 					str = "string[]"
 				case parser.BOOLEAN:
 					str = "boolean[]"
+				case parser.OBJECT:
+					str = "Record<string,any>[]"
 				}
 			}
 		case parser.OBJECT:
@@ -116,16 +122,22 @@ func getTsType(props spec.Schema) string {
 			str = "number"
 		case parser.JSONRAW_MESSAGE:
 			str = "any"
+		case parser.ANY:
+			str = "any"
 		}
 	}
 	if str == "" {
 		spew.Dump(props)
+		panic("111")
 	}
 	return str
 }
 
 // shop.CreateReq => ShopCreateReq
 func getInnerDefinitionName(req string) string {
+	if req == "" {
+		return ""
+	}
 	arr := strings.Split(req, ".")
 	if len(arr) == 2 {
 		return upperFirst(arr[0]) + upperFirst(arr[1])
@@ -134,7 +146,6 @@ func getInnerDefinitionName(req string) string {
 }
 
 func getApiName(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
-
 	var str string
 	value := in.Interface().(parser.UrlInfo)
 	arr := strings.Split(value.FullPath, "/")
@@ -165,6 +176,44 @@ func getApiName(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.E
 		}
 	}
 
+	return pongo2.AsSafeValue(str), nil
+}
+
+// /ttt/:guid/ 需要知道有多少个这样的变量
+func getApiParam(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
+	var str string
+	value := in.Interface().(parser.UrlInfo)
+	arr := strings.Split(value.FullPath, "/")
+	for _, value := range arr {
+		if value == "" {
+			continue
+		}
+		if !strings.Contains(value, ":") {
+			continue
+		}
+		newArr := strings.Split(value, ":")
+		str += fmt.Sprintf("%s: any,", newArr[1])
+	}
+	return pongo2.AsSafeValue(str), nil
+}
+
+// /ttt/:guid/ 需要知道有多少个这样的变量 转为`/ttt/${req}`
+func getApiPath(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
+	str := "`"
+	value := in.Interface().(parser.UrlInfo)
+	arr := strings.Split(value.FullPath, "/")
+	for _, value := range arr {
+		if value == "" {
+			continue
+		}
+		if !strings.Contains(value, ":") {
+			str += value + "/"
+			continue
+		}
+		newArr := strings.Split(value, ":")
+		str += fmt.Sprintf("${%s}", newArr[1])
+	}
+	str += "`"
 	return pongo2.AsSafeValue(str), nil
 }
 

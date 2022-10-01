@@ -37,6 +37,7 @@ type astParser struct {
 	// ParseDependencies whether swag should be parse outside dependency folder
 	ParseAllDependency bool
 	Dependences        []string
+	ResFuncs           []string
 	importMap          map[string]ImportInfo
 	routerFunc         *ast.FuncDecl
 	routerParam        string // router的变量名
@@ -147,8 +148,8 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 	a.parserStruct()
 	// {FullPath:/api/test/new/goodCreate Method:POST Prefix:/api/test ModuleName:shop FuncName:GoodCreate}
 	// package path: File:0x140003fa200 Path:/Users/askuy/code/github/gotomicro/ego-gen-api/internal/parser/testdata/bff/pkg/shop/shop.go ModName:bff/pkg/shop
-	for _, value := range a.sortedUrl {
-		a.packages.rangeByPkgPath(value.PackagePath, func(filename string, file *ast.File) error {
+	for _, urlInfo := range a.sortedUrl {
+		a.packages.rangeByPkgPath(urlInfo.PackagePath, func(filename string, file *ast.File) error {
 			// 先找到有没有名称为value.FuncName的函数
 			for _, declValue := range file.Decls {
 				// 找到函数
@@ -157,7 +158,7 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 					continue
 				}
 
-				if funcValue.Name.String() != value.FuncName {
+				if funcValue.Name.String() != urlInfo.FuncName {
 					continue
 				}
 
@@ -166,6 +167,7 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 				if len(funcValue.Type.Params.List) != 1 {
 					panic("参数个数不为1")
 				}
+				// 获取context前面的名字
 				ctxName := funcValue.Type.Params.List[0].Names[0].String()
 				fmt.Printf("ctxName--------------->"+"%+v\n", ctxName)
 				var bindReqName string
@@ -201,78 +203,133 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 				})
 				// warning 有这个参数，才需要去找下这个变量
 				if bindReqName != "" {
-					reqInfo := getStructByParamName(bindReqName, funcValue.Body.List)
-					fmt.Printf("reqInfo--------------->"+"%+v\n", reqInfo)
-					if reqInfo.ParamName != "" {
-						// 说明这个类型就在这个函数里，直接使用type解析即可
-						if reqInfo.ModName == "" {
-							schemaInfo, err := a.getTypeSchema(reqInfo.ParamName, file, true)
-							if err != nil {
-								panic(err)
-								//fmt.Printf("err--------------->"+"%+v\n", err)
-							}
+					// 根据 req或者res的变量名找到对应的schema信息
+					reqResInfo := getStructByParamName(bindReqName, funcValue.Body.List)
+					if reqResInfo.ParamName == "" {
+						panic("reqResInfo.ParamName is empty, " + bindReqName)
+						//return nil, ""
+					}
+					schema, reqResFullName := a.getReqResSchema(reqResInfo, file, urlInfo)
+					urlInfo.ReqSwagger = schema
+					urlInfo.ReqParam = reqResFullName
+					a.urlMap[urlInfo.UniqueKey] = urlInfo
+				}
 
-							value.Swagger = schemaInfo
-							// reqInfo.ModName == "" 说明是跟调用url地方在一个包里
-							value.ReqParam = value.ModuleName + "." + reqInfo.ParamName
+				resList := make([]ResStruct, 0)
+				// 遍历取最后一次CallExpr，说明是c.JSONOK
+				ast.Inspect(funcValue, func(n ast.Node) bool {
+					if !funcValue.Name.IsExported() {
+						return true
+					}
+					switch nn := n.(type) {
+					case *ast.CallExpr:
+						fun, flag := nn.Fun.(*ast.SelectorExpr)
+						if !flag {
+							return true
+						}
+						funcXIndent, flag := fun.X.(*ast.Ident)
+						if !flag {
+							return true
+						}
 
-							a.urlMap[value.UniqueKey] = value
-							//spew.Dump(schemaInfo)
-							// {"type":"object","properties":{"arr":{"type":"array","items":{"type":"string"}},"cover":{"type":"string"},"subTitle":{"type":"string"},"title":{"type":"string"}}}
-							//jsonBytes, err := schemaInfo.MarshalJSON()
-							//fmt.Printf("defInfo--------------->"+"%+v\n", string(jsonBytes))
-							// 说明在go其他包里
-							// 先找到他引用的包
-						} else {
-							fmt.Printf("reqInfo.ModName --------------->"+"%+v\n", reqInfo.ModName)
-							importMapInfo := a.getImport(file)
-							importInfo, flag := importMapInfo[reqInfo.ModName]
-							if !flag {
-								panic("not find import info, modName: " + reqInfo.ModName)
-							}
-							// 遍历去找这个type类型
-							structFile, err := a.packages.findFileByRangePackages(importInfo.PackagePath, func(filename string, file *ast.File) (bool, error) {
-								// 循环遍历
-								var isContinueForeach = true
-								ast.Inspect(file, func(n ast.Node) bool {
-									if file.Name.String() == reqInfo.ModName {
-										switch nn := n.(type) {
-										case *ast.GenDecl:
-											// 定义的地方
-											if nn.Tok == token.TYPE {
-												info, flag := nn.Specs[0].(*ast.TypeSpec)
-												if !flag {
-													return true
-												}
-												if info.Name.String() == reqInfo.ParamName {
-													// 找到了，不需要再循环
-													isContinueForeach = false
-													return false
-												}
-											}
-										}
-									}
-									return true
+						//spew.Dump(nn)
+						// 说明找到了c.JSONOK
+						//c.JSONOK(GoodCreateReq{})
+						//c.JSONOK(req)
+						//c.JSONOK()
+						if lo.Contains(a.ResFuncs, fun.Sel.Name) && funcXIndent.String() == ctxName {
+							if nn.Args == nil {
+								resList = append(resList, ResStruct{
+									Type: 1,
 								})
-
-								return isContinueForeach, nil
-							})
-
-							if err != nil {
-								panic(err)
+								return true
 							}
-							schemaInfo, err := a.getTypeSchema(reqInfo.ParamName, structFile, true)
-							if err != nil {
-								fmt.Printf("err--------------->"+"%+v\n", err)
+							switch argsT := nn.Args[0].(type) {
+							case *ast.CompositeLit:
+								switch specType := argsT.Type.(type) {
+								// req :=  GoodCreateReq
+								case *ast.Ident:
+									resList = append(resList, ResStruct{
+										ReqResInfo: ReqResInfo{
+											ModName:   "",
+											ParamName: specType.Name,
+										},
+										Type: 2,
+									})
+								// req3 :=  dto.Good3Req
+								case *ast.SelectorExpr:
+									resList = append(resList, ResStruct{
+										ReqResInfo: ReqResInfo{
+											ModName:   specType.X.(*ast.Ident).String(),
+											ParamName: specType.Sel.String(),
+										},
+										Type: 2,
+									})
+								}
+							case *ast.UnaryExpr:
+								switch rhsTypeXType := argsT.X.(type) {
+								case *ast.CompositeLit:
+									switch specType := rhsTypeXType.Type.(type) {
+									// req :=  GoodCreateReq
+									case *ast.Ident:
+										resList = append(resList, ResStruct{
+											ReqResInfo: ReqResInfo{
+												ModName:   "",
+												ParamName: specType.Name,
+											},
+											Type: 3,
+										})
+									// req3 :=  dto.Good3Req
+									case *ast.SelectorExpr:
+										resList = append(resList, ResStruct{
+											ReqResInfo: ReqResInfo{
+												ModName:   specType.X.(*ast.Ident).String(),
+												ParamName: specType.Sel.String(),
+											},
+											Type: 3,
+										})
+									}
+								}
+							case *ast.Ident:
+								// 说明是指针
+								resParam := argsT.String()
+								resList = append(resList, ResStruct{
+									ReferParam: resParam,
+									Type:       4,
+								})
 							}
-							value.Swagger = schemaInfo
-							// reqInfo.ModName == "" 说明是跟调用url地方在一个包里
-							value.ReqParam = reqInfo.ModName + "." + reqInfo.ParamName
-							a.urlMap[value.UniqueKey] = value
-
 						}
 					}
+					return true
+				})
+				fmt.Printf("resList--------------->"+"%+v\n", resList)
+				// 取最后一次的数据
+				if len(resList) > 0 {
+					resInfo := resList[len(resList)-1]
+					urlInfo.ResType = resInfo.Type
+					var schema *spec.Schema
+					var reqResFullName string
+					switch resInfo.Type {
+					case 2:
+						schema, reqResFullName = a.getReqResSchema(resInfo.ReqResInfo, file, urlInfo)
+
+					case 3:
+						schema, reqResFullName = a.getReqResSchema(resInfo.ReqResInfo, file, urlInfo)
+					case 4:
+						// 根据 req或者res的变量名找到对应的schema信息
+						reqResInfo := getStructByParamName(bindReqName, funcValue.Body.List)
+						if reqResInfo.ParamName == "" {
+							break
+							//panic("reqResInfo.ParamName is empty, " + bindReqName)
+							//return nil, ""
+						}
+						schema, reqResFullName = a.getReqResSchema(reqResInfo, file, urlInfo)
+					}
+					urlInfo.ResSwagger = schema
+					urlInfo.ResParam = reqResFullName
+					a.urlMap[urlInfo.UniqueKey] = urlInfo
 				}
+
 				break
 			}
 			return nil
@@ -280,12 +337,72 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 	}
 	//fmt.Printf("a.swagger.Definitions--------------->"+"%+v\n", a.swagger.Definitions)
 	//
-	//for key, value := range a.swagger.Definitions {
+	//for key, urlInfo := range a.swagger.Definitions {
 	//	if key == "shop.ReferralsSendReq" {
-	//		spew.Dump(value.SchemaProps)
+	//		spew.Dump(urlInfo.SchemaProps)
 	//	}
 	//}
 	return a, nil
+}
+
+func (p *astParser) getReqResSchema(reqResInfo ReqResInfo, file *ast.File, urlInfo UrlInfo) (schema *spec.Schema, reqAndResFullName string) {
+
+	// 说明这个类型就在这个函数里，直接使用type解析即可
+	if reqResInfo.ModName == "" {
+		schemaInfo, err := p.getTypeSchema(reqResInfo.ParamName, file, true)
+		if err != nil {
+			panic(err)
+		}
+		schema = schemaInfo
+		reqAndResFullName = urlInfo.ModuleName + "." + reqResInfo.ParamName
+		// 说明在go其他包里
+		// 先找到他引用的包
+	} else {
+		fmt.Printf("reqResInfo.ModName --------------->"+"%+v\n", reqResInfo.ModName)
+		importMapInfo := p.getImport(file)
+		importInfo, flag := importMapInfo[reqResInfo.ModName]
+		if !flag {
+			panic("not find import info, modName: " + reqResInfo.ModName)
+		}
+		// 遍历去找这个type类型
+		structFile, err := p.packages.findFileByRangePackages(importInfo.PackagePath, func(filename string, file *ast.File) (bool, error) {
+			// 循环遍历
+			var isContinueForeach = true
+			ast.Inspect(file, func(n ast.Node) bool {
+				if file.Name.String() == reqResInfo.ModName {
+					switch nn := n.(type) {
+					case *ast.GenDecl:
+						// 定义的地方
+						if nn.Tok == token.TYPE {
+							info, flag := nn.Specs[0].(*ast.TypeSpec)
+							if !flag {
+								return true
+							}
+							if info.Name.String() == reqResInfo.ParamName {
+								// 找到了，不需要再循环
+								isContinueForeach = false
+								return false
+							}
+						}
+					}
+				}
+				return true
+			})
+
+			return isContinueForeach, nil
+		})
+
+		if err != nil {
+			panic(err)
+		}
+		schemaInfo, err := p.getTypeSchema(reqResInfo.ParamName, structFile, true)
+		if err != nil {
+			fmt.Printf("err--------------->"+"%+v\n", err)
+		}
+		schema = schemaInfo
+		reqAndResFullName = reqResInfo.ModName + "." + reqResInfo.ParamName
+	}
+	return
 }
 
 func (p *astParser) GetData() []UrlInfo {

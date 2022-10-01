@@ -135,6 +135,7 @@ func (p *astParser) initOption() {
 	} else {
 		p.Dependences = strings.Split(p.userOption.Dependences, ",")
 	}
+	p.ResFuncs = strings.Split(p.userOption.ResFuncs, ",")
 }
 
 // IsExist returns whether a file or directory exists.

@@ -177,7 +177,7 @@ func (pkgDefs *PackagesDefinitions) findFileByRangePackages(pkgPath string, hand
 	}
 	pd, found := pkgDefs.packages[pkgPath]
 	if !found {
-		return nil, fmt.Errorf("not packages found")
+		return nil, fmt.Errorf("not packages found" + pkgPath)
 	}
 
 	for key, file := range pd.Files {
@@ -569,7 +569,8 @@ func getStructByParamName(paramName string, list []ast.Stmt) ReqResInfo {
 				}
 			}
 		case *ast.AssignStmt:
-			if stmtType.Lhs[0].(*ast.Ident).String() == paramName {
+			identValue, flag := stmtType.Lhs[0].(*ast.Ident)
+			if flag && identValue.String() == paramName {
 				fmt.Printf("paramName--------------->"+"%+v\n", paramName)
 				fmt.Printf(" stmtType.Rhs[0]--------------->"+"%+v\n", list)
 				switch RhsType := stmtType.Rhs[0].(type) {
