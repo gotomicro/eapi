@@ -1,7 +1,5 @@
 import { request } from 'umi';
 
-
-
 {% for value in data %}
 // {$ value.FuncName $}
 export async function {$value|getApiName $} ({$value|getApiParam$} {% if value.ReqParam !="" %}req: {$ value.ReqParam|getDefinitionName $},{% endif %}options?: { [key: string]: any }) {
@@ -13,22 +11,3 @@ export async function {$value|getApiName $} ({$value|getApiParam$} {% if value.R
 }
 
 {% endfor %}
-
-{% for key, valueDef in definitions %}
-{% if valueDef| getDefinitionType == "object" %}
-type {$ key|getDefinitionName $} = {
-    {% for key, value in valueDef.SchemaProps.Properties %}
-    {$ key $}: {$ value|getFieldTypescriptType $}; // {$ value |getDescription $}
-    {% endfor %}
-}
-{% endif %}
-{% if valueDef| getDefinitionType == "array" %}
-type {$ key|getDefinitionName $} = {$ valueDef | getFieldTypescriptType $}
-{% endif %}
-{% endfor %}
-
-type Res<T> = {
-    code: number;
-    msg: string;
-    data: T;
-};

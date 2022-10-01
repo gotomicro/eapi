@@ -80,7 +80,6 @@ func getType(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.Erro
 }
 
 func getDefinitionName(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
-	fmt.Printf("in.String()--------------->"+"%+v\n", in.String())
 	a := getInnerDefinitionName(in.String())
 	return pongo2.AsSafeValue(a), nil
 }

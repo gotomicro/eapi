@@ -69,13 +69,32 @@ func CmdFunc(cmd *cobra.Command, args []string) {
 	fmt.Println("finish")
 }
 
-func Exec(render *pongo2render.Render, tmplName string, data []parser.UrlInfo, definitions spec.Definitions) error {
+func Exec(render *pongo2render.Render, dirPth string, data []parser.UrlInfo, definitions spec.Definitions) error {
+	var (
+		err error
+	)
+	files, err := ioutil.ReadDir(dirPth)
+	if err != nil {
+		return err
+	}
+
+	for _, fi := range files {
+		if !strings.HasSuffix(fi.Name(), ".tmpl") {
+			continue
+		}
+		err = ExecOne(render, dirPth, fi.Name(), data, definitions)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func ExecOne(render *pongo2render.Render, dirPath string, tmplName string, data []parser.UrlInfo, definitions spec.Definitions) error {
 	var (
 		buf string
 		err error
 	)
-
-	flushFile := filepath.Dir(tmplName) + "/dist/" + strings.TrimRight(filepath.Base(tmplName), filepath.Ext(filepath.Base(tmplName))) + flushSuffix
+	flushFile := dirPath + "/dist/" + strings.TrimRight(filepath.Base(tmplName), filepath.Ext(filepath.Base(tmplName))) + flushSuffix
 	ctx := make(pongo2.Context)
 	ctx["data"] = data
 	ctx["definitions"] = definitions

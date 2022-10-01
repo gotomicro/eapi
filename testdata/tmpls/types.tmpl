@@ -1,0 +1,20 @@
+
+
+type Res<T> = {
+    code: number;
+    msg: string;
+    data: T;
+};
+
+{% for key, valueDef in definitions %}
+{% if valueDef| getDefinitionType == "object" %}
+type {$ key|getDefinitionName $} = {
+    {% for key, value in valueDef.SchemaProps.Properties %}
+    {$ key $}: {$ value|getFieldTypescriptType $}; // {$ value |getDescription $}
+    {% endfor %}
+}
+{% endif %}
+{% if valueDef| getDefinitionType == "array" %}
+type {$ key|getDefinitionName $} = {$ valueDef | getFieldTypescriptType $}
+{% endif %}
+{% endfor %}
