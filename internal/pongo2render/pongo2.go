@@ -203,6 +203,7 @@ func getApiPath(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.E
 	arr := strings.Split(value.FullPath, "/")
 	for _, value := range arr {
 		if value == "" {
+			str += value + "/"
 			continue
 		}
 		if !strings.Contains(value, ":") {
