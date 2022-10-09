@@ -130,10 +130,10 @@ func (p *astParser) initOption() {
 		return
 	}
 	p.GoMod = getPackagePath(p.userOption.RootPath)
-	if p.userOption.Dependences == "*" {
+	if p.userOption.Dependencies == "*" {
 		p.ParseAllDependency = true
 	} else {
-		p.Dependences = strings.Split(p.userOption.Dependences, ",")
+		p.Dependences = strings.Split(p.userOption.Dependencies, ",")
 	}
 	p.ResFuncs = strings.Split(p.userOption.ResFuncs, ",")
 }
