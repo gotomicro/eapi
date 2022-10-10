@@ -78,4 +78,7 @@ req := pkgName.Params.Func() // 另一个包下的变量下的函数
 c.JSONOK(req.Data)
 ```
 
-
+### TODO
+- [ ] 支持 GIN 的 Query / FormData 参数解析
+- [ ] 支持解析字段是否 Required (需要依赖注释解析)
+- [ ] 支持解析 Query / Form-Data 参数的类型/约束/描述 (需要依赖注释解析)
