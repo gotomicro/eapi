@@ -24,11 +24,11 @@ type TeacherRes struct {
 }
 
 func GoodCreate(c *bffcore.Context) {
-	//var req GoodCreateReq
-	//if err := c.Bind(&req); err != nil {
-	//	c.JSONE(1, "error", nil)
-	//	return
-	//}
+	var req GoodCreateReq
+	if err := c.Bind(&req); err != nil {
+		c.JSONE(1, "error", nil)
+		return
+	}
 	////info, _ := invoker.Grpc.ListAllByUid(c.Request.Context(), &communityv1.ListAllByUidRequest{})
 	res := []TeacherRes{}
 	c.JSONOK(res, nil)

@@ -1,6 +1,7 @@
 package gen
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -14,6 +15,7 @@ import (
 	"ego-gen-api/internal/pongo2"
 	"ego-gen-api/internal/pongo2render"
 	"ego-gen-api/internal/utils"
+
 	"github.com/go-openapi/spec"
 	"github.com/spf13/cobra"
 )
@@ -59,14 +61,65 @@ func CmdFunc(cmd *cobra.Command, args []string) {
 		fmt.Println("parser fail, err: " + err.Error())
 		return
 	}
-	// 获取目录
 
+	// 生成 OpenAPI 文档
+	generateOpenAPIDoc(p.GetData(), p.GetDefinitions())
+
+	// 获取目录
 	render := pongo2render.NewRender(filepath.Dir(tmplPath))
 	err = Exec(render, tmplPath, p.GetData(), p.GetDefinitions())
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println("finish")
+}
+
+func generateOpenAPIDoc(data []parser.UrlInfo, definitions spec.Definitions) {
+	model := spec.Swagger{}
+	model.Swagger = "2.0"
+
+	model.Definitions = definitions
+	paths := &spec.Paths{
+		Paths: make(map[string]spec.PathItem),
+	}
+	for _, urlInfo := range data {
+		path, ok := paths.Paths[urlInfo.FullPath]
+		if !ok {
+			path = spec.PathItem{}
+		}
+
+		setPathOperation(&path, urlInfo)
+		paths.Paths[urlInfo.FullPath] = path
+	}
+
+	model.Paths = paths
+	docContent, _ := json.MarshalIndent(model, "", "  ")
+	filePath := filepath.Join(tmplPath, "dist", "swagger.json")
+	err := ioutil.WriteFile(filePath, docContent, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func setPathOperation(path *spec.PathItem, urlInfo parser.UrlInfo) {
+	operation := urlInfo.GetOperationSpec()
+
+	switch strings.ToUpper(urlInfo.Method) {
+	case "GET":
+		path.Get = operation
+	case "PUT":
+		path.Put = operation
+	case "POST":
+		path.Post = operation
+	case "DELETE":
+		path.Delete = operation
+	case "OPTIONS":
+		path.Options = operation
+	case "HEAD":
+		path.Head = operation
+	case "PATCH":
+		path.Patch = operation
+	}
 }
 
 func Exec(render *pongo2render.Render, dirPth string, data []parser.UrlInfo, definitions spec.Definitions) error {
