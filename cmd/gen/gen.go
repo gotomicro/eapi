@@ -14,7 +14,6 @@ import (
 	"ego-gen-api/internal/pongo2"
 	"ego-gen-api/internal/pongo2render"
 	"ego-gen-api/internal/utils"
-
 	"github.com/go-openapi/spec"
 	"github.com/spf13/cobra"
 )

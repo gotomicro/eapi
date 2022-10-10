@@ -1,17 +1,24 @@
 
-
 type Res<T> = {
     code: number;
     msg: string;
     data: T;
 };
 
+type ResListPage<T> = {
+    code: number;
+    msg: string;
+    data: ResList<T>;
+};
+
+type ResList<T> = {
+    list: T;
+}
+
 {% for key, valueDef in definitions %}
 {% if valueDef| getDefinitionType == "object" %}
-type {$ key|getDefinitionName $} = {
-    {% for key, value in valueDef.SchemaProps.Properties %}
-    {$ key $}: {$ value|getFieldTypescriptType $}; // {$ value |getDescription $}
-    {% endfor %}
+type {$ key|getDefinitionName $} = {{% for key, value in valueDef.SchemaProps.Properties %}
+    {$ key $}: {$ value|getFieldTypescriptType $}; // {$ value |getDescription $}{% endfor %}
 }
 {% endif %}
 {% if valueDef| getDefinitionType == "array" %}

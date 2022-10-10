@@ -15,7 +15,7 @@
 
 ## 指令
 ```bash
-go run main.go --path=testdata/bff
+make runtmpls
 ```
 
 https://yuroyoro.github.io/goast-viewer/index.html

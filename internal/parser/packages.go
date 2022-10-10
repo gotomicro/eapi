@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"golang.org/x/tools/go/loader"
 )
 
@@ -243,6 +244,11 @@ func (pkgDefs *PackagesDefinitions) loadExternalPackage(importPath string) error
 }
 
 // findPackagePathFromImports finds out the package path of a package via ranging imports of an ast.File
+// 根据pkgName通过import path中，找到对应的ast file文件
+// 例如
+// import v1 "xxx.com/pb/common/v1"
+// pkg 为v1
+// 返回 xxx.com/pb/common/v1
 // @pkg the name of the target package
 // @file current ast.File in which to search imports
 // @fuzzy search for the package path that the last part matches the @pkg if true
@@ -317,6 +323,9 @@ func (pkgDefs *PackagesDefinitions) findPackagePathFromImports(pkg string, file 
 	return ""
 }
 
+// 根据v1.FileInfo，寻找
+// 先判断是不是基础烈性
+// 判断是不是有
 // FindTypeSpec finds out TypeSpecDef of a type by typeName
 // @typeName the name of the target type, if it starts with a package name, find its own package path from imports on top of @file
 // @file the ast.file in which @typeName is used
@@ -332,26 +341,37 @@ func (pkgDefs *PackagesDefinitions) FindTypeSpec(typeName string, file *ast.File
 
 	parts := strings.Split(typeName, ".")
 	if len(parts) > 1 {
-		isAliasPkgName := func(file *ast.File, pkgName string) bool {
-			if file != nil && file.Imports != nil {
-				for _, pkg := range file.Imports {
-					if pkg.Name != nil && pkg.Name.Name == pkgName {
-						return true
-					}
-				}
-			}
+		//isAliasPkgName := func(file *ast.File, pkgName string) bool {
+		//	if file != nil && file.Imports != nil {
+		//		for _, pkg := range file.Imports {
+		//			if pkg.Name != nil {
+		//				fmt.Printf("pkg.Name.Name--------------->"+"%+v\n", pkg.Name.Name)
+		//				//return true
+		//			}
+		//			// pkg.Name 说明是alias 名字，例如 sts "google.golang.org/grpc/status" , 那么 sts 就是 alias
+		//			if pkg.Name != nil && pkg.Name.Name == pkgName {
+		//				return true
+		//			}
+		//		}
+		//	}
+		//
+		//	return false
+		//}
 
-			return false
-		}
-
-		if !isAliasPkgName(file, parts[0]) {
+		if !IsAliasPkgName(file, parts[0]) {
 			typeDef, ok := pkgDefs.uniqueDefinitions[typeName]
 			if ok {
 				return typeDef
 			}
 		}
-
+		fmt.Printf("parts[0]--------------->"+"%+v\n", parts[0])
+		/*
+			parts[0]--------------->v1
+			pkgPath--------------->xxx.com/pb/common/v1
+		*/
 		pkgPath := pkgDefs.findPackagePathFromImports(parts[0], file, false)
+		//fmt.Printf("pkgPath--------------->"+"%+v\n", pkgPath)
+		//fmt.Printf("file.Name.Name--------------->"+"%+v\n", file.Name.Name)
 		if len(pkgPath) == 0 {
 			// check if the current package
 			if parts[0] == file.Name.Name {
@@ -366,6 +386,7 @@ func (pkgDefs *PackagesDefinitions) FindTypeSpec(typeName string, file *ast.File
 			}
 		}
 
+		fmt.Printf("parts[1]--------------->"+"%+v\n", parts[1])
 		return pkgDefs.findTypeSpec(pkgPath, parts[1])
 	}
 
@@ -389,6 +410,23 @@ func (pkgDefs *PackagesDefinitions) FindTypeSpec(typeName string, file *ast.File
 	}
 
 	return nil
+}
+
+func IsAliasPkgName(file *ast.File, pkgName string) bool {
+	if file != nil && file.Imports != nil {
+		for _, pkg := range file.Imports {
+			if pkg.Name != nil {
+				fmt.Printf("pkg.Name.Name--------------->"+"%+v\n", pkg.Name.Name)
+				//return true
+			}
+			// pkg.Name 说明是alias 名字，例如 sts "google.golang.org/grpc/status" , 那么 sts 就是 alias
+			if pkg.Name != nil && pkg.Name.Name == pkgName {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 /*
@@ -544,64 +582,667 @@ Body: *ast.BlockStmt {
   1199  .  .  .  .  .  }
 */
 
-// ReqResInfo
+// ReqResInfo 获取req，res信息
+// ParamName就是结构体名称
+// File就是结构体当前所在的file
+// 尼玛会出现没名字情况。。要重新定义一个字段
 type ReqResInfo struct {
-	ModName   string
-	ParamName string
+	StructName    string
+	IsArray       bool
+	StructLocFile *ast.File // 结构体所在的文件路径
+	FieldName     string
+	FieldValue    string
+	FieldInfo     string
+	Type          int // 1 Func(), 2 xxx.FuncName(), 3 xxx.xxx.Func()
 }
 
-// getStructByParamName 根据赋值变量名获取他的结构体
-func getStructByParamName(paramName string, list []ast.Stmt) ReqResInfo {
+// 根据参数找到他对应的结构体
+/*
+	var param Struct
+	var param dto.Struct
+	var param *Struct
+	var param *dto.Struct
+	param := Struct{}
+	param := &Struct{}
+	param := dto.Struct{}
+	param := &dto.Struct{}
+	info = goodv1.GoodSku{}
+	info ,err = invoker.Good.GoodSku(ctx, &goodv1.GoodSkuReq{})
+	c.JSONOK(info.SpecList)
+	c.JSONOK(info.GetSpecList) // 暂时不支持
+*/
+
+type ParamInfo struct {
+	SelectorName string
+	Type         int // 0 没有引用， 1 有引用， 2 是函数，不支持
+	SecondName   string
+}
+
+// getStructByReferName 根据赋值变量名获取他的结构体
+func (p *astParser) getStructByReferName(paramInfo ParamInfo, currentFile *ast.File, list []ast.Stmt) ReqResInfo {
 	var output ReqResInfo
 	for _, value := range list {
-		fmt.Printf("value--------------->"+"%+v\n", value)
 		switch stmtType := value.(type) {
 		case *ast.DeclStmt:
-			if stmtType.Decl.(*ast.GenDecl).Specs[0].(*ast.ValueSpec).Names[0].String() == paramName {
+			if stmtType.Decl.(*ast.GenDecl).Specs[0].(*ast.ValueSpec).Names[0].String() == paramInfo.SelectorName {
 				switch specType := stmtType.Decl.(*ast.GenDecl).Specs[0].(*ast.ValueSpec).Type.(type) {
 				// var req GoodCreateReq
 				case *ast.Ident:
-					output.ParamName = specType.Name
+					output.StructName = specType.Name
+					output.StructLocFile = currentFile
 				// var req3 dto.Good3Req
 				case *ast.SelectorExpr:
-					output.ModName = specType.X.(*ast.Ident).String()
-					output.ParamName = specType.Sel.String()
+					modName := specType.X.(*ast.Ident).String()
+					structName := specType.Sel.String()
+					importMapInfo := p.getImport(currentFile)
+					importInfo, flag := importMapInfo[modName]
+					if !flag {
+						panic("not find import info, modName: " + modName)
+					}
+					structLocFile, err := p.getLocFile(importInfo.PackagePath, modName, structName)
+					if err != nil {
+						panic("getLocFile" + err.Error())
+					}
+					output.StructName = specType.Sel.String()
+					output.StructLocFile = structLocFile
 				}
 			}
+			// list := make([]slice)
 		case *ast.AssignStmt:
-			identValue, flag := stmtType.Lhs[0].(*ast.Ident)
-			if flag && identValue.String() == paramName {
-				fmt.Printf("paramName--------------->"+"%+v\n", paramName)
-				fmt.Printf(" stmtType.Rhs[0]--------------->"+"%+v\n", list)
-				switch RhsType := stmtType.Rhs[0].(type) {
-				case *ast.CompositeLit:
-					switch specType := RhsType.Type.(type) {
-					// req :=  GoodCreateReq
-					case *ast.Ident:
-						output.ParamName = specType.Name
-					// req3 :=  dto.Good3Req
-					case *ast.SelectorExpr:
-						output.ModName = specType.X.(*ast.Ident).String()
-						output.ParamName = specType.Sel.String()
-					}
-				case *ast.UnaryExpr:
-					switch rhsTypeXType := RhsType.X.(type) {
+			// 没有prefix
+			switch lhsType := stmtType.Lhs[0].(type) {
+			case *ast.Ident:
+				//identValue, flag := stmtType.Lhs[0].(*ast.Ident)
+				if lhsType.String() == paramInfo.SelectorName {
+					switch RhsType := stmtType.Rhs[0].(type) {
 					case *ast.CompositeLit:
-						switch specType := rhsTypeXType.Type.(type) {
+						switch specType := RhsType.Type.(type) {
 						// req :=  GoodCreateReq
 						case *ast.Ident:
-							output.ParamName = specType.Name
+							output.StructName = specType.Name
+							output.StructLocFile = currentFile
 						// req3 :=  dto.Good3Req
 						case *ast.SelectorExpr:
-							output.ModName = specType.X.(*ast.Ident).String()
-							output.ParamName = specType.Sel.String()
+							modName := specType.X.(*ast.Ident).String()
+							structName := specType.Sel.String()
+							importMapInfo := p.getImport(currentFile)
+							importInfo, flag := importMapInfo[modName]
+							if !flag {
+								panic("not find import info, modName: " + modName)
+							}
+
+							structLocFile, err := p.getLocFile(importInfo.PackagePath, modName, structName)
+							if err != nil {
+								panic("getLocFile" + err.Error())
+							}
+							output.StructLocFile = structLocFile
+							output.StructName = specType.Sel.String()
+						// info := []Teacher{}
+						case *ast.ArrayType:
+							switch specType := specType.Elt.(type) {
+							case *ast.Ident:
+								output.StructName = specType.Name
+								output.IsArray = true
+								output.StructLocFile = currentFile
+							case *ast.SelectorExpr:
+								modName := specType.X.(*ast.Ident).String()
+								structName := specType.Sel.String()
+								importMapInfo := p.getImport(currentFile)
+								importInfo, flag := importMapInfo[modName]
+								if !flag {
+									panic("not find import info, modName: " + modName)
+								}
+
+								structLocFile, err := p.getLocFile(importInfo.PackagePath, modName, structName)
+								if err != nil {
+									panic("getLocFile" + err.Error())
+								}
+								output.StructLocFile = structLocFile
+								output.IsArray = true
+								output.StructName = specType.Sel.String()
+							}
+						}
+					case *ast.UnaryExpr:
+						switch rhsTypeXType := RhsType.X.(type) {
+						case *ast.CompositeLit:
+							switch specType := rhsTypeXType.Type.(type) {
+							// req :=  &GoodCreateReq{}
+							case *ast.Ident:
+								output.StructName = specType.Name
+								output.StructLocFile = currentFile
+							// req3 :=  &dto.Good3Req{}
+							case *ast.SelectorExpr:
+								modName := specType.X.(*ast.Ident).String()
+								structName := specType.Sel.String()
+								importMapInfo := p.getImport(currentFile)
+								importInfo, flag := importMapInfo[modName]
+								if !flag {
+									panic("not find import info, modName: " + modName)
+								}
+
+								structLocFile, err := p.getLocFile(importInfo.PackagePath, modName, structName)
+								if err != nil {
+									panic("getLocFile" + err.Error())
+								}
+								output.StructLocFile = structLocFile
+								output.StructName = specType.Sel.String()
+							}
+						}
+					// list := make([]slice,0)
+					case *ast.CallExpr:
+						//var flag bool
+						switch funType := RhsType.Fun.(type) {
+						case *ast.Ident:
+							// 函数名可能是关键字make
+							// info := make([]slice,0)
+							if funType.String() == "make" {
+								// 获取第一个参数
+								switch argType := RhsType.Args[0].(type) {
+								case *ast.ArrayType:
+									fieldType := getFieldTypeX(argType.Elt)
+									output.StructName = p.getTrueTypeName(fieldType, currentFile)
+									output.StructLocFile = currentFile
+									output.IsArray = true
+								default:
+									panic("no support make type")
+								}
+							} else {
+								// 当前file
+								// info,err := XXXX()
+								//output.ModName = ""
+								//output.FuncName = funType.String()
+								output, _ = p.getModNameAndParamNameByCurrentFile(funType.String(), paramInfo.SecondName, currentFile)
+							}
+
+						case *ast.SelectorExpr:
+							switch xType := funType.X.(type) {
+							case *ast.Ident:
+								// info,err := invoker.XXXX()
+								//output.ModName = xType.String()
+								//output.FuncName = funType.Sel.String()
+								funcName := funType.Sel.String()
+
+								importMapInfo := p.getImport(currentFile)
+								importInfo, flag := importMapInfo[xType.String()]
+								if !flag {
+									panic("not find import info, modName: " + xType.String())
+								}
+								p.packages.findFileByRangePackages(importInfo.PackagePath, func(filename string, file *ast.File) (bool, error) {
+									output, flag = p.getModNameAndParamNameByCurrentFile(funcName, paramInfo.SecondName, currentFile)
+									if flag {
+										return false, nil
+									}
+									return true, nil
+								})
+
+							case *ast.SelectorExpr:
+								// info,err := invoker.Grpc.XXXX()
+								//output.ModName = xType.X.(*ast.Ident).String()
+								paramName := xType.Sel.String()
+								//output.FuncName = funType.Sel.String()
+								funcName := funType.Sel.String()
+								importMapInfo := p.getImport(currentFile)
+								importInfo, flag := importMapInfo[xType.X.(*ast.Ident).String()]
+								if !flag {
+									panic("not find import info, modName: " + xType.X.(*ast.Ident).String())
+								}
+
+								p.packages.findFileByRangePackages(importInfo.PackagePath, func(filename string, file *ast.File) (bool, error) {
+									// 先找到有定义的
+									for _, declValue := range file.Decls {
+										// 找到函数
+										declValue, flag := declValue.(*ast.GenDecl)
+										if !flag {
+											continue
+										}
+										for _, specValue := range declValue.Specs {
+											assertValueSpec, flag := specValue.(*ast.ValueSpec)
+											if !flag {
+												continue
+											}
+											if assertValueSpec.Names[0].String() != paramName {
+												continue
+											}
+											switch specType := assertValueSpec.Type.(type) {
+											// var grpc GoodClient
+											case *ast.Ident:
+												output, _ = p.getModNameAndParamNameByCurrentFile(funcName, paramInfo.SecondName, file)
+												return false, nil
+											// var grpc shopv1.GoodClient
+											case *ast.SelectorExpr:
+												importParamMapInfo := p.getImport(file)
+												importParamInfo, flag := importParamMapInfo[specType.X.(*ast.Ident).String()]
+												if !flag {
+													panic("not find import info, modName: " + specType.X.(*ast.Ident).String())
+												}
+												fmt.Printf("importParamInfo.PackagePath--------------->"+"%+v\n", importParamInfo.PackagePath)
+												p.packages.findFileByRangePackages(importParamInfo.PackagePath, func(filename string, file *ast.File) (bool, error) {
+													fmt.Printf("filename--------------->"+"%+v\n", filename)
+													fmt.Printf("funcName--------------->"+"%+v\n", funcName)
+													output, flag = p.getModNameAndParamNameByCurrentFile(funcName, paramInfo.SecondName, file)
+													if flag {
+														fmt.Printf("output--------------->"+"%+v\n", output)
+														return false, nil
+													}
+													return true, nil
+												})
+												return false, nil
+											}
+										}
+
+									}
+									return true, nil
+								})
+
+							}
+
 						}
 					}
-				}
 
+				}
 			}
+			// 有prefix
+			// c.JSONOK(res.List)
 
 		}
 	}
 	return output
+}
+
+// 根据package name +struct name获取在哪个文件
+// todo 这个方法跟 FindTypeSpec 是差不多的。这边还少了alias玩法
+func (p *astParser) getLocFile(packagePath string, packageName string, structName string) (structLocFile *ast.File, err error) {
+	// 遍历去找这个type类型
+	return p.packages.findFileByRangePackages(packagePath, func(filename string, file *ast.File) (bool, error) {
+		// 循环遍历
+		var isContinueForeach = true
+		ast.Inspect(file, func(n ast.Node) bool {
+			// 获取package name
+			if file.Name.String() == packageName {
+				switch nn := n.(type) {
+				case *ast.GenDecl:
+					// 定义的地方
+					if nn.Tok == token.TYPE {
+						info, flag := nn.Specs[0].(*ast.TypeSpec)
+						if !flag {
+							return true
+						}
+						if info.Name.String() == structName {
+							// 找到了，不需要再循环
+							isContinueForeach = false
+							return false
+						}
+					}
+				}
+			}
+			return true
+		})
+
+		return isContinueForeach, nil
+	})
+}
+
+// 根据函数名，在当前文件获取modName，paramName
+// 如果有fieldname，说明取的struct name中的一个字段的结构体信息
+// 目前返回值必须是第一个
+func (p *astParser) getModNameAndParamNameByCurrentFile(funcName string, fieldName string, currentFile *ast.File) (output ReqResInfo, flag bool) {
+	//  currentFile 有pb.go
+	if strings.HasSuffix(p.packages.files[currentFile].Path, "pb.go") {
+		ast.Inspect(currentFile, func(node ast.Node) bool {
+			switch nn := node.(type) {
+			case *ast.InterfaceType:
+				for _, value := range nn.Methods.List {
+					if value.Names[0].String() == funcName {
+						ast.Inspect(currentFile, func(node ast.Node) bool {
+							switch nn := node.(type) {
+							case *ast.FuncDecl:
+								if nn.Name.String() == funcName {
+									if nn.Type.Results == nil {
+										return true
+									}
+									fmt.Printf("funcName--------------->"+"%+v\n", funcName)
+									// todo 目前只支持第一个
+									rst := nn.Type.Results.List[0]
+									spew.Dump(nn)
+									// 找到函数后，第一个变量返回，但是这个变量不是在这个文件里面，所以不能直接用这个currentFile，我们需要先定位到这个变量在哪个文件里
+									fmt.Printf("rst--------------->\n")
+									switch rstType := rst.Type.(type) {
+									case *ast.SelectorExpr:
+										flag = true
+										structName := rstType.Sel.String()
+										packageDir := p.packages.files[currentFile].PackagePath
+										structLocFile, err := p.getLocFile(packageDir, p.packages.files[currentFile].File.Name.String(), structName)
+										if err != nil {
+											panic("getLocFile" + err.Error())
+										}
+										if fieldName == "" {
+											output.StructLocFile = currentFile
+											output.StructName = rstType.Sel.String()
+										} else {
+											typeSpecDef := p.packages.FindTypeSpec(structName, currentFile, true)
+											if typeSpecDef == nil {
+												panic("not found typedef")
+											}
+											structInfo := typeSpecDef.TypeSpec.Type.(*ast.StructType)
+											for _, field := range structInfo.Fields.List {
+												if field.Names[0].String() != fieldName {
+													continue
+												}
+												typeName, err := getFieldType(field.Type)
+												if err != nil {
+													panic("not support type")
+												}
+												output.StructLocFile = structLocFile
+												output.StructName = typeName
+											}
+										}
+									case *ast.Ident:
+										flag = true
+										structName := rstType.String()
+										packageDir := p.packages.files[currentFile].PackagePath
+										structLocFile, err := p.getLocFile(packageDir, p.packages.files[currentFile].File.Name.String(), structName)
+										if err != nil {
+											panic("getLocFile" + err.Error())
+										}
+										if fieldName == "" {
+											output.StructLocFile = structLocFile
+											output.StructName = structName
+										} else {
+											typeSpecDef := p.packages.FindTypeSpec(structName, currentFile, true)
+											if typeSpecDef == nil {
+												panic("not found typedef")
+											}
+											structInfo := typeSpecDef.TypeSpec.Type.(*ast.StructType)
+											for _, field := range structInfo.Fields.List {
+												if field.Names[0].String() != fieldName {
+													continue
+												}
+												typeName, err := getFieldType(field.Type)
+												if err != nil {
+													panic("not support type")
+												}
+												output.StructLocFile = structLocFile
+												output.StructName = typeName
+											}
+										}
+									// c.JSONOK(res)
+									// c.JSONOK(res.List)
+									case *ast.StarExpr:
+										flag = true
+										switch XType := rstType.X.(type) {
+										case *ast.Ident:
+											structName := XType.String()
+											packageDir := p.packages.files[currentFile].PackagePath
+											structLocFile, err := p.getLocFile(packageDir, p.packages.files[currentFile].File.Name.String(), structName)
+											if err != nil {
+												panic("getLocFile" + err.Error())
+											}
+											output.StructLocFile = structLocFile
+											output.StructName = structName
+											output.FieldName = fieldName
+											if fieldName != "" {
+												output.StructLocFile = structLocFile
+												typeSpecDef := p.packages.FindTypeSpec(structName, currentFile, true)
+												if typeSpecDef == nil {
+													panic("not found typedef")
+												}
+												structInfo := typeSpecDef.TypeSpec.Type.(*ast.StructType)
+												for _, field := range structInfo.Fields.List {
+													if field.Names[0].String() != fieldName {
+														continue
+													}
+													fieldValue := ""
+													typeName, err := getFieldType(field.Type)
+													if err != nil {
+														// 数组类型
+														// resp, err := invoker.xxx.List()
+														// resp.List是数组
+														arrType, flag := field.Type.(*ast.ArrayType)
+														if !flag {
+															panic("not support type")
+														}
+														fieldType := getFieldTypeX(arrType.Elt)
+														output.FieldInfo = p.getTrueTypeName(fieldType, structLocFile)
+														output.IsArray = true
+
+														//
+														//switch eltType := arrType.Elt.(type) {
+														//case *ast.StarExpr:
+														//	fieldType := getFieldTypeX(eltType.X)
+														//	output.FieldInfo = p.getTrueTypeName(fieldType, structLocFile)
+														//	//switch eltTypeX := eltType.X.(type) {
+														//	//case *ast.Ident:
+														//	//	output.FieldValue = eltTypeX.String()
+														//	//	fieldType = eltTypeX.String()
+														//	//case *ast.SelectorExpr:
+														//	//	output.FieldValue = eltTypeX.Sel.String()
+														//	//	fieldType = eltTypeX.X.(*ast.Ident).String() + "." + eltTypeX.Sel.String()
+														//	//default:
+														//	//	panic("not support type elt type star expr")
+														//	//}
+														//case *ast.Ident:
+														//	output.FieldValue = eltType.String()
+														//	fieldType := eltType.String()
+														//	output.FieldInfo = p.getTrueTypeName(fieldType, structLocFile)
+														//}
+													} else {
+														fieldValue = p.getTrueTypeName(typeName, structLocFile)
+														fmt.Printf("typeName--------------->"+"%+v\n", typeName)
+														output.FieldValue = typeName
+														output.FieldInfo = fieldValue
+													}
+												}
+											}
+											// todo
+										case *ast.SelectorExpr:
+											fieldType := getFieldTypeX(XType)
+											typeSpecDef := p.packages.FindTypeSpec(fieldType, currentFile, true)
+											if typeSpecDef == nil {
+												panic("not found typedef")
+											}
+											//output.StructLocFile = typeSpecDef.File
+											//output.StructName = typeSpecDef.Name()
+											//fmt.Printf("typeSpecDef--------------->"+"%+v\n", typeSpecDef.File)
+										}
+
+									}
+									return false
+								}
+
+							}
+							return true
+						})
+						return false
+					}
+				}
+			}
+			return true
+		})
+	} else {
+		ast.Inspect(currentFile, func(node ast.Node) bool {
+			switch nn := node.(type) {
+			case *ast.FuncDecl:
+				if nn.Name.String() == funcName {
+					if nn.Type.Results == nil {
+						return true
+					}
+					fmt.Printf("funcName--------------->"+"%+v\n", funcName)
+					// todo 目前只支持第一个
+					rst := nn.Type.Results.List[0]
+					spew.Dump(nn)
+					// 找到函数后，第一个变量返回，但是这个变量不是在这个文件里面，所以不能直接用这个currentFile，我们需要先定位到这个变量在哪个文件里
+					fmt.Printf("rst--------------->\n")
+					switch rstType := rst.Type.(type) {
+					case *ast.SelectorExpr:
+						flag = true
+						structName := rstType.Sel.String()
+						packageDir := p.packages.files[currentFile].PackagePath
+						structLocFile, err := p.getLocFile(packageDir, p.packages.files[currentFile].File.Name.String(), structName)
+						if err != nil {
+							panic("getLocFile" + err.Error())
+						}
+						if fieldName == "" {
+							output.StructLocFile = currentFile
+							output.StructName = rstType.Sel.String()
+						} else {
+							typeSpecDef := p.packages.FindTypeSpec(structName, currentFile, true)
+							if typeSpecDef == nil {
+								panic("not found typedef")
+							}
+							structInfo := typeSpecDef.TypeSpec.Type.(*ast.StructType)
+							for _, field := range structInfo.Fields.List {
+								if field.Names[0].String() != fieldName {
+									continue
+								}
+								typeName, err := getFieldType(field.Type)
+								if err != nil {
+									panic("not support type")
+								}
+								output.StructLocFile = structLocFile
+								output.StructName = typeName
+							}
+						}
+					case *ast.Ident:
+						flag = true
+						structName := rstType.String()
+						packageDir := p.packages.files[currentFile].PackagePath
+						structLocFile, err := p.getLocFile(packageDir, p.packages.files[currentFile].File.Name.String(), structName)
+						if err != nil {
+							panic("getLocFile" + err.Error())
+						}
+						if fieldName == "" {
+							output.StructLocFile = structLocFile
+							output.StructName = structName
+						} else {
+							typeSpecDef := p.packages.FindTypeSpec(structName, currentFile, true)
+							if typeSpecDef == nil {
+								panic("not found typedef")
+							}
+							structInfo := typeSpecDef.TypeSpec.Type.(*ast.StructType)
+							for _, field := range structInfo.Fields.List {
+								if field.Names[0].String() != fieldName {
+									continue
+								}
+								typeName, err := getFieldType(field.Type)
+								if err != nil {
+									panic("not support type")
+								}
+								output.StructLocFile = structLocFile
+								output.StructName = typeName
+							}
+						}
+					// c.JSONOK(res)
+					// c.JSONOK(res.List)
+					case *ast.StarExpr:
+						flag = true
+						switch XType := rstType.X.(type) {
+						case *ast.Ident:
+							structName := XType.String()
+							packageDir := p.packages.files[currentFile].PackagePath
+							structLocFile, err := p.getLocFile(packageDir, p.packages.files[currentFile].File.Name.String(), structName)
+							if err != nil {
+								panic("getLocFile" + err.Error())
+							}
+							output.StructLocFile = structLocFile
+							output.StructName = structName
+							output.FieldName = fieldName
+							if fieldName != "" {
+								output.StructLocFile = structLocFile
+								typeSpecDef := p.packages.FindTypeSpec(structName, currentFile, true)
+								if typeSpecDef == nil {
+									panic("not found typedef")
+								}
+								structInfo := typeSpecDef.TypeSpec.Type.(*ast.StructType)
+								for _, field := range structInfo.Fields.List {
+									if field.Names[0].String() != fieldName {
+										continue
+									}
+									fieldValue := ""
+									typeName, err := getFieldType(field.Type)
+									if err != nil {
+										// 数组类型
+										// resp, err := invoker.xxx.List()
+										// resp.List是数组
+										arrType, flag := field.Type.(*ast.ArrayType)
+										if !flag {
+											panic("not support type")
+										}
+										fieldType := getFieldTypeX(arrType.Elt)
+										output.FieldInfo = p.getTrueTypeName(fieldType, structLocFile)
+										output.IsArray = true
+
+										//
+										//switch eltType := arrType.Elt.(type) {
+										//case *ast.StarExpr:
+										//	fieldType := getFieldTypeX(eltType.X)
+										//	output.FieldInfo = p.getTrueTypeName(fieldType, structLocFile)
+										//	//switch eltTypeX := eltType.X.(type) {
+										//	//case *ast.Ident:
+										//	//	output.FieldValue = eltTypeX.String()
+										//	//	fieldType = eltTypeX.String()
+										//	//case *ast.SelectorExpr:
+										//	//	output.FieldValue = eltTypeX.Sel.String()
+										//	//	fieldType = eltTypeX.X.(*ast.Ident).String() + "." + eltTypeX.Sel.String()
+										//	//default:
+										//	//	panic("not support type elt type star expr")
+										//	//}
+										//case *ast.Ident:
+										//	output.FieldValue = eltType.String()
+										//	fieldType := eltType.String()
+										//	output.FieldInfo = p.getTrueTypeName(fieldType, structLocFile)
+										//}
+									} else {
+										fieldValue = p.getTrueTypeName(typeName, structLocFile)
+										fmt.Printf("typeName--------------->"+"%+v\n", typeName)
+										output.FieldValue = typeName
+										output.FieldInfo = fieldValue
+									}
+								}
+							}
+							// todo
+						case *ast.SelectorExpr:
+							fieldType := getFieldTypeX(XType)
+							typeSpecDef := p.packages.FindTypeSpec(fieldType, currentFile, true)
+							if typeSpecDef == nil {
+								panic("not found typedef")
+							}
+							//output.StructLocFile = typeSpecDef.File
+							//output.StructName = typeSpecDef.Name()
+							//fmt.Printf("typeSpecDef--------------->"+"%+v\n", typeSpecDef.File)
+						}
+
+					}
+					return false
+				}
+
+			}
+			return true
+		})
+	}
+	return
+}
+
+// 获取真正的类型名称
+// @structLocFile 类型所在的文件
+// 例如：
+/*
+	import v1 "git.xxx.com/pb/common/v1"
+	typeName = v1.StructName
+*/
+func (p *astParser) getTrueTypeName(typeName string, structLocFile *ast.File) (trueType string) {
+	typeArr := strings.Split(typeName, ".")
+	if len(typeArr) > 1 {
+		if IsAliasPkgName(structLocFile, typeArr[0]) {
+			pkgPath := p.packages.findPackagePathFromImports(typeArr[0], structLocFile, false)
+			specDef := p.packages.findTypeSpec(pkgPath, typeArr[1])
+			trueType = specDef.File.Name.String() + "." + typeArr[1]
+		}
+	} else {
+		if !IsGolangPrimitiveType(typeName) {
+			trueType = structLocFile.Name.String() + "." + typeName
+		} else {
+			trueType = typeName
+		}
+	}
+	return
 }

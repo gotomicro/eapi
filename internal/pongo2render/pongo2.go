@@ -19,6 +19,7 @@ func init() {
 	_ = pongo2.RegisterFilter("camelString", pongo2CamelString)
 	_ = pongo2.RegisterFilter("getType", getType)
 	_ = pongo2.RegisterFilter("getDefinitionName", getDefinitionName)
+	_ = pongo2.RegisterFilter("getDefinitionNameV2", getDefinitionNameV2)
 	_ = pongo2.RegisterFilter("getDefinitionType", getDefinitionType)
 	_ = pongo2.RegisterFilter("getFieldTypescriptType", getFieldTypescriptType)
 	_ = pongo2.RegisterFilter("getApiName", getApiName)
@@ -84,6 +85,16 @@ func getDefinitionName(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *p
 	return pongo2.AsSafeValue(a), nil
 }
 
+func getDefinitionNameV2(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
+	value := in.Interface().(parser.UrlInfo)
+	str := getInnerDefinitionName(value.ResParam)
+	//if value.ResSwagger != nil && value.ResSwagger.Type != nil && len(value.ResSwagger.Type) > 0 && value.ResSwagger.Type[0] == "array" {
+	//	str += "[]"
+	//}
+
+	return pongo2.AsSafeValue(str), nil
+}
+
 func getFieldTypescriptType(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.Error) {
 	var str string
 	str = getTsType(in.Interface().(spec.Schema))
@@ -91,43 +102,58 @@ func getFieldTypescriptType(in *pongo2.Value, param *pongo2.Value) (*pongo2.Valu
 }
 
 func getTsType(props spec.Schema) string {
+	//spew.Dump(props)
 	var str string
 	// 存在引用
 	if props.Ref.String() != "" {
 		str = getInnerDefinitionName(parser.GetSchemaDefinitionName(props.Ref.String()))
 	} else {
-		switch props.Type[0] {
-		case parser.ARRAY:
-			if props.Items.Schema.Ref.String() != "" {
-				str = getInnerDefinitionName(parser.GetSchemaDefinitionName(props.Items.Schema.Ref.String())) + "[]"
-			} else {
-				switch props.Items.Schema.Type[0] {
-				case parser.INTEGER:
-					str = "number[]"
-				case parser.STRING:
-					str = "string[]"
-				case parser.BOOLEAN:
-					str = "boolean[]"
-				case parser.OBJECT:
-					str = "Record<string,any>[]"
+		if len(props.Type) > 0 {
+			switch props.Type[0] {
+			case parser.ARRAY:
+				if props.Items.Schema.Ref.String() != "" {
+					str = getInnerDefinitionName(parser.GetSchemaDefinitionName(props.Items.Schema.Ref.String())) + "[]"
+				} else {
+					switch props.Items.Schema.Type[0] {
+					case parser.INTEGER:
+						str = "number[]"
+					case parser.STRING:
+						str = "string[]"
+					case parser.BOOLEAN:
+						str = "boolean[]"
+					case parser.OBJECT:
+						str = "Record<string,any>[]"
+					}
 				}
+			// 是MAP类型
+			case parser.OBJECT:
+				if props.AdditionalProperties.Schema.Ref.String() != "" {
+					refInfo := getInnerDefinitionName(parser.GetSchemaDefinitionName(props.AdditionalProperties.Schema.Ref.String()))
+					str = "Record<string," + refInfo + ">"
+				} else {
+					str = "Record<string,any>"
+				}
+			case parser.BOOLEAN:
+				str = "boolean"
+			case parser.STRING:
+				str = "string"
+			case parser.INTEGER:
+				str = "number"
+			case parser.JSONRAW_MESSAGE:
+				str = "any"
+			case parser.ANY:
+				str = "any"
+			case parser.INTERFACE:
+				spew.Dump(props)
+				panic("111")
 			}
-		case parser.OBJECT:
-		case parser.BOOLEAN:
-			str = "boolean"
-		case parser.STRING:
-			str = "string"
-		case parser.INTEGER:
-			str = "number"
-		case parser.JSONRAW_MESSAGE:
-			str = "any"
-		case parser.ANY:
-			str = "any"
 		}
 	}
+	// todo oneof go to type script怎么处理？
 	if str == "" {
-		spew.Dump(props)
-		panic("111")
+		//spew.Dump(props)
+		//panic("111222")
+		str = "any"
 	}
 	return str
 }
@@ -211,8 +237,11 @@ func getApiPath(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *pongo2.E
 			continue
 		}
 		newArr := strings.Split(value, ":")
-		str += fmt.Sprintf("${%s}", newArr[1])
+		str += fmt.Sprintf("${%s}", newArr[1]) + "/"
 	}
+	// 去除最后一个斜线
+	str = strings.TrimSuffix(str, "/")
+
 	str += "`"
 	return pongo2.AsSafeValue(str), nil
 }
