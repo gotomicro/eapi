@@ -2,6 +2,7 @@ package parser
 
 import (
 	"go/ast"
+	"net/http"
 
 	"github.com/go-openapi/spec"
 )
@@ -23,6 +24,30 @@ type UrlInfo struct {
 	ResType     int
 	ReqSwagger  *spec.Schema
 	ResSwagger  *spec.Schema
+}
+
+func (i *UrlInfo) GetOperationSpec() *spec.Operation {
+	operation := spec.NewOperation(i.UniqueKey)
+	operation.WithDescription(i.FuncComment)
+
+	// TODO 支持 Query/FormData 参数
+
+	if i.ReqSwagger != nil {
+		param := &spec.Parameter{}
+		param.Schema = i.ReqSwagger
+		param.Name = i.ReqParam
+		// FIXME c.Bind() 方法无法直接知道来源的参数类型是 query/form-data/json-in-body/...
+		// c.Bind() 内部的逻辑是根据 Content-Type 和 HTTP Method 共同决定从哪个参数里面解析. 注释原文:
+		//		"Bind checks the Method and Content-Type to select a binding engine automatically"
+		// 然而， Content-Type 在解析代码的时候是未知的，因此我们无法还原编程人员的真实意图
+		param.In = "body"
+		operation.AddParam(param)
+	}
+	if i.ResSwagger != nil {
+		operation.RespondsWith(http.StatusOK, spec.NewResponse().WithSchema(i.ResSwagger))
+	}
+
+	return operation
 }
 
 // C.JSONOK
