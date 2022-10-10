@@ -142,6 +142,7 @@ func Exec(render *pongo2render.Render, dirPth string, data []parser.UrlInfo, def
 	}
 	return nil
 }
+
 func ExecOne(render *pongo2render.Render, dirPath string, tmplName string, data []parser.UrlInfo, definitions spec.Definitions) error {
 	var (
 		buf string

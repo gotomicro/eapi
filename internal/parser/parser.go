@@ -143,257 +143,296 @@ func AstParserBuild(userOption UserOption) (*astParser, error) {
 	if err != nil {
 		panic("parse api fail" + err.Error())
 	}
+
 	// 解析group，url
 	a.parserStruct()
+
 	// {FullPath:/api/test/new/goodCreate Method:POST Prefix:/api/test ModuleName:shop FuncName:GoodCreate}
 	// package path: File:0x140003fa200 Path:/Users/askuy/code/github/gotomicro/ego-gen-api/internal/parser/testdata/bff/pkg/shop/shop.go ModName:bff/pkg/shop
 	for _, urlInfo := range a.sortedUrl {
 		a.packages.rangeByPkgPath(urlInfo.PackagePath, func(filename string, currentFile *ast.File) error {
+			var handlerFnDecl *ast.FuncDecl
+
 			// 先找到有没有名称为value.FuncName的函数
 			for _, declValue := range currentFile.Decls {
 				// 找到函数
-				funcValue, flag := declValue.(*ast.FuncDecl)
+				fnDecl, flag := declValue.(*ast.FuncDecl)
 				if !flag {
 					continue
 				}
-
-				if funcValue.Name.String() != urlInfo.FuncName {
+				if fnDecl.Name.String() != urlInfo.FuncName {
 					continue
 				}
 
-				var comment string
-				if funcValue.Doc != nil {
-					for _, commentInfo := range funcValue.Doc.List {
-						comment += commentInfo.Text + "\n"
-					}
-				}
-				comment = strings.TrimSuffix(comment, "\n")
-				urlInfo.FuncComment = comment
-
-				// 获取参数名称，拿到他是(c *gin.Context)，还是(ctx *gin.Context)
-				// 目前只存在一个参数
-				if len(funcValue.Type.Params.List) != 1 {
-					panic("参数个数不为1")
-				}
-				// 获取context前面的名字
-				ctxName := funcValue.Type.Params.List[0].Names[0].String()
-				var bindReqName string
-				// 因为会存在两种类型，所以直接使用ast.Inspect找到对应的 *ast.AssignStme
-				// if err := c.Bind() xxxx
-				// err := c.Bind()
-				ast.Inspect(funcValue, func(n ast.Node) bool {
-					if !funcValue.Name.IsExported() {
-						return true
-					}
-					switch nn := n.(type) {
-					case *ast.CallExpr:
-						fun, flag := nn.Fun.(*ast.SelectorExpr)
-						if !flag {
-							return true
-						}
-						funcXIndent, flag := fun.X.(*ast.Ident)
-						if !flag {
-							return true
-						}
-						// 说明找到了c.Bind
-						if fun.Sel.Name == "Bind" && funcXIndent.String() == ctxName {
-							switch argType := nn.Args[0].(type) {
-							case *ast.UnaryExpr:
-								bindReqName = argType.X.(*ast.Ident).String()
-							case *ast.Ident:
-								bindReqName = argType.String()
-							}
-							return false
-						}
-					}
-					return true
-				})
-				// warning 有这个参数，才需要去找下这个变量
-				if bindReqName != "" {
-					// 根据 req或者res的变量名找到对应的schema信息
-					reqResInfo := a.getStructByReferName(ParamInfo{
-						SelectorName: bindReqName,
-					}, currentFile, funcValue.Body.List)
-					if reqResInfo.StructName == "" {
-						panic("reqResInfo.SelectorName is empty, " + bindReqName)
-						//return nil, ""
-					}
-					//fmt.Printf("reqResInfo--------------->"+"%+v\n", reqResInfo)
-					schema, reqResFullName := a.getReqResSchema(reqResInfo, urlInfo)
-					urlInfo.ReqSwagger = schema
-					urlInfo.ReqParam = reqResFullName
-					a.urlMap[urlInfo.UniqueKey] = urlInfo
-				}
-
-				resList := make([]ResStruct, 0)
-				// 遍历取最后一次CallExpr，说明是c.JSONOK
-				ast.Inspect(funcValue, func(n ast.Node) bool {
-					if !funcValue.Name.IsExported() {
-						return true
-					}
-					switch nn := n.(type) {
-					case *ast.CallExpr:
-						fun, flag := nn.Fun.(*ast.SelectorExpr)
-						if !flag {
-							return true
-						}
-						funcXIndent, flag := fun.X.(*ast.Ident)
-						if !flag {
-							return true
-						}
-
-						//spew.Dump(nn)
-						// 说明找到了c.JSONOK
-						//c.JSONOK(GoodCreateReq{})
-						//c.JSONOK(req)
-						//c.JSONOK()
-						if lo.Contains(a.ResFuncs, fun.Sel.Name) && funcXIndent.String() == ctxName {
-							resStruct := ResStruct{
-								FuncName:  fun.Sel.Name,
-								FuncValue: funcValue,
-							}
-
-							if nn.Args == nil {
-								resStruct.Type = 1
-								resList = append(resList, resStruct)
-								return true
-							}
-							switch argsT := nn.Args[0].(type) {
-							case *ast.CompositeLit:
-								switch specType := argsT.Type.(type) {
-								// req :=  GoodCreateReq
-								case *ast.Ident:
-									resStruct.ReqResInfo = ReqResInfo{
-										StructLocFile: currentFile,
-										StructName:    specType.Name,
-									}
-									resStruct.Type = 2
-									resList = append(resList, resStruct)
-
-								// c.JSONOK(gin.H{})
-								// c.JSONOK(dto.GoodRes{})
-								case *ast.SelectorExpr:
-									//locFile := a.packages.findPackagePathFromImports(specType.X.(*ast.Ident).String(), currentFile, false)
-									//resList = append(resList, ResStruct{
-									//	ReqResInfo: ReqResInfo{
-									//		//StructLocFile: currentFile,
-									//		StructName: specType.X.(*ast.Ident).String() + "." + specType.Sel.String(),
-									//	},
-									//	Type: 2,
-									//})
-									resStruct.ReqResInfo = ReqResInfo{
-										StructLocFile: currentFile,
-										StructName:    specType.X.(*ast.Ident).String() + "." + specType.Sel.String(),
-									}
-									resStruct.Type = 2
-									resList = append(resList, resStruct)
-								}
-							case *ast.UnaryExpr:
-								switch rhsTypeXType := argsT.X.(type) {
-								case *ast.CompositeLit:
-									switch specType := rhsTypeXType.Type.(type) {
-									// req :=  GoodCreateReq
-									case *ast.Ident:
-										resStruct.ReqResInfo = ReqResInfo{
-											StructLocFile: currentFile,
-											StructName:    specType.Name,
-										}
-										resStruct.Type = 3
-										resList = append(resList, resStruct)
-										// c.JSONOK(&dto.GoodRes{})
-									case *ast.SelectorExpr:
-										resStruct.ReqResInfo = ReqResInfo{
-											StructName: specType.X.(*ast.Ident).String() + "." + specType.Sel.String(),
-										}
-										resStruct.Type = 3
-										resList = append(resList, resStruct)
-									}
-								}
-							case *ast.Ident:
-								// res := Struct{}
-								// c.JSONOK(res)
-								resParam := argsT.String()
-								resStruct.Type = 4
-								resStruct.ReferParam = resParam
-								resList = append(resList, resStruct)
-							case *ast.SelectorExpr:
-								// 可能是赋值变量，也可能是某个函数变量
-								resParam := argsT.X.(*ast.Ident).String()
-								resStruct.ReqResInfo = ReqResInfo{
-									StructName: argsT.Sel.String(),
-								}
-								resStruct.Type = 5
-								resStruct.ReferParam = resParam
-								resList = append(resList, resStruct)
-							}
-						}
-					}
-					return true
-				})
-
-				// 取最后一次的数据
-				if len(resList) > 0 {
-					resInfo := resList[len(resList)-1]
-					urlInfo.ResType = resInfo.Type
-					urlInfo.ResFuncName = resInfo.FuncName
-					var reqResInfo ReqResInfo
-					//fmt.Printf("urlInfo.ResFuncName--------------->"+"%+v\n", urlInfo.ResFuncName)
-					var schema *spec.Schema
-					var reqResFullName string
-					switch resInfo.Type {
-					case 2:
-						schema, reqResFullName = a.getReqResSchema(resInfo.ReqResInfo, urlInfo)
-					case 3:
-						schema, reqResFullName = a.getReqResSchema(resInfo.ReqResInfo, urlInfo)
-					case 4:
-						// 根据 req或者res的变量名找到对应的struct name信息
-						reqResInfo = a.getStructByReferName(ParamInfo{
-							Type:         1,
-							SelectorName: resInfo.ReferParam,
-						}, currentFile, funcValue.Body.List)
-						if reqResInfo.StructName == "" {
-							fmt.Printf("resInfo--------------->"+"%+v\n", resInfo)
-							fmt.Printf("resInfo--------------->"+"%+v\n", reqResInfo)
-							//spew.Dump(resInfo)
-							//panic(111)
-							break
-						}
-
-						schema, reqResFullName = a.getReqResSchema(reqResInfo, urlInfo)
-					case 5:
-						fmt.Printf("resInfo--------------->"+"%+v%+v\n", resInfo)
-						fmt.Printf("bindReqName--------------->"+"%+v\n", bindReqName)
-						reqResInfo = a.getStructByReferName(ParamInfo{
-							Type:         1,
-							SelectorName: resInfo.ReferParam,
-							SecondName:   resInfo.StructName,
-						}, currentFile, funcValue.Body.List)
-						if reqResInfo.StructName == "" {
-							break
-							//panic("reqResInfo.SelectorName is empty, " + bindReqName)
-							//return nil, ""
-						}
-						schema, reqResFullName = a.getReqResSchema(reqResInfo, urlInfo)
-					}
-					urlInfo.ResIsArray = reqResInfo.IsArray
-					urlInfo.ResSwagger = schema
-					urlInfo.ResParam = reqResFullName
-					a.urlMap[urlInfo.UniqueKey] = urlInfo
-				}
-
+				handlerFnDecl = fnDecl
 				break
+			}
+
+			if handlerFnDecl != nil {
+				parseHandlerFn(handlerFnDecl, urlInfo, a, currentFile)
 			}
 			return nil
 		})
 	}
-	//fmt.Printf("a.swagger.Definitions--------------->"+"%+v\n", a.swagger.Definitions)
-	//
-	//for key, urlInfo := range a.swagger.Definitions {
-	//	if key == "shop.ReferralsSendReq" {
-	//		spew.Dump(urlInfo.SchemaProps)
-	//	}
-	//}
+
 	return a, nil
+}
+
+// 解析 handler 函数
+func parseHandlerFn(handlerFnDecl *ast.FuncDecl, urlInfo UrlInfo, a *astParser, currentFile *ast.File) {
+	var comment string
+	var bindReqName string
+
+	if handlerFnDecl.Doc != nil {
+		for _, commentInfo := range handlerFnDecl.Doc.List {
+			comment += commentInfo.Text + "\n"
+		}
+	}
+	comment = strings.TrimSuffix(comment, "\n")
+	urlInfo.FuncComment = comment
+
+	// 获取参数名称，拿到他是(c *gin.Context)，还是(ctx *gin.Context)
+	// 目前只存在一个参数
+	if len(handlerFnDecl.Type.Params.List) != 1 {
+		panic("参数个数不为1")
+	}
+
+	// 获取 context 参数名称
+	ctxName := handlerFnDecl.Type.Params.List[0].Names[0].String()
+
+	// 解析请求参数
+	{
+		bindReqName = parseRequestParamBinding(handlerFnDecl, ctxName)
+		// warning 有这个参数，才需要去找下这个变量
+		if bindReqName != "" {
+			// 根据 req或者res的变量名找到对应的schema信息
+			reqResInfo := a.getStructByReferName(ParamInfo{
+				SelectorName: bindReqName,
+			}, currentFile, handlerFnDecl.Body.List)
+			if reqResInfo.StructName == "" {
+				panic("reqResInfo.SelectorName is empty, " + bindReqName)
+			}
+
+			schema, reqResFullName := a.getReqResSchema(reqResInfo, urlInfo)
+			urlInfo.ReqSwagger = schema
+			urlInfo.ReqParam = reqResFullName
+			a.urlMap[urlInfo.UniqueKey] = urlInfo
+		}
+	}
+
+	resList := make([]ResStruct, 0)
+
+	// 遍历取最后一次CallExpr，说明是 c.JSONOK
+	ast.Inspect(handlerFnDecl, func(n ast.Node) bool {
+		if !handlerFnDecl.Name.IsExported() {
+			return true
+		}
+		switch nn := n.(type) {
+		case *ast.CallExpr:
+			fun, flag := nn.Fun.(*ast.SelectorExpr)
+			if !flag {
+				return true
+			}
+			funcXIndent, flag := fun.X.(*ast.Ident)
+			if !flag {
+				return true
+			}
+
+			//spew.Dump(nn)
+			// 说明找到了c.JSONOK
+			//c.JSONOK(GoodCreateReq{})
+			//c.JSONOK(req)
+			//c.JSONOK()
+			if !(lo.Contains(a.ResFuncs, fun.Sel.Name) && funcXIndent.String() == ctxName) {
+				return true
+			}
+
+			responseList := parseHandlerResponse(fun, handlerFnDecl, nn, currentFile)
+			resList = append(resList, responseList...)
+		}
+		return true
+	})
+
+	// 取最后一次的数据
+	if len(resList) > 0 {
+		resInfo := resList[len(resList)-1]
+		parseResponseCall(handlerFnDecl, urlInfo, a, currentFile, resInfo, bindReqName)
+	}
+}
+
+// 解析 handler 内的输出响应的函数调用
+func parseResponseCall(handlerFnDecl *ast.FuncDecl, urlInfo UrlInfo, a *astParser, currentFile *ast.File, resInfo ResStruct, bindReqName string) {
+	urlInfo.ResType = resInfo.Type
+	urlInfo.ResFuncName = resInfo.FuncName
+	var reqResInfo ReqResInfo
+	//fmt.Printf("urlInfo.ResFuncName--------------->"+"%+v\n", urlInfo.ResFuncName)
+	var schema *spec.Schema
+	var reqResFullName string
+	switch resInfo.Type {
+	case 2:
+		schema, reqResFullName = a.getReqResSchema(resInfo.ReqResInfo, urlInfo)
+	case 3:
+		schema, reqResFullName = a.getReqResSchema(resInfo.ReqResInfo, urlInfo)
+	case 4:
+		// 根据 req或者res的变量名找到对应的struct name信息
+		reqResInfo = a.getStructByReferName(ParamInfo{
+			Type:         1,
+			SelectorName: resInfo.ReferParam,
+		}, currentFile, handlerFnDecl.Body.List)
+		if reqResInfo.StructName == "" {
+			fmt.Printf("resInfo--------------->"+"%+v\n", resInfo)
+			fmt.Printf("resInfo--------------->"+"%+v\n", reqResInfo)
+			//spew.Dump(resInfo)
+			//panic(111)
+			break
+		}
+
+		schema, reqResFullName = a.getReqResSchema(reqResInfo, urlInfo)
+	case 5:
+		fmt.Printf("resInfo--------------->"+"%+v%+v\n", resInfo)
+		fmt.Printf("bindReqName--------------->"+"%+v\n", bindReqName)
+		reqResInfo = a.getStructByReferName(ParamInfo{
+			Type:         1,
+			SelectorName: resInfo.ReferParam,
+			SecondName:   resInfo.StructName,
+		}, currentFile, handlerFnDecl.Body.List)
+		if reqResInfo.StructName == "" {
+			break
+			//panic("reqResInfo.SelectorName is empty, " + bindReqName)
+			//return nil, ""
+		}
+		schema, reqResFullName = a.getReqResSchema(reqResInfo, urlInfo)
+	}
+	urlInfo.ResIsArray = reqResInfo.IsArray
+	urlInfo.ResSwagger = schema
+	urlInfo.ResParam = reqResFullName
+	a.urlMap[urlInfo.UniqueKey] = urlInfo
+}
+
+// 解析 handler 响应
+// TODO: 解析 gin 的响应函数. c.JSON(), c.XML(), c.Data() 等
+func parseHandlerResponse(fun *ast.SelectorExpr, handlerFnDecl *ast.FuncDecl, nn *ast.CallExpr, currentFile *ast.File) (resList []ResStruct) {
+	resStruct := ResStruct{
+		FuncName:  fun.Sel.Name,
+		FuncValue: handlerFnDecl,
+	}
+	if nn.Args == nil {
+		resStruct.Type = 1
+		resList = append(resList, resStruct)
+		return
+	}
+
+	switch argsT := nn.Args[0].(type) {
+	case *ast.CompositeLit:
+		switch specType := argsT.Type.(type) {
+		// req :=  GoodCreateReq
+		case *ast.Ident:
+			resStruct.ReqResInfo = ReqResInfo{
+				StructLocFile: currentFile,
+				StructName:    specType.Name,
+			}
+			resStruct.Type = 2
+			resList = append(resList, resStruct)
+
+		// c.JSONOK(gin.H{})
+		// c.JSONOK(dto.GoodRes{})
+		case *ast.SelectorExpr:
+			//locFile := a.packages.findPackagePathFromImports(specType.X.(*ast.Ident).String(), currentFile, false)
+			//resList = append(resList, ResStruct{
+			//	ReqResInfo: ReqResInfo{
+			//		//StructLocFile: currentFile,
+			//		StructName: specType.X.(*ast.Ident).String() + "." + specType.Sel.String(),
+			//	},
+			//	Type: 2,
+			//})
+			resStruct.ReqResInfo = ReqResInfo{
+				StructLocFile: currentFile,
+				StructName:    specType.X.(*ast.Ident).String() + "." + specType.Sel.String(),
+			}
+			resStruct.Type = 2
+			resList = append(resList, resStruct)
+		}
+
+	case *ast.UnaryExpr:
+		switch rhsTypeXType := argsT.X.(type) {
+		case *ast.CompositeLit:
+			switch specType := rhsTypeXType.Type.(type) {
+			// req :=  GoodCreateReq
+			case *ast.Ident:
+				resStruct.ReqResInfo = ReqResInfo{
+					StructLocFile: currentFile,
+					StructName:    specType.Name,
+				}
+				resStruct.Type = 3
+				resList = append(resList, resStruct)
+				// c.JSONOK(&dto.GoodRes{})
+			case *ast.SelectorExpr:
+				resStruct.ReqResInfo = ReqResInfo{
+					StructName: specType.X.(*ast.Ident).String() + "." + specType.Sel.String(),
+				}
+				resStruct.Type = 3
+				resList = append(resList, resStruct)
+			}
+		}
+
+	case *ast.Ident:
+		// res := Struct{}
+		// c.JSONOK(res)
+		resParam := argsT.String()
+		resStruct.Type = 4
+		resStruct.ReferParam = resParam
+		resList = append(resList, resStruct)
+
+	case *ast.SelectorExpr:
+		// 可能是赋值变量，也可能是某个函数变量
+		resParam := argsT.X.(*ast.Ident).String()
+		resStruct.ReqResInfo = ReqResInfo{
+			StructName: argsT.Sel.String(),
+		}
+		resStruct.Type = 5
+		resStruct.ReferParam = resParam
+		resList = append(resList, resStruct)
+	}
+
+	return
+}
+
+// 解析请求参数绑定
+func parseRequestParamBinding(handlerFnDecl *ast.FuncDecl, ctxName string) string {
+	var bindReqName string
+	// 因为会存在两种类型，所以直接使用ast.Inspect找到对应的 *ast.AssignStme
+	// if err := c.Bind() xxxx
+	// err := c.Bind()
+	ast.Inspect(handlerFnDecl, func(n ast.Node) bool {
+		if !handlerFnDecl.Name.IsExported() {
+			return true
+		}
+		switch nn := n.(type) {
+		case *ast.CallExpr:
+			fun, flag := nn.Fun.(*ast.SelectorExpr)
+			if !flag {
+				return true
+			}
+			funcXIndent, flag := fun.X.(*ast.Ident)
+			if !flag {
+				return true
+			}
+
+			// 找到 c.Bind() 调用
+			if funcXIndent.String() == ctxName && fun.Sel.Name == "Bind" {
+				switch argType := nn.Args[0].(type) {
+				case *ast.UnaryExpr:
+					bindReqName = argType.X.(*ast.Ident).String()
+				case *ast.Ident:
+					bindReqName = argType.String()
+				}
+				return false
+			}
+			// TODO 解析注解 -请求参数类型
+		}
+		return true
+	})
+	return bindReqName
 }
 
 func (p *astParser) getReqResSchema(reqResInfo ReqResInfo, urlInfo UrlInfo) (schema *spec.Schema, reqAndResFullName string) {
