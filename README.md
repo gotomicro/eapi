@@ -1,85 +1,22 @@
-# ego-gen-api
-每次Go项目都要写接口文档，或者和前端对接API
-哪怕用swagger，也要写好久的API注释
+# ego-gen-api [WIP]
 
-为什么不能直接使用`ast`，生成接口文档和对应的ts、flutter代码，提交到对应npm中，减少对接成本。
+**本项目正在开发中，暂不能在实际场景中使用**
 
-## 思路
-* 如何确定一个ego的gin router
-* 在返回值中，只要有一个参数是*egin.Component，就是我们的router函数
-* 我们在从return中找到对应顺序的变量名
-* 通过解析这个函数里数据，如果是这个变量名，并且是函数调用方法，使用的Group、GET、POST等名称，那么就是我们的方法
-* 通过import找到对应的文件路径，解析他的dto
-* 响应数据，通过解析到时候配置到函数名，找到最后一个，解析他，拿到响应schema
-* 根据模板生成接口文档和前端代码，提交到npm中
+`ego-gen-api` 通过分析 AST 解析出代码中的路由（方法/路径）和 Handler 函数获取接口的信息（请求响应参数/响应状态码等），进而生成 Swagger 文档。
 
-## 指令
-```bash
-make runtmpls
-```
+由于本工具是通过分析 AST 中的必要部分而不执行代码（类似于静态分析）的方式实现的，因此不能覆盖到任一种使用场景。如果你要在项目中使用本工具，您的代码必须必须要按照一定的约定编写，否则将不能生成完整的文档。虽然这给你的代码编写带来了一定的约束，但从另一个角度看，这也使得代码风格更加统一。
 
-## AST调试网站
-https://yuroyoro.github.io/goast-viewer/index.html
+本工具暂时只支持了有限的框架（现阶段只支持了 `egin` 的路由）。如果你需要将本项目进行扩展或应用于未支持的框架，本工具实现了插件机制，你可以编写自定义插件。
 
-## 开发思路
-解析里面最麻烦的是响应数据。目前是通过命令行中获取响应的函数。
-然后通过这个函数名，找到他return的数据。这个数据可能是以下几种类型
-* 1 直接返回结构体、指针数据
-```
-c.JSONOK(Struct{})
-c.JSONOK(&Struct{})
-c.JSONOK(dto.Struct{})
-c.JSONOK(&dto.Struct{})
-```
-* 2 定义的结构体、指针数据
-```
-var res Struct{}
-var res &Struct{}
-var res dto.Struct{}
-var res &dto.Struct{}
-c.JSONOK(res)
-```
-* 3 返回一个赋值的变量
-```
-res := Struct{}
-res := &Struct{}
-res := &dto.Struct{}
-res := &dto.Struct{}
-c.JSONOK(req)
-```
-* 4 返回一个赋值的变量的成员变量
-```
-req := Struct{
-    Data: Struct{}
-}
-req := &Struct{
-    Data: Struct{}
+## 插件 Plugin
 
-req := dto.Struct{
-    Data: Struct{}
-}
-req := &dto.Struct{
-    Data: Struct{}
-}
-c.JSONOK(req.Data)
-```
-* 5 函数返回一个变量
-```
-req := Func() // 同包下的函数
-req := pkgName.Func() // 另一个包下的函数
-req := pkgName.Params.Func() // 另一个包下的变量下的函数
-c.JSONOK(req)
-```
-* 6 函数返回一个变量的成员变量
-```
-req := Func() // 同包下的函数
-req := pkgName.Func() // 另一个包下的函数
-req := pkgName.Params.Func() // 另一个包下的变量下的函数
-c.JSONOK(req.Data)
-```
+> TODO
 
-### TODO
-- [ ] 支持 GIN 的 c.JSON(),c.XML(),... 响应函数解析
-- [ ] 支持 GIN 的 Query / FormData 参数解析
-- [ ] 支持解析字段是否 Required (需要依赖注释解析)
-- [ ] 支持解析 Query / Form-Data 参数的类型/约束/描述 (需要依赖注释解析)
+## 生命周期 Lifecycle
+1. Parsing Routes
+    1. Method
+    2. Path
+    3. Handler Name
+2. Parsing Handlers
+    1. Request Parameters (Query-Parameters/Path-Parameters/Body-Payload)
+    2. Response (Status-Code/Data-Type)
