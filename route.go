@@ -1,7 +1,7 @@
 package analyzer
 
 import (
-	"go/types"
+	"go/ast"
 	"net/http"
 
 	"github.com/go-openapi/spec"
@@ -11,19 +11,17 @@ type RouteGroup struct {
 	Prefix string
 }
 
-type Route struct {
+type API struct {
 	Method   string
 	FullPath string
-	Handler  *types.Func
-
-	spec *APISpec
+	Spec     *APISpec
 }
 
-func (r *Route) Spec() *APISpec {
-	return r.spec
+func NewAPI(method string, fullPath string) *API {
+	return &API{Method: method, FullPath: fullPath, Spec: NewAPISpec(method + "." + fullPath)}
 }
 
-func (r *Route) applyToPathItem(pathItem *spec.PathItem) {
+func (r *API) applyToPathItem(pathItem *spec.PathItem) {
 	switch r.Method {
 	case http.MethodGet:
 		pathItem.Get = r.Operation()
@@ -42,11 +40,33 @@ func (r *Route) applyToPathItem(pathItem *spec.PathItem) {
 	}
 }
 
-func (r *Route) Operation() *spec.Operation {
-	return r.spec.Operation
+func (r *API) Operation() *spec.Operation {
+	return r.Spec.Operation
+}
+
+type APIs []*API
+
+func (r *APIs) add(items ...*API) {
+	*r = append(*r, items...)
 }
 
 type APISpec struct {
-	// TODO: 数据格式需要方便修改
 	*spec.Operation
+}
+
+func NewAPISpec(id string) *APISpec {
+	return &APISpec{
+		Operation: spec.NewOperation(id),
+	}
+}
+
+// LoadFromFuncDecl load annotations/description from comments of handler function
+func (s *APISpec) LoadFromFuncDecl(funcDecl *ast.FuncDecl) {
+	cg := funcDecl.Doc
+	comment := ParseComment(cg)
+	if comment != nil {
+		s.WithConsumes(comment.Consumes()...)
+		s.WithProduces(comment.Produces()...)
+		s.WithDescription(comment.TrimPrefix(funcDecl.Name.Name))
+	}
 }

@@ -23,28 +23,22 @@ var (
 
 const (
 	routerGroupMethodName = "Group"
-	routerGroupTypeName   = "*github.com/gin-gonic/gin.RouterGroup"
 )
 
 var _ analyzer.Plugin = &Plugin{}
 
 type Plugin struct{}
 
-func (e *Plugin) ParseRoutes(ctx *analyzer.Context, node ast.Node, routes []*analyzer.Route) []*analyzer.Route {
+func (e *Plugin) Analyze(ctx *analyzer.Context, node ast.Node) {
 	switch n := node.(type) {
 	case *ast.AssignStmt:
-		e.assignStmt(ctx, n, routes)
+		e.assignStmt(ctx, n)
 	case *ast.CallExpr:
-		routes = e.callExpr(ctx, n, routes)
+		e.callExpr(ctx, n)
 	}
-	return routes
 }
 
-func (e *Plugin) ParseHandler(ctx *analyzer.Context, fn *ast.FuncDecl, spec *analyzer.APISpec) {
-	NewHandlerParser(ctx, spec, fn).Parse()
-}
-
-func (e *Plugin) assignStmt(ctx *analyzer.Context, node ast.Node, routes []*analyzer.Route) {
+func (e *Plugin) assignStmt(ctx *analyzer.Context, node ast.Node) {
 	assign := node.(*ast.AssignStmt)
 	if len(assign.Rhs) != 1 || len(assign.Lhs) != 1 {
 		return
@@ -104,35 +98,40 @@ func (e *Plugin) assignStmt(ctx *analyzer.Context, node ast.Node, routes []*anal
 	return
 }
 
-func (e *Plugin) callExpr(ctx *analyzer.Context, node ast.Node, routes []*analyzer.Route) (res []*analyzer.Route) {
-	res = routes
-	callExpr, ok := node.(*ast.CallExpr)
-	if !ok {
-		return
-	}
-	selExpr, ok := callExpr.Fun.(*ast.SelectorExpr)
-	if !ok {
-		return
-	}
-	t := ctx.Package().TypesInfo.TypeOf(selExpr.X)
-	if t == nil {
-		return
-	}
-	if !lo.Contains(routerIndents, t.String()) {
-		return
-	}
-	if !lo.Contains(routeCallMethods, selExpr.Sel.String()) {
-		return
-	}
-	if len(callExpr.Args) < 2 {
-		return
-	}
-	arg0, ok := callExpr.Args[0].(*ast.BasicLit)
-	if !ok {
+func (e *Plugin) callExpr(ctx *analyzer.Context, callExpr *ast.CallExpr) {
+	api := e.parseAPI(ctx, callExpr)
+	if api == nil {
 		return
 	}
 
-	var prefix = ""
+	ctx.AddAPI(api)
+	return
+}
+
+func (e *Plugin) parseAPI(ctx *analyzer.Context, callExpr *ast.CallExpr) *analyzer.API {
+	selExpr, ok := callExpr.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return nil
+	}
+	t := ctx.Package().TypesInfo.TypeOf(selExpr.X)
+	if t == nil {
+		return nil
+	}
+	if !lo.Contains(routerIndents, t.String()) {
+		return nil
+	}
+	if !lo.Contains(routeCallMethods, selExpr.Sel.String()) {
+		return nil
+	}
+	if len(callExpr.Args) < 2 {
+		return nil
+	}
+	arg0, ok := callExpr.Args[0].(*ast.BasicLit)
+	if !ok {
+		return nil
+	}
+
+	var prefix string
 	if xIdent, ok := selExpr.X.(*ast.Ident); ok {
 		v := ctx.Env.Lookup(xIdent.Name)
 		if rg, ok := v.(*analyzer.RouteGroup); ok {
@@ -148,20 +147,29 @@ func (e *Plugin) callExpr(ctx *analyzer.Context, node ast.Node, routes []*analyz
 	case *ast.SelectorExpr:
 		handler = ctx.Package().TypesInfo.Uses[handlerArg.Sel]
 	default:
-		return // ignore
+		return nil // ignore
 	}
 	handlerFn, ok := handler.(*types.Func)
 	if !ok {
-		return
+		return nil
 	}
-
 	fullPath := path.Join(prefix, e.normalizePath(strings.Trim(arg0.Value, "\"")))
-	res = append(res, &analyzer.Route{
-		Method:   selExpr.Sel.String(),
-		FullPath: fullPath,
-		Handler:  handlerFn,
-	})
-	return
+	method := selExpr.Sel.String()
+
+	route := analyzer.NewAPI(method, fullPath)
+
+	handlerDef := ctx.GetDefinition(handlerFn.Pkg().Path(), handlerFn.Name())
+	handlerFnDef, ok := handlerDef.(*analyzer.FuncDefinition)
+	if !ok {
+		return nil
+	}
+	newHandlerParser(
+		ctx.NewEnv().WithPackage(handlerFnDef.Pkg()).WithFile(handlerFnDef.File()),
+		route.Spec,
+		handlerFnDef.Decl,
+	).Parse()
+	route.Spec.LoadFromFuncDecl(handlerFnDef.Decl)
+	return route
 }
 
 var (

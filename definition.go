@@ -21,15 +21,16 @@ var _ Definition = &FuncDefinition{}
 type FuncDefinition struct {
 	pkg  *packages.Package
 	file *ast.File
-	decl *ast.FuncDecl
+
+	Decl *ast.FuncDecl
 }
 
 func NewFuncDefinition(pkg *packages.Package, file *ast.File, decl *ast.FuncDecl) *FuncDefinition {
-	return &FuncDefinition{pkg: pkg, file: file, decl: decl}
+	return &FuncDefinition{pkg: pkg, file: file, Decl: decl}
 }
 
 func (f *FuncDefinition) Key() string {
-	return f.pkg.PkgPath + "." + f.decl.Name.Name
+	return f.pkg.PkgPath + "." + f.Decl.Name.Name
 }
 
 func (f *FuncDefinition) Pkg() *packages.Package {

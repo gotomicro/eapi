@@ -6,9 +6,7 @@ import (
 	"go/build"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/go-openapi/spec"
 	"github.com/samber/lo"
@@ -18,7 +16,7 @@ import (
 )
 
 type Analyzer struct {
-	routes      []*Route
+	routes      APIs
 	globalEnv   *Environment
 	plugins     []Plugin
 	definitions Definitions
@@ -29,7 +27,7 @@ type Analyzer struct {
 
 func NewAnalyzer() *Analyzer {
 	a := &Analyzer{
-		routes:      make([]*Route, 0),
+		routes:      make(APIs, 0),
 		globalEnv:   NewEnvironment(nil),
 		plugins:     make([]Plugin, 0),
 		definitions: make(Definitions),
@@ -57,7 +55,13 @@ func (a *Analyzer) Load(packagePath string) {
 	if err != nil {
 		panic("invalid package path: " + err.Error())
 	}
-	a.packages = append(a.packages, a.load(packagePath)...)
+
+	pkgList := a.load(packagePath)
+	for _, pkg := range pkgList {
+		a.loadDefinitionsFromPkg(pkg, packagePath)
+	}
+
+	a.packages = append(a.packages, pkgList...)
 }
 
 func (a *Analyzer) Process(packagePath string) {
@@ -67,52 +71,20 @@ func (a *Analyzer) Process(packagePath string) {
 
 	a.Load(packagePath)
 
-	for _, pkg := range a.packages {
-		InspectPackage(pkg, func(pkg *packages.Package) bool {
-			if pkg.Module != nil && pkg.Module.Dir == packagePath {
-				a.processPkg(pkg)
-				return true
-			}
-			return false
-		})
-	}
-
-	for _, route := range a.routes {
-		route.spec = &APISpec{spec.NewOperation(route.Method + " " + route.FullPath)}
-		handler := route.Handler
-		pkg, file, fnDecl := a.findFuncDeclInPackages(a.packages, handler.Pkg().Path(), handler.Name())
-		if fnDecl == nil {
-			continue
-		}
-
-		comment := ParseComment(fnDecl.Doc)
-		if comment != nil {
-			route.Operation().WithConsumes(comment.Consumes()...)
-			route.Operation().WithProduces(comment.Produces()...)
-			route.Operation().WithDescription(comment.TrimPrefix(fnDecl.Name.Name))
-		}
-
-		for _, plugin := range a.plugins {
-			plugin.ParseHandler(a.context().withPackage(pkg).withFile(file), fnDecl, route.spec)
-		}
-
-		pathItem := a.doc.Paths.Paths[route.FullPath]
-		route.applyToPathItem(&pathItem)
-		a.doc.Paths.Paths[route.FullPath] = pathItem
-	}
+	a.processPkg(packagePath)
 }
 
-func (a *Analyzer) GetRoutes() []*Route {
-	return a.routes
+func (a *Analyzer) APIs() *APIs {
+	return &a.routes
 }
 
 func (a *Analyzer) Doc() *spec.Swagger {
 	return a.doc
 }
 
-func (a *Analyzer) parseRoutes(ctx *Context, node ast.Node) {
+func (a *Analyzer) analyze(ctx *Context, node ast.Node) {
 	for _, plugin := range a.plugins {
-		a.routes = plugin.ParseRoutes(ctx, node, a.routes)
+		plugin.Analyze(ctx, node)
 	}
 }
 
@@ -161,10 +133,20 @@ func (a *Analyzer) load(pkgPath string) []*packages.Package {
 	return res
 }
 
-func (a *Analyzer) processPkg(pkg *packages.Package) {
-	ctx := a.context().Block().withPackage(pkg)
-	for _, file := range pkg.Syntax {
-		a.processFile(ctx.Block().withFile(file), file, pkg)
+func (a *Analyzer) processPkg(packagePath string) {
+	for _, pkg := range a.packages {
+		InspectPackage(pkg, func(pkg *packages.Package) bool {
+			if pkg.Module == nil || pkg.Module.Dir != packagePath {
+				return false
+			}
+
+			ctx := a.context().Block().WithPackage(pkg)
+			for _, file := range pkg.Syntax {
+				a.processFile(ctx.Block().WithFile(file), file, pkg)
+			}
+
+			return true
+		})
 	}
 }
 
@@ -172,164 +154,69 @@ func (a *Analyzer) processFile(ctx *Context, file *ast.File, pkg *packages.Packa
 	ast.Inspect(file, func(node ast.Node) bool {
 		switch node := node.(type) {
 		case *ast.FuncDecl:
-			a.funDecl(ctx, node, file, pkg)
-			return false
-		case *ast.TypeSpec:
-			a.typeSpec(ctx, node, file, pkg)
+			a.funDecl(ctx.Block(), node, file, pkg)
 			return false
 		case *ast.BlockStmt:
-			a.blockStmt(ctx, node, pkg)
+			a.blockStmt(ctx.Block(), node, file, pkg)
 			return false
 		}
 
-		a.parseRoutes(ctx, node)
+		a.analyze(ctx, node)
 		return true
 	})
 }
 
 func (a *Analyzer) funDecl(ctx *Context, node *ast.FuncDecl, file *ast.File, pkg *packages.Package) {
-	a.definitions.Set(NewFuncDefinition(pkg, file, node))
-
 	ast.Inspect(node, func(node ast.Node) bool {
 		switch node := node.(type) {
 		case *ast.BlockStmt:
-			a.blockStmt(ctx, node, pkg)
+			a.blockStmt(ctx.Block(), node, file, pkg)
 			return false
 		}
 
-		//route := a.matchRoute(node, pkg, env)
-		//if route != nil {
-		//	a.routes = append(a.routes, route)
-		//}
-
-		a.parseRoutes(ctx, node)
+		a.analyze(ctx, node)
 		return true
 	})
 }
 
-func (a *Analyzer) typeSpec(ctx *Context, node *ast.TypeSpec, file *ast.File, pkg *packages.Package) {
-	a.definitions.Set(NewTypeDefinition(pkg, file, node))
+func (a *Analyzer) loadDefinitionsFromPkg(pkg *packages.Package, packagePath string) {
+	InspectPackage(pkg, func(pkg *packages.Package) bool {
+		if pkg.Module == nil || pkg.Module.Dir != packagePath { // only load definitions in current package
+			return false
+		}
+
+		for _, file := range pkg.Syntax {
+			ast.Inspect(file, func(node ast.Node) bool {
+				switch node := node.(type) {
+				case *ast.FuncDecl:
+					a.definitions.Set(NewFuncDefinition(pkg, file, node))
+					return false
+				case *ast.TypeSpec:
+					a.definitions.Set(NewTypeDefinition(pkg, file, node))
+					return false
+				}
+				return true
+			})
+		}
+		return true
+	})
 }
 
-func (a *Analyzer) blockStmt(ctx *Context, node *ast.BlockStmt, pkg *packages.Package) {
+func (a *Analyzer) blockStmt(ctx *Context, node *ast.BlockStmt, file *ast.File, pkg *packages.Package) {
+	a.analyze(ctx, node)
+
 	for _, node := range node.List {
 		ast.Inspect(node, func(node ast.Node) bool {
-			a.parseRoutes(ctx, node)
-
 			switch node := node.(type) {
 			case *ast.BlockStmt:
-				a.blockStmt(ctx.Block(), node, pkg)
+				a.blockStmt(ctx.Block(), node, file, pkg)
 				return false
 			}
+
+			a.analyze(ctx, node)
 			return true
 		})
 	}
-}
-
-var (
-	routerIndents = []string{
-		"*github.com/gin-gonic/gin.RouterGroup",
-		"*github.com/gotomicro/ego/server/egin.Component",
-	}
-	routeCallMethods = []string{"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "CONNECT", "OPTIONS", "TRACE"}
-)
-
-const (
-	routerGroupMethodName = "Group"
-	routerGroupTypeName   = "*github.com/gin-gonic/gin.RouterGroup"
-)
-
-func (a *Analyzer) matchRoute(node ast.Node, pkg *packages.Package, env *Environment) (route *Route) {
-	callExpr, ok := node.(*ast.CallExpr)
-	if !ok {
-		return
-	}
-
-	fnSel, ok := callExpr.Fun.(*ast.SelectorExpr)
-	if !ok {
-		return
-	}
-	xIdent, ok := fnSel.X.(*ast.Ident)
-	if !ok {
-		return
-	}
-	t := pkg.TypesInfo.TypeOf(xIdent)
-	if t == nil {
-		return
-	}
-	if !lo.Contains(routerIndents, t.String()) || !lo.Contains(routeCallMethods, fnSel.Sel.Name) {
-		return
-	}
-	if len(callExpr.Args) <= 0 {
-		return
-	}
-
-	var prefix string
-	if t.String() == routerGroupTypeName {
-		prefix = a.getGroupPrefix(xIdent, pkg)
-	}
-
-	arg0 := callExpr.Args[0]
-	arg0Lit, ok := arg0.(*ast.BasicLit)
-	if !ok {
-		return
-	}
-	routePath := strings.Trim(arg0Lit.Value, "\"")
-	route = &Route{
-		Method:   fnSel.Sel.Name,
-		FullPath: path.Join(prefix, routePath),
-	}
-	return
-}
-
-func (a *Analyzer) getGroupPrefix(routerGroupIdent *ast.Ident, pkg *packages.Package) (prefix string) {
-	if routerGroupIdent.Obj.Kind != ast.Var {
-		return
-	}
-	assignStmt, ok := routerGroupIdent.Obj.Decl.(*ast.AssignStmt)
-	if !ok {
-		return
-	}
-
-	if len(assignStmt.Lhs) != 1 || len(assignStmt.Rhs) != 1 { // 暂不支持多左值赋值表达式
-		return
-	}
-	rhExpr := assignStmt.Rhs[0]
-	callExpr, ok := rhExpr.(*ast.CallExpr)
-	if !ok {
-		return
-	}
-	fnSelExpr, ok := callExpr.Fun.(*ast.SelectorExpr)
-	if !ok {
-		return
-	}
-	fnSelXIdent, ok := fnSelExpr.X.(*ast.Ident)
-	if !ok {
-		return
-	}
-	t := pkg.TypesInfo.TypeOf(fnSelXIdent)
-	if t == nil {
-		return
-	}
-	if !lo.Contains(routerIndents, t.String()) {
-		return
-	}
-	if fnSelExpr.Sel.Name != routerGroupMethodName {
-		return
-	}
-
-	arg0 := callExpr.Args[0]
-	arg0Lit, ok := arg0.(*ast.BasicLit)
-	if !ok {
-		return
-	}
-	prefix = strings.Trim(arg0Lit.Value, "\"")
-
-	if t.String() == routerGroupTypeName {
-		prefix = path.Join(a.getGroupPrefix(fnSelXIdent, pkg), prefix)
-	}
-
-	return prefix
 }
 
 func (a *Analyzer) findFuncDeclInPackages(list []*packages.Package, pkgName, fnName string) (pkg *packages.Package, inFile *ast.File, decl *ast.FuncDecl) {
@@ -407,4 +294,14 @@ func (a *Analyzer) parseGoModule(pkgPath string) *packages.Module {
 
 func (a *Analyzer) context() *Context {
 	return newContext(a, a.globalEnv)
+}
+
+func (a *Analyzer) AddRoutes(items ...*API) {
+	a.routes.add(items...)
+
+	for _, item := range items {
+		path := a.doc.Paths.Paths[item.FullPath]
+		item.applyToPathItem(&path)
+		a.doc.Paths.Paths[item.FullPath] = path
+	}
 }

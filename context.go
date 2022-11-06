@@ -12,7 +12,7 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-type RouteAnalyzer func(ctx *Context, node ast.Node) (routes []*Route)
+type RouteAnalyzer func(ctx *Context, node ast.Node) (routes []*API)
 
 type Context struct {
 	Env *Environment
@@ -29,13 +29,13 @@ func newContext(analyzer *Analyzer, env *Environment) *Context {
 	}
 }
 
-func (c *Context) withPackage(pkg *packages.Package) *Context {
+func (c *Context) WithPackage(pkg *packages.Package) *Context {
 	res := *c
 	res.pkg = pkg
 	return &res
 }
 
-func (c *Context) withFile(file *ast.File) *Context {
+func (c *Context) WithFile(file *ast.File) *Context {
 	res := *c
 	res.file = file
 	return &res
@@ -78,6 +78,10 @@ func (c *Context) ParseType(t types.Type) Definition {
 
 func (c *Context) Doc() *spec.Swagger {
 	return c.analyzer.Doc()
+}
+
+func (c *Context) AddAPI(items ...*API) {
+	c.analyzer.AddRoutes(items...)
 }
 
 func (c *Context) ParseStatusCode(status ast.Expr) int {
@@ -144,4 +148,14 @@ func (c *Context) FindHeadCommentOf(pos token.Pos) *ast.CommentGroup {
 	}
 
 	return nil
+}
+
+func (c *Context) APIs() *APIs {
+	return c.analyzer.APIs()
+}
+
+func (c *Context) NewEnv() *Context {
+	res := *c
+	res.Env = NewEnvironment(nil)
+	return &res
 }

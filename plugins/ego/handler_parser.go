@@ -12,17 +12,17 @@ import (
 
 const ginContextIdentName = "*github.com/gin-gonic/gin.Context"
 
-type HandlerParser struct {
+type handlerParser struct {
 	ctx  *analyzer.Context
 	spec *analyzer.APISpec
 	decl *ast.FuncDecl
 }
 
-func NewHandlerParser(ctx *analyzer.Context, spec *analyzer.APISpec, decl *ast.FuncDecl) *HandlerParser {
-	return &HandlerParser{ctx: ctx, spec: spec, decl: decl}
+func newHandlerParser(ctx *analyzer.Context, spec *analyzer.APISpec, decl *ast.FuncDecl) *handlerParser {
+	return &handlerParser{ctx: ctx, spec: spec, decl: decl}
 }
 
-func (p *HandlerParser) Parse() {
+func (p *handlerParser) Parse() {
 	ast.Inspect(p.decl, func(node ast.Node) bool {
 		switch node := node.(type) {
 		case *ast.CallExpr:
@@ -32,7 +32,7 @@ func (p *HandlerParser) Parse() {
 	})
 }
 
-func (p *HandlerParser) parseCallExpr(call *ast.CallExpr) {
+func (p *handlerParser) parseCallExpr(call *ast.CallExpr) {
 	sel, ok := call.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return
@@ -66,7 +66,7 @@ func (p *HandlerParser) parseCallExpr(call *ast.CallExpr) {
 	}
 }
 
-func (p *HandlerParser) parseBinding(call *ast.CallExpr) {
+func (p *handlerParser) parseBinding(call *ast.CallExpr) {
 	if len(call.Args) != 1 {
 		return
 	}
@@ -79,7 +79,7 @@ func (p *HandlerParser) parseBinding(call *ast.CallExpr) {
 	p.spec.AddParam(spec.BodyParam("Payload", payloadSchema))
 }
 
-func (p *HandlerParser) parseJsonRes(call *ast.CallExpr) {
+func (p *handlerParser) parseJsonRes(call *ast.CallExpr) {
 	if len(call.Args) != 2 {
 		return
 	}
@@ -102,7 +102,7 @@ func (p *HandlerParser) parseJsonRes(call *ast.CallExpr) {
 	p.spec.RespondsWith(statusCode, res)
 }
 
-func (p *HandlerParser) parsePrimitiveParam(call *ast.CallExpr, in string) {
+func (p *handlerParser) parsePrimitiveParam(call *ast.CallExpr, in string) {
 	if len(call.Args) <= 0 {
 		return
 	}
