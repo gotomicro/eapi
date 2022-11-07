@@ -27,9 +27,16 @@ type GoodsCreateReq struct {
 	Images []*Image `json:"images"`
 }
 
+type SelfRefType struct {
+	Data   string       `json:"data"`
+	Parent *SelfRefType `json:"parent"`
+}
+
 type GoodsCreateRes struct {
 	// 商品 GUID
 	Guid string `json:"guid"`
+	// 测试循环引用
+	SelfRef *SelfRefType `json:"selfRef"`
 }
 
 type GoodsInfoRes struct {

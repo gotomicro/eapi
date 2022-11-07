@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gotomicro/ego-gen-api/tag"
+	"github.com/samber/lo"
 
 	"github.com/go-openapi/spec"
 )
@@ -21,10 +22,41 @@ const (
 type SchemaBuilder struct {
 	ctx         *Context
 	contentType string
+	stack       Stack[string]
 }
 
 func NewSchemaBuilder(ctx *Context, contentType string) *SchemaBuilder {
 	return &SchemaBuilder{ctx: ctx, contentType: contentType}
+}
+
+func newSchemaBuilderWithStack(ctx *Context, contentType string, stack Stack[string]) *SchemaBuilder {
+	return &SchemaBuilder{ctx: ctx, contentType: contentType, stack: stack}
+}
+
+func (s *SchemaBuilder) GetSchemaByExpr(expr ast.Expr, contentType string) *spec.Schema {
+	t := s.ctx.Package().TypesInfo.TypeOf(expr)
+	def := s.ctx.ParseType(t)
+	typeDef, ok := def.(*TypeDefinition)
+	if !ok {
+		return nil
+	}
+	if lo.Contains(s.stack, typeDef.Key()) {
+		return spec.RefSchema(typeDef.RefKey())
+	}
+	_, ok = s.ctx.Doc().Definitions[typeDef.ModelKey()]
+	if ok {
+		return spec.RefSchema(typeDef.RefKey())
+	}
+
+	s.stack.Push(typeDef.Key())
+	defer s.stack.Pop()
+
+	payloadSchema := newSchemaBuilderWithStack(s.ctx.WithPackage(typeDef.pkg).WithFile(typeDef.file), contentType, append(s.stack, typeDef.Key())).
+		FromTypeSpec(typeDef.Spec)
+	payloadSchema.ID = strings.ReplaceAll(typeDef.Key(), "/", "_")
+	s.ctx.Doc().Definitions[typeDef.ModelKey()] = *payloadSchema
+
+	return spec.RefSchema(typeDef.RefKey())
 }
 
 func (s *SchemaBuilder) FromTypeSpec(t *ast.TypeSpec) *spec.Schema {
@@ -105,7 +137,7 @@ func (s *SchemaBuilder) parseIdent(expr *ast.Ident) *spec.Schema {
 	case "string":
 		return &spec.Schema{SchemaProps: spec.SchemaProps{Type: []string{"string"}}}
 	default:
-		return s.ctx.GetSchemaByExpr(expr, s.contentType)
+		return s.GetSchemaByExpr(expr, s.contentType)
 	}
 }
 

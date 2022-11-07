@@ -6,7 +6,6 @@ import (
 	"go/token"
 	"go/types"
 	"strconv"
-	"strings"
 
 	"github.com/go-openapi/spec"
 	"golang.org/x/tools/go/packages"
@@ -117,21 +116,7 @@ func (c *Context) ParseStatusCode(status ast.Expr) int {
 }
 
 func (c *Context) GetSchemaByExpr(expr ast.Expr, contentType string) *spec.Schema {
-	t := c.Package().TypesInfo.TypeOf(expr)
-	def := c.ParseType(t)
-	typeDef, ok := def.(*TypeDefinition)
-	if !ok {
-		return nil
-	}
-	_, ok = c.Doc().Definitions[typeDef.ModelKey()]
-	if ok {
-		return spec.RefSchema(typeDef.RefKey())
-	}
-
-	payloadSchema := typeDef.ToSwaggerSchema(c, contentType)
-	payloadSchema.ID = strings.ReplaceAll(typeDef.Key(), "/", "_")
-	c.Doc().Definitions[typeDef.ModelKey()] = *payloadSchema
-	return spec.RefSchema(typeDef.RefKey())
+	return NewSchemaBuilder(c, contentType).GetSchemaByExpr(expr, contentType)
 }
 
 func (c *Context) FindHeadCommentOf(pos token.Pos) *ast.CommentGroup {
