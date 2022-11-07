@@ -134,7 +134,13 @@ func (a *Analyzer) load(pkgPath string) []*packages.Package {
 	// 前面的 packages.Load() 方法不能解析出以第一层的 Module
 	// 所以这里手动解析 go.mod
 	for _, p := range res {
-		p.Module = a.parseGoModule(pkgPath)
+		module := a.parseGoModule(pkgPath)
+		if module == nil {
+			panic("failed to parse go.mod file in " + pkgPath)
+		}
+		p.Module = module
+		p.PkgPath = module.Path
+		p.ID = module.Path
 	}
 
 	return res

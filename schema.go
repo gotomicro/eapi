@@ -3,7 +3,6 @@ package analyzer
 import (
 	"fmt"
 	"go/ast"
-	"go/types"
 	"strings"
 
 	"github.com/gotomicro/ego-gen-api/tag"
@@ -81,6 +80,7 @@ func (s *SchemaBuilder) parseExpr(expr ast.Expr) (schema *spec.Schema) {
 		return s.parseSelectorExpr(expr)
 
 	case *ast.MapType:
+		return spec.MapProperty(s.parseExpr(expr))
 
 	case *ast.ArrayType:
 		return spec.ArrayProperty(s.parseExpr(expr.Elt))
@@ -139,11 +139,6 @@ func (s *SchemaBuilder) parseIdent(expr *ast.Ident) *spec.Schema {
 	default:
 		return s.GetSchemaByExpr(expr, s.contentType)
 	}
-}
-
-func (s *SchemaBuilder) parseType(t types.Type) *spec.Schema {
-	// TODO
-	return nil
 }
 
 func (s *SchemaBuilder) parseSelectorExpr(expr *ast.SelectorExpr) *spec.Schema {

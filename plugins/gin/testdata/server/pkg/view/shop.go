@@ -1,5 +1,7 @@
 package view
 
+import "github.com/gin-gonic/gin"
+
 type Image struct {
 	// 图片链接
 	// @required
@@ -37,6 +39,8 @@ type GoodsCreateRes struct {
 	Guid string `json:"guid"`
 	// 测试循环引用
 	SelfRef *SelfRefType `json:"selfRef"`
+	// 测试引用第三方包
+	Status gin.Params
 }
 
 type GoodsInfoRes struct {
