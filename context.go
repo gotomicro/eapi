@@ -159,3 +159,103 @@ func (c *Context) NewEnv() *Context {
 	res.Env = NewEnvironment(nil)
 	return &res
 }
+
+type CallRule struct {
+	Rules map[string][]string // typeName to function-names
+}
+
+func NewCallRule() *CallRule {
+	r := new(CallRule)
+	r.Rules = make(map[string][]string)
+	return r
+}
+
+func (c *CallRule) WithRule(typeName string, fnNames ...string) *CallRule {
+	c.Rules[typeName] = append(c.Rules[typeName], fnNames...)
+	return c
+}
+
+func (c *Context) MatchCall(n ast.Node, rule *CallRule, callback func(call *ast.CallExpr, typeName, fnName string)) {
+	callExpr, ok := n.(*ast.CallExpr)
+	if !ok {
+		return
+	}
+
+	actualTypeName, actualFnName, err := c.GetCallInfo(callExpr)
+	if err != nil {
+		return
+	}
+
+	for typeName, fnNames := range rule.Rules {
+		for _, fnName := range fnNames {
+			if typeName == actualTypeName && fnName == actualFnName {
+				callback(callExpr, typeName, fnName)
+			}
+		}
+	}
+
+	return
+}
+
+// GetCallInfo returns the package or type and name associated with a call expression
+//
+// e.g. GetCallInfo(`c.GET("/ping", ...)`) returns ("*github/gin-gonic/gin.RouterGroup", "GET", nil)
+//
+func (c *Context) GetCallInfo(n ast.Node) (string, string, error) {
+	switch node := n.(type) {
+	case *ast.CallExpr:
+		switch fn := node.Fun.(type) {
+		case *ast.SelectorExpr:
+			switch expr := fn.X.(type) {
+			case *ast.Ident:
+				if expr.Obj != nil && expr.Obj.Kind == ast.Var {
+					t := c.Package().TypesInfo.TypeOf(expr)
+					if t != nil {
+						return t.String(), fn.Sel.Name, nil
+					}
+					return "undefined", fn.Sel.Name, fmt.Errorf("missing type info")
+				}
+				return expr.Name, fn.Sel.Name, nil
+			case *ast.SelectorExpr:
+				if expr.Sel != nil {
+					t := c.Package().TypesInfo.TypeOf(expr.Sel)
+					if t != nil {
+						return t.String(), fn.Sel.Name, nil
+					}
+					return "undefined", fn.Sel.Name, fmt.Errorf("missing type info")
+				}
+			case *ast.CallExpr:
+				switch call := expr.Fun.(type) {
+				case *ast.Ident:
+					if call.Name == "new" {
+						t := c.Package().TypesInfo.TypeOf(expr.Args[0])
+						if t != nil {
+							return t.String(), fn.Sel.Name, nil
+						}
+						return "undefined", fn.Sel.Name, fmt.Errorf("missing type info")
+					}
+					if call.Obj != nil {
+						switch decl := call.Obj.Decl.(type) {
+						case *ast.FuncDecl:
+							ret := decl.Type.Results
+							if ret != nil && len(ret.List) > 0 {
+								ret1 := ret.List[0]
+								if ret1 != nil {
+									t := c.Package().TypesInfo.TypeOf(ret1.Type)
+									if t != nil {
+										return t.String(), fn.Sel.Name, nil
+									}
+									return "undefined", fn.Sel.Name, fmt.Errorf("missing type info")
+								}
+							}
+						}
+					}
+				}
+			}
+		case *ast.Ident:
+			return c.Package().Name, fn.Name, nil
+		}
+	}
+
+	return "", "", fmt.Errorf("unable to determine call info")
+}

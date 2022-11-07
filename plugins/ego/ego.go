@@ -9,20 +9,16 @@ import (
 	"strings"
 
 	"ego-gen-api"
-
-	"github.com/samber/lo"
 )
 
 var (
-	routerIndents = []string{
-		"*github.com/gin-gonic/gin.RouterGroup",
-		"*github.com/gotomicro/ego/server/egin.Component",
-	}
-	routeCallMethods = []string{"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "CONNECT", "OPTIONS", "TRACE"}
+	routeMethods = []string{"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "CONNECT", "OPTIONS", "TRACE"}
 )
 
 const (
-	routerGroupMethodName = "Group"
+	ginRouterGroupTypeName = "*github.com/gin-gonic/gin.RouterGroup"
+	eginComponentTypeName  = "*github.com/gotomicro/ego/server/egin.Component"
+	routerGroupMethodName  = "Group"
 )
 
 var _ analyzer.Plugin = &Plugin{}
@@ -45,92 +41,75 @@ func (e *Plugin) assignStmt(ctx *analyzer.Context, node ast.Node) {
 	}
 
 	rh := assign.Rhs[0]
-	callExpr, ok := rh.(*ast.CallExpr)
-	if !ok {
-		return
-	}
-	selExpr, ok := callExpr.Fun.(*ast.SelectorExpr)
-	if !ok {
-		return
-	}
-	t := ctx.Package().TypesInfo.TypeOf(selExpr.X)
-	if t == nil {
-		return
-	}
-	if !lo.Contains(routerIndents, t.String()) {
-		return
-	}
-	if selExpr.Sel.Name != routerGroupMethodName {
-		return
-	}
-	if len(callExpr.Args) <= 0 {
-		return
-	}
-	arg0, ok := callExpr.Args[0].(*ast.BasicLit)
-	if !ok {
-		return
-	}
-	xIdent, ok := selExpr.X.(*ast.Ident)
-	if !ok {
-		return
-	}
+	ctx.MatchCall(
+		rh,
+		analyzer.NewCallRule().
+			WithRule(eginComponentTypeName, routerGroupMethodName).
+			WithRule(ginRouterGroupTypeName, routerGroupMethodName),
+		func(callExpr *ast.CallExpr, typeName, fnName string) {
+			if len(callExpr.Args) <= 0 {
+				return
+			}
+			arg0, ok := callExpr.Args[0].(*ast.BasicLit)
+			if !ok {
+				return
+			}
+			selExpr := callExpr.Fun.(*ast.SelectorExpr)
+			xIdent, ok := selExpr.X.(*ast.Ident)
+			if !ok {
+				return
+			}
+			var prefix = ""
+			v := ctx.Env.Lookup(xIdent.Name)
+			if rg, ok := v.(*analyzer.RouteGroup); ok {
+				prefix = rg.Prefix
+			}
 
-	var prefix = ""
-	v := ctx.Env.Lookup(xIdent.Name)
-	if rg, ok := v.(*analyzer.RouteGroup); ok {
-		prefix = rg.Prefix
-	}
+			rg := &analyzer.RouteGroup{Prefix: path.Join(prefix, e.normalizePath(strings.Trim(arg0.Value, "\"")))}
+			lh := assign.Lhs[0]
+			lhIdent, ok := lh.(*ast.Ident)
+			if !ok {
+				return
+			}
 
-	rg := &analyzer.RouteGroup{Prefix: path.Join(prefix, e.normalizePath(strings.Trim(arg0.Value, "\"")))}
-	lh := assign.Lhs[0]
-	lhIdent, ok := lh.(*ast.Ident)
-	if !ok {
-		return
-	}
-
-	switch assign.Tok {
-	case token.ASSIGN:
-		ctx.Env.Assign(lhIdent.Name, rg)
-	case token.DEFINE:
-		ctx.Env.Define(lhIdent.Name, rg)
-	}
+			switch assign.Tok {
+			case token.ASSIGN:
+				ctx.Env.Assign(lhIdent.Name, rg)
+			case token.DEFINE:
+				ctx.Env.Define(lhIdent.Name, rg)
+			}
+		},
+	)
 
 	return
 }
 
 func (e *Plugin) callExpr(ctx *analyzer.Context, callExpr *ast.CallExpr) {
-	api := e.parseAPI(ctx, callExpr)
-	if api == nil {
-		return
-	}
-
-	ctx.AddAPI(api)
-	return
+	ctx.MatchCall(
+		callExpr,
+		analyzer.NewCallRule().
+			WithRule(ginRouterGroupTypeName, routeMethods...).
+			WithRule(eginComponentTypeName, routeMethods...),
+		func(call *ast.CallExpr, typeName, fnName string) {
+			api := e.parseAPI(ctx, callExpr)
+			if api == nil {
+				return
+			}
+			ctx.AddAPI(api)
+		},
+	)
 }
 
-func (e *Plugin) parseAPI(ctx *analyzer.Context, callExpr *ast.CallExpr) *analyzer.API {
-	selExpr, ok := callExpr.Fun.(*ast.SelectorExpr)
-	if !ok {
-		return nil
-	}
-	t := ctx.Package().TypesInfo.TypeOf(selExpr.X)
-	if t == nil {
-		return nil
-	}
-	if !lo.Contains(routerIndents, t.String()) {
-		return nil
-	}
-	if !lo.Contains(routeCallMethods, selExpr.Sel.String()) {
-		return nil
-	}
+func (e *Plugin) parseAPI(ctx *analyzer.Context, callExpr *ast.CallExpr) (api *analyzer.API) {
 	if len(callExpr.Args) < 2 {
-		return nil
+		return
 	}
 	arg0, ok := callExpr.Args[0].(*ast.BasicLit)
 	if !ok {
-		return nil
+		return
 	}
 
+	selExpr := callExpr.Fun.(*ast.SelectorExpr)
 	var prefix string
 	if xIdent, ok := selExpr.X.(*ast.Ident); ok {
 		v := ctx.Env.Lookup(xIdent.Name)
@@ -147,29 +126,28 @@ func (e *Plugin) parseAPI(ctx *analyzer.Context, callExpr *ast.CallExpr) *analyz
 	case *ast.SelectorExpr:
 		handler = ctx.Package().TypesInfo.Uses[handlerArg.Sel]
 	default:
-		return nil // ignore
+		return // ignore
 	}
 	handlerFn, ok := handler.(*types.Func)
 	if !ok {
-		return nil
+		return
 	}
-	fullPath := path.Join(prefix, e.normalizePath(strings.Trim(arg0.Value, "\"")))
-	method := selExpr.Sel.String()
-
-	route := analyzer.NewAPI(method, fullPath)
-
 	handlerDef := ctx.GetDefinition(handlerFn.Pkg().Path(), handlerFn.Name())
 	handlerFnDef, ok := handlerDef.(*analyzer.FuncDefinition)
 	if !ok {
-		return nil
+		return
 	}
+
+	fullPath := path.Join(prefix, e.normalizePath(strings.Trim(arg0.Value, "\"")))
+	method := selExpr.Sel.Name
+	api = analyzer.NewAPI(method, fullPath)
 	newHandlerParser(
 		ctx.NewEnv().WithPackage(handlerFnDef.Pkg()).WithFile(handlerFnDef.File()),
-		route.Spec,
+		api.Spec,
 		handlerFnDef.Decl,
 	).Parse()
-	route.Spec.LoadFromFuncDecl(handlerFnDef.Decl)
-	return route
+	api.Spec.LoadFromFuncDecl(handlerFnDef.Decl)
+	return
 }
 
 var (

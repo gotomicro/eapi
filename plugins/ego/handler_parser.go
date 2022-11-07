@@ -2,7 +2,6 @@ package ego
 
 import (
 	"go/ast"
-	"go/types"
 	"strings"
 
 	"ego-gen-api"
@@ -11,6 +10,10 @@ import (
 )
 
 const ginContextIdentName = "*github.com/gin-gonic/gin.Context"
+
+var (
+	interestedGinContextMethods = []string{"Bind", "JSON", "Query", "Param"}
+)
 
 type handlerParser struct {
 	ctx  *analyzer.Context
@@ -24,46 +27,23 @@ func newHandlerParser(ctx *analyzer.Context, spec *analyzer.APISpec, decl *ast.F
 
 func (p *handlerParser) Parse() {
 	ast.Inspect(p.decl, func(node ast.Node) bool {
-		switch node := node.(type) {
-		case *ast.CallExpr:
-			p.parseCallExpr(node)
-		}
+		p.ctx.MatchCall(node,
+			analyzer.NewCallRule().WithRule(ginContextIdentName, interestedGinContextMethods...),
+			func(call *ast.CallExpr, typeName, fnName string) {
+				switch fnName {
+				case "Bind":
+					p.parseBinding(call)
+				case "JSON":
+					p.parseJsonRes(call)
+				case "Query": // query parameter
+					p.parsePrimitiveParam(call, "query")
+				case "Param": // path parameter
+					p.parsePrimitiveParam(call, "path")
+				}
+			},
+		)
 		return true
 	})
-}
-
-func (p *handlerParser) parseCallExpr(call *ast.CallExpr) {
-	sel, ok := call.Fun.(*ast.SelectorExpr)
-	if !ok {
-		return
-	}
-	xIdent, ok := sel.X.(*ast.Ident)
-	if !ok {
-		return
-	}
-	xType := p.ctx.Package().TypesInfo.TypeOf(xIdent)
-	if xType == nil {
-		return
-	}
-	if xType.String() != ginContextIdentName {
-		return
-	}
-
-	fnType, ok := p.ctx.Package().TypesInfo.Uses[sel.Sel].(*types.Func)
-	if !ok {
-		return
-	}
-	fnName := fnType.Name()
-	switch fnName {
-	case "Bind":
-		p.parseBinding(call)
-	case "JSON":
-		p.parseJsonRes(call)
-	case "Query": // query parameter
-		p.parsePrimitiveParam(call, "query")
-	case "Param": // path parameter
-		p.parsePrimitiveParam(call, "path")
-	}
 }
 
 func (p *handlerParser) parseBinding(call *ast.CallExpr) {
