@@ -1,6 +1,10 @@
 package view
 
-import "github.com/gin-gonic/gin"
+import (
+	"encoding/json"
+
+	"github.com/gin-gonic/gin"
+)
 
 type Image struct {
 	// 图片链接
@@ -45,6 +49,8 @@ type GoodsCreateRes struct {
 	Status gin.Params
 	// 测试类型别名
 	StringAlias StringAlias `json:"stringAlias"`
+	// 测试引用内置包类型
+	Raw json.RawMessage `json:"raw"`
 }
 
 type GoodsInfoRes struct {

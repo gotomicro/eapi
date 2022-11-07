@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/go-openapi/spec"
 	"github.com/samber/lo"
@@ -204,11 +205,21 @@ func (a *Analyzer) funDecl(ctx *Context, node *ast.FuncDecl, file *ast.File, pkg
 
 func (a *Analyzer) loadDefinitionsFromPkg(pkg *packages.Package, packagePath string) {
 	InspectPackage(pkg, func(pkg *packages.Package) bool {
-		if pkg.Module == nil { // only load definitions in current package
-			return false
-		}
-		if pkg.Module.Dir != packagePath && !lo.Contains(a.depends, pkg.Module.Path) {
-			return false
+		if pkg.Module == nil { // Go 内置包
+			ignore := true
+			for _, depend := range a.depends {
+				if strings.HasPrefix(pkg.PkgPath, depend) {
+					ignore = false
+					break
+				}
+			}
+			if ignore {
+				return false
+			}
+		} else {
+			if pkg.Module.Dir != packagePath && !lo.Contains(a.depends, pkg.Module.Path) {
+				return false
+			}
 		}
 
 		for _, file := range pkg.Syntax {

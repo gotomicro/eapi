@@ -17,7 +17,7 @@ func currentDir() string {
 func TestEgoPlugin(t *testing.T) {
 	path := filepath.Join(currentDir(), "testdata/server")
 	a := analyzer.NewAnalyzer().Plugin(&Plugin{})
-	a.Depends("github.com/gin-gonic/gin")
+	a.Depends("github.com/gin-gonic/gin", "encoding/json")
 	a.Process(path)
 	doc := a.Doc()
 	docContent, _ := json.MarshalIndent(doc, "", "  ")
