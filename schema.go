@@ -80,7 +80,7 @@ func (s *SchemaBuilder) parseExpr(expr ast.Expr) (schema *spec.Schema) {
 		return s.parseSelectorExpr(expr)
 
 	case *ast.MapType:
-		return spec.MapProperty(s.parseExpr(expr))
+		return spec.MapProperty(s.parseExpr(expr.Value))
 
 	case *ast.ArrayType:
 		return spec.ArrayProperty(s.parseExpr(expr.Elt))
