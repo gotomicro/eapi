@@ -65,6 +65,9 @@ type GoodsInfoRes struct {
 	Price    int64  `json:"price"`
 }
 
+// GoodsInfo 商品详情
+// @consume application/json
+// @produce application/json
 func GoodsInfo(c *gin.Context) {
 	guid := c.Param("guid")
 

@@ -64,14 +64,21 @@ func (a *Analyzer) Load(packagePath string) {
 	a.packages = append(a.packages, pkgList...)
 }
 
-func (a *Analyzer) Process(packagePath string) {
+func (a *Analyzer) Process(packagePath string) *Analyzer {
 	if len(a.plugins) <= 0 {
 		panic("must register plugin before processing")
+	}
+
+	packagePath, err := filepath.Abs(packagePath)
+	if err != nil {
+		panic("invalid package path: " + err.Error())
 	}
 
 	a.Load(packagePath)
 
 	a.processPkg(packagePath)
+
+	return a
 }
 
 func (a *Analyzer) APIs() *APIs {

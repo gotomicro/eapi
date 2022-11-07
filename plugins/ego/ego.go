@@ -25,6 +25,10 @@ var _ analyzer.Plugin = &Plugin{}
 
 type Plugin struct{}
 
+func NewPlugin() *Plugin {
+	return &Plugin{}
+}
+
 func (e *Plugin) Analyze(ctx *analyzer.Context, node ast.Node) {
 	switch n := node.(type) {
 	case *ast.AssignStmt:
@@ -32,6 +36,10 @@ func (e *Plugin) Analyze(ctx *analyzer.Context, node ast.Node) {
 	case *ast.CallExpr:
 		e.callExpr(ctx, n)
 	}
+}
+
+func (e *Plugin) Name() string {
+	return "ego"
 }
 
 func (e *Plugin) assignStmt(ctx *analyzer.Context, node ast.Node) {
