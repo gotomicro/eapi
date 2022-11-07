@@ -44,6 +44,8 @@ func (p *Parser) parse() Annotation {
 		return p.consumeAnnotation()
 	case "@produce":
 		return p.produceAnnotation()
+	case "@ignore":
+		return &IgnoreAnnotation{}
 	default: // unresolved plugin
 		return p.unresolvedAnnotation(tag)
 	}

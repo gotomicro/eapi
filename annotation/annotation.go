@@ -8,6 +8,7 @@ const (
 	Consume
 	Produce
 	Unresolved
+	Ignore
 )
 
 type Annotation interface {
@@ -49,4 +50,10 @@ type UnresolvedAnnotation struct {
 
 func (a *UnresolvedAnnotation) Type() Type {
 	return Unresolved
+}
+
+type IgnoreAnnotation struct{}
+
+func (a *IgnoreAnnotation) Type() Type {
+	return Ignore
 }
