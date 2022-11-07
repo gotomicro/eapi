@@ -1,8 +1,11 @@
 package analyzer
 
 import (
+	"io/ioutil"
+	"path/filepath"
 	"strings"
 
+	"golang.org/x/mod/modfile"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -20,4 +23,19 @@ func NormalizeComment(text, trimStart string) string {
 	text = strings.TrimSpace(text)
 	text = strings.TrimPrefix(text, trimStart)
 	return text
+}
+
+func ReadGoMod(pkgPath string) (mod *modfile.File, err error) {
+	fileName := filepath.Join(pkgPath, "go.mod")
+	content, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return
+	}
+
+	mod, err = modfile.Parse("go.mod", content, nil)
+	if err != nil {
+		return
+	}
+
+	return
 }
