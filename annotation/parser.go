@@ -46,6 +46,8 @@ func (p *Parser) parse() Annotation {
 		return p.produceAnnotation()
 	case "@ignore":
 		return &IgnoreAnnotation{}
+	case "@tag", "@tags":
+		return p.tags()
 	default: // unresolved plugin
 		return p.unresolvedAnnotation(tag)
 	}
@@ -114,4 +116,13 @@ func (p *Parser) unresolvedAnnotation(tag *Token) Annotation {
 		Tag:    tag.Image,
 		Tokens: p.tokens,
 	}
+}
+
+func (p *Parser) tags() *TagAnnotation {
+	res := &TagAnnotation{}
+	for p.hasMore() {
+		ident := p.consume(tokenIdentifier)
+		res.Tags = append(res.Tags, ident.Image)
+	}
+	return res
 }

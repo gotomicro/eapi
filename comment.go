@@ -67,6 +67,17 @@ func (c *Comment) Produces() []string {
 	return res
 }
 
+func (c *Comment) Tags() []string {
+	var res []string
+	for _, annot := range c.Annotations {
+		tags, ok := annot.(*annotation.TagAnnotation)
+		if ok {
+			res = append(res, tags.Tags...)
+		}
+	}
+	return res
+}
+
 func ParseComment(commentGroup *ast.CommentGroup) *Comment {
 	if commentGroup == nil {
 		return nil

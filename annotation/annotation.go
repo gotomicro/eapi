@@ -9,6 +9,7 @@ const (
 	Produce
 	Unresolved
 	Ignore
+	Tag
 )
 
 type Annotation interface {
@@ -56,4 +57,12 @@ type IgnoreAnnotation struct{}
 
 func (a *IgnoreAnnotation) Type() Type {
 	return Ignore
+}
+
+type TagAnnotation struct {
+	Tags []string
+}
+
+func (a *TagAnnotation) Type() Type {
+	return Tag
 }

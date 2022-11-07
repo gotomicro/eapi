@@ -11,6 +11,7 @@ import (
 // GoodsCreate 创建商品
 // @consume application/json
 // @produce application/json
+// @tags Shop
 func GoodsCreate(c *gin.Context) {
 	var req view.GoodsCreateReq
 	if err := c.Bind(&req); err != nil {

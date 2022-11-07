@@ -68,5 +68,6 @@ func (s *APISpec) LoadFromFuncDecl(funcDecl *ast.FuncDecl) {
 		s.WithConsumes(comment.Consumes()...)
 		s.WithProduces(comment.Produces()...)
 		s.WithDescription(comment.TrimPrefix(funcDecl.Name.Name))
+		s.WithTags(comment.Tags()...)
 	}
 }
