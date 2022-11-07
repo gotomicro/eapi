@@ -75,7 +75,7 @@ func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *spec.Schema {
 		for _, name := range field.Names {
 			fieldSchema := s.parseExpr(field.Type)
 			if fieldSchema == nil {
-				fmt.Printf("unknown field type of %s at %s\n", name.Name, s.ctx.LineColumn(field.Type.Pos()))
+				fmt.Printf("unknown field type %s at %s\n", name.Name, s.ctx.LineColumn(field.Type.Pos()))
 				continue
 			}
 			propName := s.getPropName(name.Name, field, contentType)

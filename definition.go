@@ -71,7 +71,7 @@ func (t *TypeDefinition) Key() string {
 }
 
 func (t *TypeDefinition) ToSwaggerSchema(ctx *Context, contentType string) *spec.Schema {
-	return NewSchemaBuilder(ctx, contentType).FromTypeSpec(t.Spec)
+	return NewSchemaBuilder(ctx.WithPackage(t.pkg).WithFile(t.file), contentType).FromTypeSpec(t.Spec)
 }
 
 func (t *TypeDefinition) ModelKey() string {
