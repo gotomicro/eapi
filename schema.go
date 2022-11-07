@@ -3,6 +3,7 @@ package analyzer
 import (
 	"fmt"
 	"go/ast"
+	"go/types"
 	"strings"
 
 	"github.com/gotomicro/ego-gen-api/tag"
@@ -34,6 +35,10 @@ func newSchemaBuilderWithStack(ctx *Context, contentType string, stack Stack[str
 
 func (s *SchemaBuilder) GetSchemaByExpr(expr ast.Expr, contentType string) *spec.Schema {
 	t := s.ctx.Package().TypesInfo.TypeOf(expr)
+	if t, ok := t.(*types.Basic); ok {
+		return s.basicType(t.Name())
+	}
+
 	def := s.ctx.ParseType(t)
 	typeDef, ok := def.(*TypeDefinition)
 	if !ok {
@@ -125,20 +130,12 @@ func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *spec.Schema {
 }
 
 func (s *SchemaBuilder) parseIdent(expr *ast.Ident) *spec.Schema {
-	switch expr.Name {
-	case "uint", "int", "uint8", "int8", "uint16", "int16",
-		"uint32", "int32", "uint64", "int64",
-		"byte", "rune":
-		return &spec.Schema{SchemaProps: spec.SchemaProps{Type: []string{"integer"}}}
-	case "float32", "float64":
-		return &spec.Schema{SchemaProps: spec.SchemaProps{Type: []string{"number"}}}
-	case "bool":
-		return &spec.Schema{SchemaProps: spec.SchemaProps{Type: []string{"boolean"}}}
-	case "string":
-		return &spec.Schema{SchemaProps: spec.SchemaProps{Type: []string{"string"}}}
-	default:
-		return s.GetSchemaByExpr(expr, s.contentType)
+	schema := s.basicType(expr.Name)
+	if schema != nil {
+		return schema
 	}
+
+	return s.GetSchemaByExpr(expr, s.contentType)
 }
 
 func (s *SchemaBuilder) parseSelectorExpr(expr *ast.SelectorExpr) *spec.Schema {
@@ -166,4 +163,21 @@ func (s *SchemaBuilder) getPropName(fieldName string, field *ast.Field, contentT
 
 	propName, _, _ = strings.Cut(tagValue, ",")
 	return
+}
+
+func (s *SchemaBuilder) basicType(name string) *spec.Schema {
+	switch name {
+	case "uint", "int", "uint8", "int8", "uint16", "int16",
+		"uint32", "int32", "uint64", "int64",
+		"byte", "rune":
+		return &spec.Schema{SchemaProps: spec.SchemaProps{Type: []string{"integer"}}}
+	case "float32", "float64":
+		return &spec.Schema{SchemaProps: spec.SchemaProps{Type: []string{"number"}}}
+	case "bool":
+		return &spec.Schema{SchemaProps: spec.SchemaProps{Type: []string{"boolean"}}}
+	case "string":
+		return &spec.Schema{SchemaProps: spec.SchemaProps{Type: []string{"string"}}}
+	}
+
+	return nil
 }

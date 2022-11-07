@@ -34,6 +34,8 @@ type SelfRefType struct {
 	Parent *SelfRefType `json:"parent"`
 }
 
+type StringAlias = string
+
 type GoodsCreateRes struct {
 	// 商品 GUID
 	Guid string `json:"guid"`
@@ -41,6 +43,8 @@ type GoodsCreateRes struct {
 	SelfRef *SelfRefType `json:"selfRef"`
 	// 测试引用第三方包
 	Status gin.Params
+	// 测试类型别名
+	StringAlias StringAlias `json:"stringAlias"`
 }
 
 type GoodsInfoRes struct {
