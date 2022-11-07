@@ -20,6 +20,7 @@ type Analyzer struct {
 	globalEnv   *Environment
 	plugins     []Plugin
 	definitions Definitions
+	depends     []string
 
 	doc      *spec.Swagger
 	packages []*packages.Package
@@ -50,6 +51,11 @@ func (a *Analyzer) Plugin(plugins ...Plugin) *Analyzer {
 	return a
 }
 
+func (a *Analyzer) Depends(pkgNames ...string) *Analyzer {
+	a.depends = append(a.depends, pkgNames...)
+	return a
+}
+
 func (a *Analyzer) Load(packagePath string) {
 	packagePath, err := filepath.Abs(packagePath)
 	if err != nil {
@@ -74,7 +80,11 @@ func (a *Analyzer) Process(packagePath string) *Analyzer {
 		panic("invalid package path: " + err.Error())
 	}
 
-	a.Load(packagePath)
+	pkgList := a.load(packagePath)
+	for _, pkg := range pkgList {
+		a.loadDefinitionsFromPkg(pkg, packagePath)
+	}
+	a.packages = append(a.packages, pkgList...)
 
 	a.processPkg(packagePath)
 
@@ -194,7 +204,10 @@ func (a *Analyzer) funDecl(ctx *Context, node *ast.FuncDecl, file *ast.File, pkg
 
 func (a *Analyzer) loadDefinitionsFromPkg(pkg *packages.Package, packagePath string) {
 	InspectPackage(pkg, func(pkg *packages.Package) bool {
-		if pkg.Module == nil || pkg.Module.Dir != packagePath { // only load definitions in current package
+		if pkg.Module == nil { // only load definitions in current package
+			return false
+		}
+		if pkg.Module.Dir != packagePath && !lo.Contains(a.depends, pkg.Module.Path) {
 			return false
 		}
 
