@@ -44,9 +44,9 @@ func (p *Parser) parse() Annotation {
 		return p.consumeAnnotation()
 	case "@produce":
 		return p.produceAnnotation()
+	default: // unresolved plugin
+		return p.unresolvedAnnotation(tag)
 	}
-
-	return nil
 }
 
 func (p *Parser) consume(typ TokenType) *Token {
@@ -104,5 +104,12 @@ func (p *Parser) produceAnnotation() *ProduceAnnotation {
 	}
 	return &ProduceAnnotation{
 		ContentType: ident.Image,
+	}
+}
+
+func (p *Parser) unresolvedAnnotation(tag *Token) Annotation {
+	return &UnresolvedAnnotation{
+		Tag:    tag.Image,
+		Tokens: p.tokens,
 	}
 }

@@ -7,6 +7,7 @@ const (
 	Nullable
 	Consume
 	Produce
+	Unresolved
 )
 
 type Annotation interface {
@@ -39,4 +40,13 @@ type ProduceAnnotation struct {
 
 func (a *ProduceAnnotation) Type() Type {
 	return Produce
+}
+
+type UnresolvedAnnotation struct {
+	Tag    string
+	Tokens []*Token
+}
+
+func (a *UnresolvedAnnotation) Type() Type {
+	return Unresolved
 }
