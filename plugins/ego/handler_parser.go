@@ -4,9 +4,8 @@ import (
 	"go/ast"
 	"strings"
 
-	"ego-gen-api"
-
 	"github.com/go-openapi/spec"
+	analyzer "github.com/gotomicro/ego-gen-api"
 )
 
 const ginContextIdentName = "*github.com/gin-gonic/gin.Context"

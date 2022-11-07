@@ -6,7 +6,7 @@ import (
 	"go/types"
 	"strings"
 
-	"ego-gen-api/tag"
+	"github.com/gotomicro/ego-gen-api/tag"
 
 	"github.com/go-openapi/spec"
 )

@@ -4,7 +4,7 @@ import (
 	"go/ast"
 	"strings"
 
-	"ego-gen-api/annotation"
+	"github.com/gotomicro/ego-gen-api/annotation"
 
 	"github.com/go-openapi/spec"
 )

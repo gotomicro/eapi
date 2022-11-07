@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"ego-gen-api"
+	analyzer "github.com/gotomicro/ego-gen-api"
 )
 
 var (

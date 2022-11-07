@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"testing"
 
-	"ego-gen-api"
+	analyzer "github.com/gotomicro/ego-gen-api"
 )
 
 func currentDir() string {
