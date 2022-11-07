@@ -106,11 +106,11 @@ func (c *Context) ParseStatusCode(status ast.Expr) int {
 	case *ast.BasicLit:
 	default:
 		// unknown status code
-		fmt.Printf("unknown status code %s", c.LineColumn(status.Pos()))
+		fmt.Printf("unknown status code %s\n", c.LineColumn(status.Pos()))
 	}
 
 	// unknown status code
-	fmt.Printf("unknown status code %s", c.LineColumn(status.Pos()))
+	fmt.Printf("unknown status code %s\n", c.LineColumn(status.Pos()))
 
 	// fallback to 200
 	return 200
