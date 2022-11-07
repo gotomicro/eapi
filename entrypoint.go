@@ -22,24 +22,31 @@ func NewEntrypoint(plugins ...Plugin) *Entrypoint {
 
 func (e *Entrypoint) Run(args []string) {
 	app := cli.NewApp()
+	app.Name = "egen"
+	app.Usage = "Tool for generating open API documentation by static-analysis"
+	app.Description = `Tool for generating open API documentation by static-analysis`
 	app.Flags = append(app.Flags, &cli.StringFlag{
 		Name:     "plugin",
 		Aliases:  []string{"p", "plug"},
+		Usage:    "specify plugin name",
 		Required: true,
 	})
 	app.Flags = append(app.Flags, &cli.StringFlag{
 		Name:     "dir",
 		Aliases:  []string{"d"},
+		Usage:    "directory of your project which contains go.mod file",
 		Required: true,
 	})
 	app.Flags = append(app.Flags, &cli.StringFlag{
 		Name:     "output",
 		Aliases:  []string{"o"},
+		Usage:    "output directory of swagger.json",
 		Required: true,
 	})
 	app.Flags = append(app.Flags, &cli.StringSliceFlag{
 		Name:     "depends",
 		Aliases:  []string{"dep"},
+		Usage:    "depended module name",
 		Required: false,
 	})
 	app.Action = e.run

@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/go-openapi/spec v0.20.7
 	github.com/samber/lo v1.28.2
+	github.com/urfave/cli/v2 v2.23.4
 	golang.org/x/mod v0.6.0
 	golang.org/x/tools v0.2.0
 )
@@ -19,7 +20,6 @@ require (
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/stretchr/testify v1.8.0 // indirect
-	github.com/urfave/cli/v2 v2.23.4 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 	golang.org/x/sys v0.1.0 // indirect

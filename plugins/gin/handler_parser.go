@@ -1,4 +1,4 @@
-package ego
+package gin
 
 import (
 	"go/ast"
