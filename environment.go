@@ -27,6 +27,10 @@ func (e *Environment) Resolve(k interface{}) *Environment {
 	if ok {
 		return e
 	}
+	if e.parent != nil {
+		return e.parent.Resolve(k)
+	}
+
 	return nil
 }
 
