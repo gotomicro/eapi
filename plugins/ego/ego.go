@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	analyzer "github.com/gotomicro/ego-gen-api"
+	"github.com/gotomicro/ego-gen-api/plugins/gin"
 )
 
 var (
@@ -149,12 +150,12 @@ func (e *Plugin) parseAPI(ctx *analyzer.Context, callExpr *ast.CallExpr) (api *a
 	fullPath := path.Join(prefix, e.normalizePath(strings.Trim(arg0.Value, "\"")))
 	method := selExpr.Sel.Name
 	api = analyzer.NewAPI(method, fullPath)
-	newHandlerParser(
+	api.Spec.LoadFromFuncDecl(handlerFnDef.Decl)
+	gin.NewHandlerParser(
 		ctx.NewEnv().WithPackage(handlerFnDef.Pkg()).WithFile(handlerFnDef.File()),
 		api.Spec,
 		handlerFnDef.Decl,
 	).Parse()
-	api.Spec.LoadFromFuncDecl(handlerFnDef.Decl)
 	return
 }
 

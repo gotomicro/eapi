@@ -6,25 +6,26 @@ import (
 
 	"github.com/go-openapi/spec"
 	analyzer "github.com/gotomicro/ego-gen-api"
+	"github.com/samber/lo"
 )
 
 const ginContextIdentName = "*github.com/gin-gonic/gin.Context"
 
 var (
-	interestedGinContextMethods = []string{"Bind", "JSON", "Query", "Param"}
+	interestedGinContextMethods = []string{"Bind", "JSON", "Query", "Param", "GetPostForm", "PostFormArray", "XML"}
 )
 
-type handlerParser struct {
+type HandlerParser struct {
 	ctx  *analyzer.Context
 	spec *analyzer.APISpec
 	decl *ast.FuncDecl
 }
 
-func newHandlerParser(ctx *analyzer.Context, spec *analyzer.APISpec, decl *ast.FuncDecl) *handlerParser {
-	return &handlerParser{ctx: ctx, spec: spec, decl: decl}
+func NewHandlerParser(ctx *analyzer.Context, spec *analyzer.APISpec, decl *ast.FuncDecl) *HandlerParser {
+	return &HandlerParser{ctx: ctx, spec: spec, decl: decl}
 }
 
-func (p *handlerParser) Parse() {
+func (p *HandlerParser) Parse() {
 	ast.Inspect(p.decl, func(node ast.Node) bool {
 		p.ctx.MatchCall(node,
 			analyzer.NewCallRule().WithRule(ginContextIdentName, interestedGinContextMethods...),
@@ -33,12 +34,18 @@ func (p *handlerParser) Parse() {
 				case "Bind":
 					p.parseBinding(call)
 				case "JSON":
-					p.parseJsonRes(call)
+					p.parseResBody(call, "application/json")
+				case "XML":
+					p.parseResBody(call, "application/xml")
 				case "Query": // query parameter
 					p.parsePrimitiveParam(call, "query")
 				case "Param": // path parameter
 					p.parsePrimitiveParam(call, "path")
-					// TODO: supporting more methods (Form(), File(), XML(), HTML(), Data(), etc...)
+				case "GetPostForm":
+					p.parsePrimitiveParam(call, "formData")
+				case "PostFormArray":
+					p.parsePrimitiveParamArray(call, "formData")
+					// TODO: supporting more methods (FileForm(), HTML(), Data(), etc...)
 				}
 			},
 		)
@@ -46,7 +53,7 @@ func (p *handlerParser) Parse() {
 	})
 }
 
-func (p *handlerParser) parseBinding(call *ast.CallExpr) {
+func (p *HandlerParser) parseBinding(call *ast.CallExpr) {
 	if len(call.Args) != 1 {
 		return
 	}
@@ -59,13 +66,12 @@ func (p *handlerParser) parseBinding(call *ast.CallExpr) {
 	p.spec.AddParam(spec.BodyParam("Payload", payloadSchema))
 }
 
-func (p *handlerParser) parseJsonRes(call *ast.CallExpr) {
+func (p *HandlerParser) parseResBody(call *ast.CallExpr, contentType string) {
 	if len(call.Args) != 2 {
 		return
 	}
-	var contentType string
-	if len(p.spec.Produces) > 0 {
-		contentType = p.spec.Produces[0]
+	if !lo.Contains(p.spec.Produces, contentType) {
+		p.spec.Produces = append(p.spec.Produces, contentType)
 	}
 
 	res := spec.NewResponse()
@@ -82,17 +88,37 @@ func (p *handlerParser) parseJsonRes(call *ast.CallExpr) {
 	p.spec.RespondsWith(statusCode, res)
 }
 
-func (p *handlerParser) parsePrimitiveParam(call *ast.CallExpr, in string) {
+func (p *HandlerParser) parsePrimitiveParam(call *ast.CallExpr, in string) {
+	param := p.primitiveParam(call, in)
+	p.spec.AddParam(param)
+}
+
+func (p *HandlerParser) primitiveParam(call *ast.CallExpr, in string) *spec.Parameter {
 	if len(call.Args) <= 0 {
-		return
+		return nil
 	}
 	arg0 := call.Args[0]
 	arg0Lit, ok := arg0.(*ast.BasicLit)
 	if !ok {
-		return
+		return nil
+	}
+	name := strings.Trim(arg0Lit.Value, "\"")
+	res := &spec.Parameter{ParamProps: spec.ParamProps{Name: name, In: in}}
+
+	commentGroup := p.ctx.FindHeadCommentOf(call.Pos())
+	if commentGroup != nil {
+		comment := analyzer.ParseComment(commentGroup)
+		if comment != nil {
+			res.Description = comment.Text
+		}
 	}
 
-	name := strings.Trim(arg0Lit.Value, "\"")
-	param := &spec.Parameter{ParamProps: spec.ParamProps{Name: name, In: in}}
+	return res
+}
+
+func (p *HandlerParser) parsePrimitiveParamArray(call *ast.CallExpr, in string) {
+	param := p.primitiveParam(call, in)
+	param.Type = "array"
+	param.Items = &spec.Items{SimpleSchema: spec.SimpleSchema{Type: "string"}}
 	p.spec.AddParam(param)
 }

@@ -27,6 +27,18 @@ func GoodsCreate(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
+// GoodsDown 下架商品
+func GoodsDown(c *gin.Context) {
+	// 商品 GUID
+	_ = c.Param("guid")
+	// 操作人 UID
+	_, _ = c.GetPostForm("operatorUid")
+	// 日期范围
+	_ = c.PostFormArray("dateRange")
+
+	c.XML(http.StatusOK, view.GoodsDownRes{})
+}
+
 // GoodsInfo 商品详情
 // @consume application/json
 // @produce application/json

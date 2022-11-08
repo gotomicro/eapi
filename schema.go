@@ -14,6 +14,7 @@ import (
 
 const (
 	mimeTypeJson           = "application/json"
+	mimeApplicationXml     = "application/xml"
 	mimeTypeXml            = "text/xml"
 	mimeTypeFormData       = "multipart/form-data"
 	mimeTypeFormUrlencoded = "application/x-www-form-urlencoded"
@@ -152,7 +153,7 @@ func (s *SchemaBuilder) getPropName(fieldName string, field *ast.Field, contentT
 	switch contentType {
 	case mimeTypeJson:
 		tagValue = tags["json"]
-	case mimeTypeXml:
+	case mimeTypeXml, mimeApplicationXml:
 		tagValue = tags["xml"]
 	case mimeTypeFormData, mimeTypeFormUrlencoded:
 		tagValue = tags["form"]

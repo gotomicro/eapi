@@ -59,3 +59,7 @@ type GoodsInfoRes struct {
 	Cover    string `json:"cover"`
 	Price    int64  `json:"price"`
 }
+
+type GoodsDownRes struct {
+	Status string `json:"status"`
+}

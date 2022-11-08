@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gotomicro/ego-gen-api/annotation"
+	"github.com/samber/lo"
 
 	"github.com/go-openapi/spec"
 )
@@ -64,7 +65,7 @@ func (c *Comment) Produces() []string {
 			res = append(res, produce.ContentType)
 		}
 	}
-	return res
+	return lo.Uniq(res)
 }
 
 func (c *Comment) Tags() []string {
