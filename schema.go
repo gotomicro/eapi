@@ -34,50 +34,20 @@ func newSchemaBuilderWithStack(ctx *Context, contentType string, stack Stack[str
 	return &SchemaBuilder{ctx: ctx, contentType: contentType, stack: stack}
 }
 
-func (s *SchemaBuilder) GetSchemaByExpr(expr ast.Expr, contentType string) *spec.Schema {
-	t := s.ctx.Package().TypesInfo.TypeOf(expr)
-	if t, ok := t.(*types.Basic); ok {
-		return s.basicType(t.Name())
-	}
-
-	def := s.ctx.ParseType(t)
-	typeDef, ok := def.(*TypeDefinition)
-	if !ok {
-		return nil
-	}
-	if lo.Contains(s.stack, typeDef.Key()) {
-		return spec.RefSchema(typeDef.RefKey())
-	}
-	_, ok = s.ctx.Doc().Definitions[typeDef.ModelKey()]
-	if ok {
-		return spec.RefSchema(typeDef.RefKey())
-	}
-
-	s.stack.Push(typeDef.Key())
-	defer s.stack.Pop()
-
-	payloadSchema := newSchemaBuilderWithStack(s.ctx.WithPackage(typeDef.pkg).WithFile(typeDef.file), contentType, append(s.stack, typeDef.Key())).
-		FromTypeSpec(typeDef.Spec)
-	payloadSchema.ID = strings.ReplaceAll(typeDef.Key(), "/", "_")
-	s.ctx.Doc().Definitions[typeDef.ModelKey()] = *payloadSchema
-
-	return spec.RefSchema(typeDef.RefKey())
-}
-
 func (s *SchemaBuilder) FromTypeSpec(t *ast.TypeSpec) *spec.Schema {
-	schema := s.parseExpr(t.Type)
+	schema := s.ParseExpr(t.Type)
 	schema.Title = t.Name.Name
 	schema.Description = NormalizeComment(t.Comment.Text(), t.Name.Name)
 	return schema
 }
 
-func (s *SchemaBuilder) parseExpr(expr ast.Expr) (schema *spec.Schema) {
+func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *spec.Schema) {
 	switch expr := expr.(type) {
 	case *ast.StructType:
 		return s.parseStruct(expr)
 
 	case *ast.StarExpr:
-		return s.parseExpr(expr.X)
+		return s.ParseExpr(expr.X)
 
 	case *ast.Ident:
 		return s.parseIdent(expr)
@@ -86,13 +56,13 @@ func (s *SchemaBuilder) parseExpr(expr ast.Expr) (schema *spec.Schema) {
 		return s.parseSelectorExpr(expr)
 
 	case *ast.MapType:
-		return spec.MapProperty(s.parseExpr(expr.Value))
+		return spec.MapProperty(s.ParseExpr(expr.Value))
 
 	case *ast.ArrayType:
-		return spec.ArrayProperty(s.parseExpr(expr.Elt))
+		return spec.ArrayProperty(s.ParseExpr(expr.Elt))
 
 	case *ast.SliceExpr:
-		return spec.ArrayProperty(s.parseExpr(expr.X))
+		return spec.ArrayProperty(s.ParseExpr(expr.X))
 	}
 
 	// TODO
@@ -111,7 +81,7 @@ func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *spec.Schema {
 	for _, field := range expr.Fields.List {
 		comment := ParseComment(field.Doc)
 		for _, name := range field.Names {
-			fieldSchema := s.parseExpr(field.Type)
+			fieldSchema := s.ParseExpr(field.Type)
 			if fieldSchema == nil {
 				fmt.Printf("unknown field type %s at %s\n", name.Name, s.ctx.LineColumn(field.Type.Pos()))
 				continue
@@ -131,16 +101,17 @@ func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *spec.Schema {
 }
 
 func (s *SchemaBuilder) parseIdent(expr *ast.Ident) *spec.Schema {
-	schema := s.basicType(expr.Name)
-	if schema != nil {
-		return schema
+	t := s.ctx.Package().TypesInfo.TypeOf(expr)
+	switch t := t.(type) {
+	case *types.Basic:
+		return s.basicType(t.Name())
 	}
 
-	return s.GetSchemaByExpr(expr, s.contentType)
+	return s.parseType(t)
 }
 
 func (s *SchemaBuilder) parseSelectorExpr(expr *ast.SelectorExpr) *spec.Schema {
-	return s.parseExpr(expr.Sel)
+	return s.ParseExpr(expr.Sel)
 }
 
 func (s *SchemaBuilder) getPropName(fieldName string, field *ast.Field, contentType string) (propName string) {
@@ -181,4 +152,36 @@ func (s *SchemaBuilder) basicType(name string) *spec.Schema {
 	}
 
 	return nil
+}
+
+func (s *SchemaBuilder) parseType(t types.Type) *spec.Schema {
+	switch t := t.(type) {
+	case *types.Slice:
+		return spec.ArrayProperty(s.parseType(t.Elem()))
+	case *types.Array:
+		return spec.ArrayProperty(s.parseType(t.Elem()))
+	}
+
+	def := s.ctx.ParseType(t)
+	typeDef, ok := def.(*TypeDefinition)
+	if !ok {
+		return nil
+	}
+	if lo.Contains(s.stack, typeDef.Key()) {
+		return spec.RefSchema(typeDef.RefKey())
+	}
+	_, ok = s.ctx.Doc().Definitions[typeDef.ModelKey()]
+	if ok {
+		return spec.RefSchema(typeDef.RefKey())
+	}
+
+	s.stack.Push(typeDef.Key())
+	defer s.stack.Pop()
+
+	payloadSchema := newSchemaBuilderWithStack(s.ctx.WithPackage(typeDef.pkg).WithFile(typeDef.file), s.contentType, append(s.stack, typeDef.Key())).
+		FromTypeSpec(typeDef.Spec)
+	payloadSchema.ID = strings.ReplaceAll(typeDef.Key(), "/", "_")
+	s.ctx.Doc().Definitions[typeDef.ModelKey()] = *payloadSchema
+
+	return spec.RefSchema(typeDef.RefKey())
 }

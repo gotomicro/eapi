@@ -116,7 +116,7 @@ func (c *Context) ParseStatusCode(status ast.Expr) int {
 }
 
 func (c *Context) GetSchemaByExpr(expr ast.Expr, contentType string) *spec.Schema {
-	return NewSchemaBuilder(c, contentType).GetSchemaByExpr(expr, contentType)
+	return NewSchemaBuilder(c, contentType).ParseExpr(expr)
 }
 
 func (c *Context) FindHeadCommentOf(pos token.Pos) *ast.CommentGroup {
