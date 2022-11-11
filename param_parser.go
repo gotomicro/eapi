@@ -70,8 +70,7 @@ func (p *ParamParser) parseStructType(structType *ast.StructType) (params []*spe
 }
 
 func (p *ParamParser) parseField(name *ast.Ident, field *ast.Field) (param *spec.Parameter) {
-	param = &spec.Parameter{}
-	param.Type, param.Format = p.typeOf(field.Type)
+	param = p.typeOf(field.Type)
 
 	tagValues := tag.Parse(field.Tag.Value)
 	formName, ok := tagValues["form"]
@@ -91,17 +90,35 @@ func (p *ParamParser) parseField(name *ast.Ident, field *ast.Field) (param *spec
 	return
 }
 
-func (p *ParamParser) typeOf(expr ast.Expr) (string, string) {
+func (p *ParamParser) typeOf(expr ast.Expr) *spec.Parameter {
 	switch t := expr.(type) {
 	case *ast.Ident:
-		return p.typeOfIdent(t)
+		param := &spec.Parameter{}
+		param.Type, param.Format = p.typeOfIdent(t)
+		return param
 
 	case *ast.SelectorExpr:
 		return p.typeOf(t.Sel)
+
+	case *ast.ArrayType:
+		param := &spec.Parameter{}
+		param.Type = "array"
+		param.Items = spec.NewItems()
+		param.Items.SimpleSchema = p.typeOf(t.Elt).SimpleSchema
+		return param
+
+	case *ast.SliceExpr:
+		param := &spec.Parameter{}
+		param.Type = "array"
+		param.Items = spec.NewItems()
+		param.Items.SimpleSchema = p.typeOf(t.X).SimpleSchema
+		return param
 	}
 
 	// fallback
-	return "string", ""
+	param := &spec.Parameter{}
+	param.Type = "string"
+	return param
 }
 
 func (p *ParamParser) typeOfIdent(ident *ast.Ident) (string, string) {
