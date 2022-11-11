@@ -1,0 +1,16 @@
+output: docs
+plugin: gin
+dir: '.'
+
+depends:
+  - github.com/gin-gonic/gin
+  - encoding/json
+
+properties:
+  response:
+    - type: '*server/pkg/handler.CustomContext'
+      method: 'JSONOK'
+      return:
+        contentType: 'application/json'
+        data: 'args[0]'
+        status: 200

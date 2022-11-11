@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	analyzer "github.com/gotomicro/ego-gen-api"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -22,10 +23,21 @@ const (
 
 var _ analyzer.Plugin = &Plugin{}
 
-type Plugin struct{}
+type Plugin struct {
+	config Config
+}
 
 func NewPlugin() *Plugin {
 	return &Plugin{}
+}
+
+func (e *Plugin) Mount() error {
+	err := viper.UnmarshalKey("properties", &e.config)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (e *Plugin) Analyze(ctx *analyzer.Context, node ast.Node) {
@@ -38,7 +50,7 @@ func (e *Plugin) Analyze(ctx *analyzer.Context, node ast.Node) {
 }
 
 func (e *Plugin) Name() string {
-	return "ego"
+	return "gin"
 }
 
 func (e *Plugin) assignStmt(ctx *analyzer.Context, node ast.Node) {
@@ -121,20 +133,11 @@ func (e *Plugin) parseAPI(ctx *analyzer.Context, callExpr *ast.CallExpr) (api *a
 		}
 	}
 
-	handlerArg := callExpr.Args[len(callExpr.Args)-1]
-	var handler interface{}
-	switch handlerArg := handlerArg.(type) {
-	case *ast.Ident:
-		handler = ctx.Package().TypesInfo.Uses[handlerArg]
-	case *ast.SelectorExpr:
-		handler = ctx.Package().TypesInfo.Uses[handlerArg.Sel]
-	default:
-		return // ignore
-	}
-	handlerFn, ok := handler.(*types.Func)
-	if !ok {
+	handlerFn := e.getHandlerFn(ctx, callExpr)
+	if handlerFn == nil {
 		return
 	}
+
 	handlerDef := ctx.GetDefinition(handlerFn.Pkg().Path(), handlerFn.Name())
 	handlerFnDef, ok := handlerDef.(*analyzer.FuncDefinition)
 	if !ok {
@@ -149,7 +152,52 @@ func (e *Plugin) parseAPI(ctx *analyzer.Context, callExpr *ast.CallExpr) (api *a
 		ctx.NewEnv().WithPackage(handlerFnDef.Pkg()).WithFile(handlerFnDef.File()),
 		api.Spec,
 		handlerFnDef.Decl,
-	).Parse()
+	).WithConfig(&e.config).Parse()
+	return
+}
+
+// unwrap and returns the first nested call
+// e.g. unwrapCall(`a(b(c(d)), b1(c1))`) return `c(d)`
+func (e *Plugin) unwrapCall(callExpr *ast.CallExpr) *ast.CallExpr {
+	if len(callExpr.Args) == 0 {
+		return callExpr
+	}
+
+	arg0 := callExpr.Args[0]
+	arg0Call, ok := arg0.(*ast.CallExpr)
+	if ok {
+		return e.unwrapCall(arg0Call)
+	}
+
+	return callExpr
+}
+
+func (e *Plugin) getHandlerFn(ctx *analyzer.Context, callExpr *ast.CallExpr) (handlerFn *types.Func) {
+	handlerArg := callExpr.Args[len(callExpr.Args)-1]
+
+	if call, ok := handlerArg.(*ast.CallExpr); ok {
+		nestedCall := e.unwrapCall(call)
+		if len(nestedCall.Args) <= 0 {
+			return
+		}
+		handlerArg = nestedCall.Args[0]
+	}
+
+	var handler interface{}
+	switch handlerArg := handlerArg.(type) {
+	case *ast.Ident:
+		handler = ctx.Package().TypesInfo.Uses[handlerArg]
+	case *ast.SelectorExpr:
+		handler = ctx.Package().TypesInfo.Uses[handlerArg.Sel]
+	default:
+		return
+	}
+
+	handlerFn, ok := handler.(*types.Func)
+	if !ok {
+		return
+	}
+
 	return
 }
 

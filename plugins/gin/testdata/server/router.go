@@ -1,18 +1,32 @@
 package router
 
 import (
+	"server/pkg/handler"
 	"server/pkg/shop"
 
 	"github.com/gin-gonic/gin"
 )
 
+type CustomGroup struct {
+	*gin.RouterGroup
+}
+
 func ServeHttp() *gin.Engine {
 	r := gin.Default()
+
+	// custom router group
+	cg := &CustomGroup{RouterGroup: &r.RouterGroup}
+	cg.DELETE("/api/goods/:guid", shop.GoodsDelete)
+
+	// wrapped handler
+	cg.GET("/wrapped-handler", handler.Handler(shop.WrappedHandler))
+
 	g := r.Group("/api")
 	g.POST("/goods", shop.GoodsCreate)
 	g.POST("/goods/:guid/down", shop.GoodsDown)
 
 	g = g.Group("/v2")
 	g.GET("/goods/:guid", shop.GoodsInfo)
+
 	return r
 }

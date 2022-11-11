@@ -3,6 +3,7 @@ package shop
 import (
 	"net/http"
 
+	"server/pkg/handler"
 	"server/pkg/view"
 
 	"github.com/gin-gonic/gin"
@@ -49,4 +50,17 @@ func GoodsInfo(c *gin.Context) {
 	_ = guid
 
 	c.JSON(http.StatusOK, view.GoodsInfoRes{})
+}
+
+// GoodsDelete 删除商品
+func GoodsDelete(c *gin.Context) {
+
+}
+
+func WrappedHandler(c *handler.CustomContext) {
+	_ = c.Query("hello")
+	_ = c.Query("world")
+
+	// 自定义响应函数
+	c.JSONOK(view.GoodsInfoRes{})
 }

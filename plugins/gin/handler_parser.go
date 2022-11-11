@@ -2,10 +2,12 @@ package gin
 
 import (
 	"go/ast"
+	"log"
 	"strings"
 
 	"github.com/go-openapi/spec"
 	analyzer "github.com/gotomicro/ego-gen-api"
+	"github.com/robertkrimen/otto"
 	"github.com/samber/lo"
 )
 
@@ -19,14 +21,26 @@ type HandlerParser struct {
 	ctx  *analyzer.Context
 	spec *analyzer.APISpec
 	decl *ast.FuncDecl
+
+	c *Config
 }
 
 func NewHandlerParser(ctx *analyzer.Context, spec *analyzer.APISpec, decl *ast.FuncDecl) *HandlerParser {
 	return &HandlerParser{ctx: ctx, spec: spec, decl: decl}
 }
 
+func (p *HandlerParser) WithConfig(c *Config) *HandlerParser {
+	p.c = c
+	return p
+}
+
 func (p *HandlerParser) Parse() {
 	ast.Inspect(p.decl, func(node ast.Node) bool {
+		matched := p.matchCustomRule(node)
+		if matched {
+			return true
+		}
+
 		p.ctx.MatchCall(node,
 			analyzer.NewCallRule().WithRule(ginContextIdentName, interestedGinContextMethods...),
 			func(call *ast.CallExpr, typeName, fnName string) {
@@ -121,4 +135,85 @@ func (p *HandlerParser) parsePrimitiveParamArray(call *ast.CallExpr, in string) 
 	param.Type = "array"
 	param.Items = &spec.Items{SimpleSchema: spec.SimpleSchema{Type: "string"}}
 	p.spec.AddParam(param)
+}
+
+func (p *HandlerParser) matchCustomRule(node ast.Node) (matched bool) {
+	if p.c == nil || len(p.c.Response) == 0 {
+		return false
+	}
+
+	for _, rule := range p.c.Response {
+		p.ctx.MatchCall(
+			node,
+			analyzer.NewCallRule().WithRule(rule.Type, rule.Method),
+			func(call *ast.CallExpr, typeName, fnName string) {
+				matched = true
+
+				var contentType = rule.Return.ContentType
+				if !lo.Contains(p.spec.Produces, contentType) {
+					p.spec.Produces = append(p.spec.Produces, contentType)
+				}
+
+				res := spec.NewResponse()
+				commentGroup := p.ctx.FindHeadCommentOf(call.Pos())
+				if commentGroup != nil {
+					comment := analyzer.ParseComment(commentGroup)
+					if comment != nil {
+						res.Description = comment.Text
+					}
+				}
+
+				res.Schema = p.parseSchemaInCall(call, rule.Return.Data, contentType)
+				statusCode := p.parseStatusCodeInCall(call, rule.Return.Status)
+				p.spec.RespondsWith(statusCode, res)
+			},
+		)
+	}
+
+	return
+}
+
+func (p *HandlerParser) parseStatusCodeInCall(call *ast.CallExpr, statusCode string) (code int) {
+	if statusCode == "" {
+		return 200 // default to 200
+	}
+
+	output := p.evaluate(call, statusCode)
+	switch value := output.(type) {
+	case int64:
+		code = int(value)
+	case int:
+		code = value
+	case ast.Expr:
+		code = p.ctx.ParseStatusCode(value)
+	}
+
+	return
+}
+
+func (p *HandlerParser) parseSchemaInCall(call *ast.CallExpr, code string, contentType string) (schema *spec.Schema) {
+	output := p.evaluate(call, code)
+	expr, ok := output.(ast.Expr)
+	if !ok {
+		return nil
+	}
+	schema = p.ctx.GetSchemaByExpr(expr, contentType)
+
+	return
+}
+
+func (p *HandlerParser) evaluate(call *ast.CallExpr, code string) interface{} {
+	env := otto.New()
+	env.Set("args", call.Args)
+	output, err := env.Run(code)
+	if err != nil {
+		log.Fatalln("evaluate failed", err)
+	}
+
+	value, err := output.Export()
+	if err != nil {
+		log.Fatalln("evaluate failed", err)
+	}
+
+	return value
 }
