@@ -48,6 +48,13 @@ func NewAnalyzer() *Analyzer {
 }
 
 func (a *Analyzer) Plugin(plugins ...Plugin) *Analyzer {
+	for _, plugin := range plugins {
+		err := plugin.Mount()
+		if err != nil {
+			panic(fmt.Sprintf("mount plugin '%s' failed. error: %s", plugin.Name(), err.Error()))
+		}
+	}
+
 	a.plugins = append(a.plugins, plugins...)
 	return a
 }

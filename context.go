@@ -182,6 +182,11 @@ func (c *Context) MatchCall(n ast.Node, rule *CallRule, callback func(call *ast.
 	return
 }
 
+type CallInfo struct {
+	Type   string
+	Method string
+}
+
 // GetCallInfo returns the package or type and name associated with a call expression
 //
 // e.g. GetCallInfo(`c.GET("/ping", ...)`) returns ("*github/gin-gonic/gin.RouterGroup", "GET", nil)
@@ -191,6 +196,12 @@ func (c *Context) GetCallInfo(n ast.Node) (string, string, error) {
 	case *ast.CallExpr:
 		switch fn := node.Fun.(type) {
 		case *ast.SelectorExpr:
+			// try to parse type of sel.Sel
+			info := c.parseCallInfoByIdent(fn.Sel)
+			if info != nil {
+				return info.Type, info.Method, nil
+			}
+
 			switch expr := fn.X.(type) {
 			case *ast.Ident:
 				if expr.Obj != nil && expr.Obj.Kind == ast.Var {
@@ -243,4 +254,23 @@ func (c *Context) GetCallInfo(n ast.Node) (string, string, error) {
 	}
 
 	return "", "", fmt.Errorf("unable to determine call info")
+}
+
+func (c *Context) parseCallInfoByIdent(ident *ast.Ident) (info *CallInfo) {
+	info = &CallInfo{}
+	t := c.Package().TypesInfo.ObjectOf(ident)
+	fn, ok := t.(*types.Func)
+	if !ok {
+		return nil
+	}
+	info.Method = fn.Name()
+
+	sign := fn.Type().(*types.Signature)
+	if sign.Recv() != nil {
+		info.Type = sign.Recv().Type().String()
+	} else {
+		info.Type = fn.Pkg().Path()
+	}
+
+	return
 }
