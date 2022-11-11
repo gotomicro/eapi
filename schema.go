@@ -56,7 +56,7 @@ func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *spec.Schema) {
 		return s.parseIdent(expr)
 
 	case *ast.SelectorExpr:
-		return s.parseSelectorExpr(expr)
+		return s.ParseExpr(expr.Sel)
 
 	case *ast.MapType:
 		return spec.MapProperty(s.ParseExpr(expr.Value))
@@ -121,7 +121,38 @@ func (s *SchemaBuilder) parseIdent(expr *ast.Ident) *spec.Schema {
 		return s.basicType(t.Name())
 	}
 
+	// 检查是否是常用类型
+	schema := s.commonUsedType(t)
+	if schema != nil {
+		return schema
+	}
+
 	return s.parseType(t)
+}
+
+var commonTypes = map[string][]string{
+	"time.Time":                {"string", "datetime"},
+	"encoding/json.RawMessage": {"string", "byte"},
+}
+
+func (s *SchemaBuilder) commonUsedType(t types.Type) *spec.Schema {
+	switch t := t.(type) {
+	case *types.Named:
+		typeName := t.Obj().Pkg().Path() + "." + t.Obj().Name()
+		commonType, ok := commonTypes[typeName]
+		if !ok {
+			return nil
+		}
+		schema := &spec.Schema{}
+		schema.Type = append(schema.Type, commonType[0])
+		schema.Format = commonType[1]
+		return schema
+
+	case *types.Pointer:
+		return s.commonUsedType(t.Elem())
+	}
+
+	return nil
 }
 
 func (s *SchemaBuilder) parseSelectorExpr(expr *ast.SelectorExpr) *spec.Schema {
