@@ -7,6 +7,11 @@ depends:
   - encoding/json
 
 properties:
+  request:
+    - type: '*server/pkg/handler.CustomContext'
+      method: 'Bind'
+      return:
+        data: 'args[0]'
   response:
     - type: '*server/pkg/handler.CustomContext'
       method: 'JSONOK'

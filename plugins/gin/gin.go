@@ -157,7 +157,7 @@ func (e *Plugin) parseAPI(ctx *analyzer.Context, callExpr *ast.CallExpr) (api *a
 	api.Spec.LoadFromFuncDecl(handlerFnDef.Decl)
 	NewHandlerParser(
 		ctx.NewEnv().WithPackage(handlerFnDef.Pkg()).WithFile(handlerFnDef.File()),
-		api.Spec,
+		api,
 		handlerFnDef.Decl,
 	).WithConfig(&e.config).Parse()
 	return

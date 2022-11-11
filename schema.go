@@ -13,11 +13,11 @@ import (
 )
 
 const (
-	mimeTypeJson           = "application/json"
-	mimeApplicationXml     = "application/xml"
-	mimeTypeXml            = "text/xml"
-	mimeTypeFormData       = "multipart/form-data"
-	mimeTypeFormUrlencoded = "application/x-www-form-urlencoded"
+	MimeTypeJson           = "application/json"
+	MimeApplicationXml     = "application/xml"
+	MimeTypeXml            = "text/xml"
+	MimeTypeFormData       = "multipart/form-data"
+	MimeTypeFormUrlencoded = "application/x-www-form-urlencoded"
 )
 
 type SchemaBuilder struct {
@@ -36,6 +36,9 @@ func newSchemaBuilderWithStack(ctx *Context, contentType string, stack Stack[str
 
 func (s *SchemaBuilder) FromTypeSpec(t *ast.TypeSpec) *spec.Schema {
 	schema := s.ParseExpr(t.Type)
+	if schema == nil {
+		return nil
+	}
 	schema.Title = t.Name.Name
 	schema.Description = NormalizeComment(t.Comment.Text(), t.Name.Name)
 	return schema
@@ -63,6 +66,9 @@ func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *spec.Schema) {
 
 	case *ast.SliceExpr:
 		return spec.ArrayProperty(s.ParseExpr(expr.X))
+
+	case *ast.UnaryExpr:
+		return s.ParseExpr(expr.X)
 	}
 
 	// TODO
@@ -80,6 +86,10 @@ func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *spec.Schema {
 
 	for _, field := range expr.Fields.List {
 		comment := ParseComment(field.Doc)
+		if comment != nil && comment.Ignore() {
+			continue // ignored field
+		}
+
 		for _, name := range field.Names {
 			fieldSchema := s.ParseExpr(field.Type)
 			if fieldSchema == nil {
@@ -87,6 +97,10 @@ func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *spec.Schema {
 				continue
 			}
 			propName := s.getPropName(name.Name, field, contentType)
+			if propName == "-" { // ignore
+				continue
+			}
+
 			if comment != nil {
 				comment.transformIntoSchema(fieldSchema)
 				if comment.Required() {
@@ -122,11 +136,11 @@ func (s *SchemaBuilder) getPropName(fieldName string, field *ast.Field, contentT
 	tags := tag.Parse(field.Tag.Value)
 	var tagValue string
 	switch contentType {
-	case mimeTypeJson:
+	case MimeTypeJson:
 		tagValue = tags["json"]
-	case mimeTypeXml, mimeApplicationXml:
+	case MimeTypeXml, MimeApplicationXml:
 		tagValue = tags["xml"]
-	case mimeTypeFormData, mimeTypeFormUrlencoded:
+	case MimeTypeFormData, MimeTypeFormUrlencoded:
 		tagValue = tags["form"]
 	}
 	if tagValue == "" {
@@ -180,6 +194,10 @@ func (s *SchemaBuilder) parseType(t types.Type) *spec.Schema {
 
 	payloadSchema := newSchemaBuilderWithStack(s.ctx.WithPackage(typeDef.pkg).WithFile(typeDef.file), s.contentType, append(s.stack, typeDef.Key())).
 		FromTypeSpec(typeDef.Spec)
+	if payloadSchema == nil {
+		return nil
+	}
+
 	payloadSchema.ID = strings.ReplaceAll(typeDef.Key(), "/", "_")
 	s.ctx.Doc().Definitions[typeDef.ModelKey()] = *payloadSchema
 

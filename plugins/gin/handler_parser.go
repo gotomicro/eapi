@@ -3,6 +3,7 @@ package gin
 import (
 	"go/ast"
 	"log"
+	"net/http"
 	"strings"
 
 	"github.com/go-openapi/spec"
@@ -19,14 +20,15 @@ var (
 
 type HandlerParser struct {
 	ctx  *analyzer.Context
+	api  *analyzer.API
 	spec *analyzer.APISpec
 	decl *ast.FuncDecl
 
 	c *Config
 }
 
-func NewHandlerParser(ctx *analyzer.Context, spec *analyzer.APISpec, decl *ast.FuncDecl) *HandlerParser {
-	return &HandlerParser{ctx: ctx, spec: spec, decl: decl}
+func NewHandlerParser(ctx *analyzer.Context, api *analyzer.API, decl *ast.FuncDecl) *HandlerParser {
+	return &HandlerParser{ctx: ctx, api: api, spec: api.Spec, decl: decl}
 }
 
 func (p *HandlerParser) WithConfig(c *Config) *HandlerParser {
@@ -36,7 +38,11 @@ func (p *HandlerParser) WithConfig(c *Config) *HandlerParser {
 
 func (p *HandlerParser) Parse() {
 	ast.Inspect(p.decl, func(node ast.Node) bool {
-		matched := p.matchCustomRule(node)
+		matched := p.matchCustomResponseRule(node)
+		if matched {
+			return true
+		}
+		matched = p.matchCustomRequestRule(node)
 		if matched {
 			return true
 		}
@@ -137,7 +143,7 @@ func (p *HandlerParser) parsePrimitiveParamArray(call *ast.CallExpr, in string) 
 	p.spec.AddParam(param)
 }
 
-func (p *HandlerParser) matchCustomRule(node ast.Node) (matched bool) {
+func (p *HandlerParser) matchCustomResponseRule(node ast.Node) (matched bool) {
 	if p.c == nil || len(p.c.Response) == 0 {
 		return false
 	}
@@ -173,6 +179,64 @@ func (p *HandlerParser) matchCustomRule(node ast.Node) (matched bool) {
 	return
 }
 
+func (p *HandlerParser) matchCustomRequestRule(node ast.Node) (matched bool) {
+	if p.c == nil || len(p.c.Request) == 0 {
+		return false
+	}
+
+	for _, rule := range p.c.Request {
+		p.ctx.MatchCall(
+			node,
+			analyzer.NewCallRule().WithRule(rule.Type, rule.Method),
+			func(call *ast.CallExpr, typeName, fnName string) {
+				matched = true
+
+				contentType := p.getRequestContentType(rule.Return.ContentType)
+				switch contentType {
+				case analyzer.MimeTypeFormData, analyzer.MimeTypeFormUrlencoded:
+					in := p.getFormDataIn()
+					params := p.parseParamsInCall(call, rule.Return.Data, contentType)
+					for _, param := range params {
+						param.In = in
+						p.spec.AddParam(param)
+					}
+
+				default:
+					schema := p.parseSchemaInCall(call, rule.Return.Data, contentType)
+					if schema == nil {
+						return
+					}
+					param := spec.BodyParam("payload", schema)
+
+					commentGroup := p.ctx.FindHeadCommentOf(call.Pos())
+					if commentGroup != nil {
+						comment := analyzer.ParseComment(commentGroup)
+						if comment != nil {
+							param.Description = comment.Text
+						}
+					}
+
+					p.spec.AddParam(param)
+				}
+
+			},
+		)
+	}
+
+	return
+}
+
+func (p *HandlerParser) getFormDataIn() string {
+	var in = "query"
+	switch p.api.Method {
+	case http.MethodGet, http.MethodHead, http.MethodOptions:
+		in = "query"
+	default:
+		in = "form"
+	}
+	return in
+}
+
 func (p *HandlerParser) parseStatusCodeInCall(call *ast.CallExpr, statusCode string) (code int) {
 	if statusCode == "" {
 		return 200 // default to 200
@@ -202,6 +266,16 @@ func (p *HandlerParser) parseSchemaInCall(call *ast.CallExpr, code string, conte
 	return
 }
 
+func (p *HandlerParser) parseParamsInCall(call *ast.CallExpr, code string, contentType string) (params []*spec.Parameter) {
+	output := p.evaluate(call, code)
+	expr, ok := output.(ast.Expr)
+	if !ok {
+		return nil
+	}
+
+	return analyzer.NewParamParser(p.ctx, contentType).Parse(expr)
+}
+
 func (p *HandlerParser) evaluate(call *ast.CallExpr, code string) interface{} {
 	env := otto.New()
 	env.Set("args", call.Args)
@@ -216,4 +290,25 @@ func (p *HandlerParser) evaluate(call *ast.CallExpr, code string) interface{} {
 	}
 
 	return value
+}
+
+// 获取一个尽可能正确的 request payload contentType
+func (p *HandlerParser) getRequestContentType(contentType string) string {
+	if contentType != "" {
+		if !lo.Contains(p.spec.Consumes, contentType) {
+			p.spec.Consumes = append(p.spec.Consumes, contentType)
+		}
+		return contentType
+	}
+	if len(p.spec.Consumes) != 0 {
+		return p.spec.Consumes[0]
+	}
+
+	// fallback
+	switch p.api.Method {
+	case http.MethodGet, http.MethodHead:
+		return analyzer.MimeTypeFormData
+	default:
+		return analyzer.MimeTypeJson
+	}
 }
