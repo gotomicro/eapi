@@ -16,7 +16,7 @@ func ServeHttp() *gin.Engine {
 
 	// custom router group
 	cg := &CustomGroup{RouterGroup: &r.RouterGroup}
-	cg.DELETE("/api/goods/:guid", shop.GoodsDelete)
+	cg.DELETE("/api/goods/:guid", handler.Handler(shop.GoodsDelete))
 
 	// wrapped handler
 	cg.GET("/wrapped-handler", handler.Handler(shop.WrappedHandler))

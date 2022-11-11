@@ -77,13 +77,35 @@ func (p *HandlerParser) parseBinding(call *ast.CallExpr) {
 	if len(call.Args) != 1 {
 		return
 	}
+	arg0 := call.Args[0]
 
-	var contentType string
-	if len(p.spec.Consumes) > 0 {
-		contentType = p.spec.Consumes[0]
+	contentType := p.getRequestContentType("")
+	switch contentType {
+	case analyzer.MimeTypeFormData, analyzer.MimeTypeFormUrlencoded:
+		in := p.getFormDataIn()
+		params := analyzer.NewParamParser(p.ctx, contentType).Parse(arg0)
+		for _, param := range params {
+			param.In = in
+			p.spec.AddParam(param)
+		}
+
+	default:
+		schema := p.ctx.GetSchemaByExpr(arg0, contentType)
+		if schema == nil {
+			return
+		}
+		param := spec.BodyParam("payload", schema)
+
+		commentGroup := p.ctx.FindHeadCommentOf(call.Pos())
+		if commentGroup != nil {
+			comment := analyzer.ParseComment(commentGroup)
+			if comment != nil {
+				param.Description = comment.Text
+			}
+		}
+
+		p.spec.AddParam(param)
 	}
-	payloadSchema := p.ctx.GetSchemaByExpr(call.Args[0], contentType)
-	p.spec.AddParam(spec.BodyParam("Payload", payloadSchema))
 }
 
 func (p *HandlerParser) parseResBody(call *ast.CallExpr, contentType string) {

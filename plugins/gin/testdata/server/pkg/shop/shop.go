@@ -53,8 +53,10 @@ func GoodsInfo(c *gin.Context) {
 }
 
 // GoodsDelete 删除商品
-func GoodsDelete(c *gin.Context) {
-
+// @consume multipart/form-data
+func GoodsDelete(c *handler.CustomContext) {
+	var request view.GoodsDeleteRequest
+	_ = c.Bind(&request)
 }
 
 func WrappedHandler(c *handler.CustomContext) {
