@@ -96,7 +96,13 @@ func (e *Plugin) assignStmt(ctx *analyzer.Context, node ast.Node) {
 
 			switch assign.Tok {
 			case token.ASSIGN:
-				ctx.Env.Assign(lhIdent.Name, rg)
+				env := ctx.Env.Resolve(lhIdent.Name)
+				if env == nil {
+					ctx.Env.Define(lhIdent.Name, rg)
+				} else {
+					env.Assign(lhIdent.Name, rg)
+				}
+
 			case token.DEFINE:
 				ctx.Env.Define(lhIdent.Name, rg)
 			}
