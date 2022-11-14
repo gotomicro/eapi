@@ -47,7 +47,6 @@ dir: 'api' # 需要解析的代码目录
 depends:
  - github.com/gotomicro/gotoant
  - gorm.io/datatypes
- - git.shimo.im/gopkg/mo-ego-component
 
 # 可选. 插件属性. 用于自定义请求响应的函数调用
 properties:
