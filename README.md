@@ -8,7 +8,7 @@
 
 ## 安装 Install
 ```shell
-go install github.com/gotomicro/ego-gen-api/cmd/egen@latest
+go install github.com/gotomicro/ego-gen-api/cmd/egogen@latest
 ```
 
 ## 如何使用 How to Use
