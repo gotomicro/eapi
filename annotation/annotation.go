@@ -10,6 +10,8 @@ const (
 	Unresolved
 	Ignore
 	Tag
+	Description
+	Summary
 )
 
 type Annotation interface {
@@ -65,4 +67,20 @@ type TagAnnotation struct {
 
 func (a *TagAnnotation) Type() Type {
 	return Tag
+}
+
+type DescriptionAnnotation struct {
+	Text string
+}
+
+func (a *DescriptionAnnotation) Type() Type {
+	return Description
+}
+
+type SummaryAnnotation struct {
+	Text string
+}
+
+func (a *SummaryAnnotation) Type() Type {
+	return Description
 }

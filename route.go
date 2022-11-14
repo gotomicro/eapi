@@ -65,6 +65,7 @@ func (s *APISpec) LoadFromFuncDecl(funcDecl *ast.FuncDecl) {
 	cg := funcDecl.Doc
 	comment := ParseComment(cg)
 	if comment != nil {
+		s.WithSummary(comment.Summary())
 		s.WithConsumes(comment.Consumes()...)
 		s.WithProduces(comment.Produces()...)
 		s.WithDescription(comment.TrimPrefix(funcDecl.Name.Name))
