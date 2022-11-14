@@ -63,3 +63,7 @@ type GoodsInfoRes struct {
 type GoodsDownRes struct {
 	Status string `json:"status"`
 }
+
+type GoodsDeleteRequest struct {
+	FormDataField string `form:"formDataField"`
+}

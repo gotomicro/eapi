@@ -13,11 +13,11 @@ import (
 )
 
 const (
-	mimeTypeJson           = "application/json"
-	mimeApplicationXml     = "application/xml"
-	mimeTypeXml            = "text/xml"
-	mimeTypeFormData       = "multipart/form-data"
-	mimeTypeFormUrlencoded = "application/x-www-form-urlencoded"
+	MimeTypeJson           = "application/json"
+	MimeApplicationXml     = "application/xml"
+	MimeTypeXml            = "text/xml"
+	MimeTypeFormData       = "multipart/form-data"
+	MimeTypeFormUrlencoded = "application/x-www-form-urlencoded"
 )
 
 type SchemaBuilder struct {
@@ -34,65 +34,44 @@ func newSchemaBuilderWithStack(ctx *Context, contentType string, stack Stack[str
 	return &SchemaBuilder{ctx: ctx, contentType: contentType, stack: stack}
 }
 
-func (s *SchemaBuilder) GetSchemaByExpr(expr ast.Expr, contentType string) *spec.Schema {
-	t := s.ctx.Package().TypesInfo.TypeOf(expr)
-	if t, ok := t.(*types.Basic); ok {
-		return s.basicType(t.Name())
-	}
-
-	def := s.ctx.ParseType(t)
-	typeDef, ok := def.(*TypeDefinition)
-	if !ok {
+func (s *SchemaBuilder) FromTypeSpec(t *ast.TypeSpec) *spec.Schema {
+	schema := s.ParseExpr(t.Type)
+	if schema == nil {
 		return nil
 	}
-	if lo.Contains(s.stack, typeDef.Key()) {
-		return spec.RefSchema(typeDef.RefKey())
-	}
-	_, ok = s.ctx.Doc().Definitions[typeDef.ModelKey()]
-	if ok {
-		return spec.RefSchema(typeDef.RefKey())
-	}
-
-	s.stack.Push(typeDef.Key())
-	defer s.stack.Pop()
-
-	payloadSchema := newSchemaBuilderWithStack(s.ctx.WithPackage(typeDef.pkg).WithFile(typeDef.file), contentType, append(s.stack, typeDef.Key())).
-		FromTypeSpec(typeDef.Spec)
-	payloadSchema.ID = strings.ReplaceAll(typeDef.Key(), "/", "_")
-	s.ctx.Doc().Definitions[typeDef.ModelKey()] = *payloadSchema
-
-	return spec.RefSchema(typeDef.RefKey())
-}
-
-func (s *SchemaBuilder) FromTypeSpec(t *ast.TypeSpec) *spec.Schema {
-	schema := s.parseExpr(t.Type)
 	schema.Title = t.Name.Name
 	schema.Description = NormalizeComment(t.Comment.Text(), t.Name.Name)
 	return schema
 }
 
-func (s *SchemaBuilder) parseExpr(expr ast.Expr) (schema *spec.Schema) {
+func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *spec.Schema) {
 	switch expr := expr.(type) {
 	case *ast.StructType:
 		return s.parseStruct(expr)
 
 	case *ast.StarExpr:
-		return s.parseExpr(expr.X)
+		return s.ParseExpr(expr.X)
 
 	case *ast.Ident:
 		return s.parseIdent(expr)
 
 	case *ast.SelectorExpr:
-		return s.parseSelectorExpr(expr)
+		return s.ParseExpr(expr.Sel)
 
 	case *ast.MapType:
-		return spec.MapProperty(s.parseExpr(expr.Value))
+		return spec.MapProperty(s.ParseExpr(expr.Value))
 
 	case *ast.ArrayType:
-		return spec.ArrayProperty(s.parseExpr(expr.Elt))
+		return spec.ArrayProperty(s.ParseExpr(expr.Elt))
 
 	case *ast.SliceExpr:
-		return spec.ArrayProperty(s.parseExpr(expr.X))
+		return spec.ArrayProperty(s.ParseExpr(expr.X))
+
+	case *ast.UnaryExpr:
+		return s.ParseExpr(expr.X)
+
+	case *ast.CompositeLit:
+		return s.ParseExpr(expr.Type)
 	}
 
 	// TODO
@@ -110,13 +89,34 @@ func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *spec.Schema {
 
 	for _, field := range expr.Fields.List {
 		comment := ParseComment(field.Doc)
+		if comment != nil && comment.Ignore() {
+			continue // ignored field
+		}
+
+		if len(field.Names) == 0 { // type composition
+			fieldSchema := s.ParseExpr(field.Type)
+			if fieldSchema != nil {
+				// merge properties
+				fieldSchema = s.unRef(fieldSchema)
+				if fieldSchema != nil {
+					for name, value := range fieldSchema.Properties {
+						schema.Properties[name] = value
+					}
+				}
+			}
+		}
+
 		for _, name := range field.Names {
-			fieldSchema := s.parseExpr(field.Type)
+			fieldSchema := s.ParseExpr(field.Type)
 			if fieldSchema == nil {
 				fmt.Printf("unknown field type %s at %s\n", name.Name, s.ctx.LineColumn(field.Type.Pos()))
 				continue
 			}
 			propName := s.getPropName(name.Name, field, contentType)
+			if propName == "-" { // ignore
+				continue
+			}
+
 			if comment != nil {
 				comment.transformIntoSchema(fieldSchema)
 				if comment.Required() {
@@ -131,16 +131,48 @@ func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *spec.Schema {
 }
 
 func (s *SchemaBuilder) parseIdent(expr *ast.Ident) *spec.Schema {
-	schema := s.basicType(expr.Name)
+	t := s.ctx.Package().TypesInfo.TypeOf(expr)
+	switch t := t.(type) {
+	case *types.Basic:
+		return s.basicType(t.Name())
+	}
+
+	// 检查是否是常用类型
+	schema := s.commonUsedType(t)
 	if schema != nil {
 		return schema
 	}
 
-	return s.GetSchemaByExpr(expr, s.contentType)
+	return s.parseType(t)
+}
+
+var commonTypes = map[string][]string{
+	"time.Time":                {"string", "datetime"},
+	"encoding/json.RawMessage": {"string", "byte"},
+}
+
+func (s *SchemaBuilder) commonUsedType(t types.Type) *spec.Schema {
+	switch t := t.(type) {
+	case *types.Named:
+		typeName := t.Obj().Pkg().Path() + "." + t.Obj().Name()
+		commonType, ok := commonTypes[typeName]
+		if !ok {
+			return nil
+		}
+		schema := &spec.Schema{}
+		schema.Type = append(schema.Type, commonType[0])
+		schema.Format = commonType[1]
+		return schema
+
+	case *types.Pointer:
+		return s.commonUsedType(t.Elem())
+	}
+
+	return nil
 }
 
 func (s *SchemaBuilder) parseSelectorExpr(expr *ast.SelectorExpr) *spec.Schema {
-	return s.parseExpr(expr.Sel)
+	return s.ParseExpr(expr.Sel)
 }
 
 func (s *SchemaBuilder) getPropName(fieldName string, field *ast.Field, contentType string) (propName string) {
@@ -151,11 +183,11 @@ func (s *SchemaBuilder) getPropName(fieldName string, field *ast.Field, contentT
 	tags := tag.Parse(field.Tag.Value)
 	var tagValue string
 	switch contentType {
-	case mimeTypeJson:
+	case MimeTypeJson:
 		tagValue = tags["json"]
-	case mimeTypeXml, mimeApplicationXml:
+	case MimeTypeXml, MimeApplicationXml:
 		tagValue = tags["xml"]
-	case mimeTypeFormData, mimeTypeFormUrlencoded:
+	case MimeTypeFormData, MimeTypeFormUrlencoded:
 		tagValue = tags["form"]
 	}
 	if tagValue == "" {
@@ -181,4 +213,61 @@ func (s *SchemaBuilder) basicType(name string) *spec.Schema {
 	}
 
 	return nil
+}
+
+func (s *SchemaBuilder) parseType(t types.Type) *spec.Schema {
+	switch t := t.(type) {
+	case *types.Slice:
+		return spec.ArrayProperty(s.parseType(t.Elem()))
+	case *types.Array:
+		return spec.ArrayProperty(s.parseType(t.Elem()))
+	}
+
+	def := s.ctx.ParseType(t)
+	typeDef, ok := def.(*TypeDefinition)
+	if !ok {
+		return nil
+	}
+	if lo.Contains(s.stack, typeDef.Key()) {
+		return spec.RefSchema(typeDef.RefKey())
+	}
+	_, ok = s.ctx.Doc().Definitions[typeDef.ModelKey()]
+	if ok {
+		return spec.RefSchema(typeDef.RefKey())
+	}
+
+	s.stack.Push(typeDef.Key())
+	defer s.stack.Pop()
+
+	payloadSchema := newSchemaBuilderWithStack(s.ctx.WithPackage(typeDef.pkg).WithFile(typeDef.file), s.contentType, append(s.stack, typeDef.Key())).
+		FromTypeSpec(typeDef.Spec)
+	if payloadSchema == nil {
+		return nil
+	}
+
+	payloadSchema.ID = strings.ReplaceAll(typeDef.Key(), "/", "_")
+	s.ctx.Doc().Definitions[typeDef.ModelKey()] = *payloadSchema
+
+	return spec.RefSchema(typeDef.RefKey())
+}
+
+func (s *SchemaBuilder) unRef(schema *spec.Schema) *spec.Schema {
+	ref := schema.Ref
+	if ref.GetURL() == nil {
+		return schema
+	}
+
+	tokens := ref.GetPointer().DecodedTokens()
+	if len(tokens) != 2 {
+		return nil
+	}
+	if tokens[0] != "definitions" {
+		return nil
+	}
+
+	def, ok := s.ctx.Doc().Definitions[tokens[1]]
+	if !ok {
+		return nil
+	}
+	return &def
 }

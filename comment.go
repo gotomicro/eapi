@@ -79,6 +79,16 @@ func (c *Comment) Tags() []string {
 	return res
 }
 
+func (c *Comment) Ignore() bool {
+	for _, annot := range c.Annotations {
+		_, ok := annot.(*annotation.IgnoreAnnotation)
+		if ok {
+			return true
+		}
+	}
+	return false
+}
+
 func ParseComment(commentGroup *ast.CommentGroup) *Comment {
 	if commentGroup == nil {
 		return nil

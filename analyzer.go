@@ -72,7 +72,7 @@ func (a *Analyzer) Load(packagePath string) {
 
 	pkgList := a.load(packagePath)
 	for _, pkg := range pkgList {
-		a.loadDefinitionsFromPkg(pkg, packagePath)
+		a.loadDefinitionsFromPkg(pkg, pkg.Module.Dir)
 	}
 
 	a.packages = append(a.packages, pkgList...)
@@ -90,7 +90,7 @@ func (a *Analyzer) Process(packagePath string) *Analyzer {
 
 	pkgList := a.load(packagePath)
 	for _, pkg := range pkgList {
-		a.loadDefinitionsFromPkg(pkg, packagePath)
+		a.loadDefinitionsFromPkg(pkg, pkg.Module.Dir)
 	}
 	a.packages = append(a.packages, pkgList...)
 
@@ -152,6 +152,10 @@ func (a *Analyzer) load(pkgPath string) []*packages.Package {
 	// 前面的 packages.Load() 方法不能解析出以第一层的 Module
 	// 所以这里手动解析 go.mod
 	for _, p := range res {
+		if p.Module != nil {
+			continue
+		}
+
 		module := a.parseGoModule(pkgPath)
 		if module == nil {
 			panic("failed to parse go.mod file in " + pkgPath)
@@ -166,8 +170,9 @@ func (a *Analyzer) load(pkgPath string) []*packages.Package {
 
 func (a *Analyzer) processPkg(packagePath string) {
 	for _, pkg := range a.packages {
+		moduleDir := pkg.Module.Dir
 		InspectPackage(pkg, func(pkg *packages.Package) bool {
-			if pkg.Module == nil || pkg.Module.Dir != packagePath {
+			if pkg.Module == nil || pkg.Module.Dir != moduleDir {
 				return false
 			}
 
@@ -210,7 +215,7 @@ func (a *Analyzer) funDecl(ctx *Context, node *ast.FuncDecl, file *ast.File, pkg
 	})
 }
 
-func (a *Analyzer) loadDefinitionsFromPkg(pkg *packages.Package, packagePath string) {
+func (a *Analyzer) loadDefinitionsFromPkg(pkg *packages.Package, moduleDir string) {
 	InspectPackage(pkg, func(pkg *packages.Package) bool {
 		if pkg.Module == nil { // Go 内置包
 			ignore := true
@@ -224,7 +229,7 @@ func (a *Analyzer) loadDefinitionsFromPkg(pkg *packages.Package, packagePath str
 				return false
 			}
 		} else {
-			if pkg.Module.Dir != packagePath && !lo.Contains(a.depends, pkg.Module.Path) {
+			if pkg.Module.Dir != moduleDir && !lo.Contains(a.depends, pkg.Module.Path) {
 				return false
 			}
 		}
@@ -313,7 +318,11 @@ func (a *Analyzer) findFuncDeclInPackage(pkg *packages.Package, pkgName string, 
 }
 
 func (a *Analyzer) parseGoModule(pkgPath string) *packages.Module {
-	fileName := filepath.Join(pkgPath, "go.mod")
+	dir, fileName := a.lookupGoModFile(pkgPath)
+	if fileName == "" {
+		panic("go.mod not found in " + pkgPath)
+	}
+
 	content, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -330,10 +339,27 @@ func (a *Analyzer) parseGoModule(pkgPath string) *packages.Module {
 	return &packages.Module{
 		Path:      mod.Module.Mod.Path,
 		Main:      true,
-		Dir:       pkgPath,
+		Dir:       dir,
 		GoMod:     fileName,
 		GoVersion: mod.Go.Version,
 	}
+}
+
+func (a *Analyzer) lookupGoModFile(pkgPath string) (string, string) {
+	for {
+		fileName := filepath.Join(pkgPath, "go.mod")
+		_, err := os.Stat(fileName)
+		if err == nil {
+			return filepath.Dir(pkgPath), fileName
+		}
+		var suffix string
+		pkgPath, suffix = filepath.Split(pkgPath)
+		if suffix == "" {
+			break
+		}
+	}
+
+	return "", ""
 }
 
 func (a *Analyzer) context() *Context {

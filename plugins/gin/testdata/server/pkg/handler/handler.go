@@ -14,6 +14,11 @@ func (c *CustomContext) JSONOK(data interface{}) {
 	c.JSON(http.StatusOK, data)
 }
 
+func (c *CustomContext) Bind(data interface{}) (err error) {
+	// ...
+	return
+}
+
 func Handler(handler func(c *CustomContext)) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		handler(&CustomContext{Context: c})

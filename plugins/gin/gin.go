@@ -18,6 +18,8 @@ var (
 
 const (
 	ginRouterGroupTypeName = "*github.com/gin-gonic/gin.RouterGroup"
+	ginIRouterTypeName     = "github.com/gin-gonic/gin.IRouter"
+	ginIRoutesTypeName     = "github.com/gin-gonic/gin.IRoutes"
 	routerGroupMethodName  = "Group"
 )
 
@@ -62,7 +64,10 @@ func (e *Plugin) assignStmt(ctx *analyzer.Context, node ast.Node) {
 	rh := assign.Rhs[0]
 	ctx.MatchCall(
 		rh,
-		analyzer.NewCallRule().WithRule(ginRouterGroupTypeName, routerGroupMethodName),
+		analyzer.NewCallRule().
+			WithRule(ginRouterGroupTypeName, routerGroupMethodName).
+			WithRule(ginIRouterTypeName, routerGroupMethodName).
+			WithRule(ginIRoutesTypeName, routerGroupMethodName),
 		func(callExpr *ast.CallExpr, typeName, fnName string) {
 			if len(callExpr.Args) <= 0 {
 				return
@@ -91,7 +96,13 @@ func (e *Plugin) assignStmt(ctx *analyzer.Context, node ast.Node) {
 
 			switch assign.Tok {
 			case token.ASSIGN:
-				ctx.Env.Assign(lhIdent.Name, rg)
+				env := ctx.Env.Resolve(lhIdent.Name)
+				if env == nil {
+					ctx.Env.Define(lhIdent.Name, rg)
+				} else {
+					env.Assign(lhIdent.Name, rg)
+				}
+
 			case token.DEFINE:
 				ctx.Env.Define(lhIdent.Name, rg)
 			}
@@ -104,7 +115,9 @@ func (e *Plugin) assignStmt(ctx *analyzer.Context, node ast.Node) {
 func (e *Plugin) callExpr(ctx *analyzer.Context, callExpr *ast.CallExpr) {
 	ctx.MatchCall(
 		callExpr,
-		analyzer.NewCallRule().WithRule(ginRouterGroupTypeName, routeMethods...),
+		analyzer.NewCallRule().WithRule(ginRouterGroupTypeName, routeMethods...).
+			WithRule(ginIRouterTypeName, routeMethods...).
+			WithRule(ginIRoutesTypeName, routeMethods...),
 		func(call *ast.CallExpr, typeName, fnName string) {
 			api := e.parseAPI(ctx, callExpr)
 			if api == nil {
@@ -150,7 +163,7 @@ func (e *Plugin) parseAPI(ctx *analyzer.Context, callExpr *ast.CallExpr) (api *a
 	api.Spec.LoadFromFuncDecl(handlerFnDef.Decl)
 	NewHandlerParser(
 		ctx.NewEnv().WithPackage(handlerFnDef.Pkg()).WithFile(handlerFnDef.File()),
-		api.Spec,
+		api,
 		handlerFnDef.Decl,
 	).WithConfig(&e.config).Parse()
 	return
