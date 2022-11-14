@@ -15,7 +15,7 @@ import (
 const ginContextIdentName = "*github.com/gin-gonic/gin.Context"
 
 var (
-	interestedGinContextMethods = []string{"Bind", "JSON", "Query", "Param", "GetPostForm", "PostFormArray", "XML"}
+	interestedGinContextMethods = []string{"Bind", "JSON", "Query", "Param", "GetPostForm", "PostFormArray", "XML", "Redirect"}
 )
 
 type HandlerParser struct {
@@ -65,6 +65,8 @@ func (p *HandlerParser) Parse() {
 					p.parsePrimitiveParam(call, "formData")
 				case "PostFormArray":
 					p.parsePrimitiveParamArray(call, "formData")
+				case "Redirect":
+					p.parseRedirectRes(call)
 					// TODO: supporting more methods (FileForm(), HTML(), Data(), etc...)
 				}
 			},
@@ -126,6 +128,23 @@ func (p *HandlerParser) parseResBody(call *ast.CallExpr, contentType string) {
 		}
 	}
 
+	statusCode := p.ctx.ParseStatusCode(call.Args[0])
+	p.spec.RespondsWith(statusCode, res)
+}
+
+func (p *HandlerParser) parseRedirectRes(call *ast.CallExpr) {
+	if len(call.Args) == 0 {
+		return
+	}
+
+	res := spec.NewResponse()
+	commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
+	if commentGroup != nil {
+		comment := analyzer.ParseComment(commentGroup)
+		if comment != nil {
+			res.Description = comment.Text
+		}
+	}
 	statusCode := p.ctx.ParseStatusCode(call.Args[0])
 	p.spec.RespondsWith(statusCode, res)
 }

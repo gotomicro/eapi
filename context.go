@@ -103,6 +103,13 @@ func (c *Context) ParseStatusCode(status ast.Expr) int {
 		return int(statusCode)
 
 	case *ast.BasicLit:
+		code, err := strconv.ParseInt(status.Value, 10, 64)
+		if err != nil {
+			fmt.Printf("unknown status code '%s' at %s\n", status.Value, c.LineColumn(status.Pos()))
+			break
+		}
+		return int(code)
+
 	default:
 		// unknown status code
 		fmt.Printf("unknown status code %s\n", c.LineColumn(status.Pos()))
