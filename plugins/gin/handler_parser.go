@@ -96,7 +96,7 @@ func (p *HandlerParser) parseBinding(call *ast.CallExpr) {
 		}
 		param := spec.BodyParam("payload", schema)
 
-		commentGroup := p.ctx.FindHeadCommentOf(call.Pos())
+		commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
 		if commentGroup != nil {
 			comment := analyzer.ParseComment(commentGroup)
 			if comment != nil {
@@ -118,7 +118,7 @@ func (p *HandlerParser) parseResBody(call *ast.CallExpr, contentType string) {
 
 	res := spec.NewResponse()
 	res.Schema = p.ctx.GetSchemaByExpr(call.Args[1], contentType)
-	commentGroup := p.ctx.FindHeadCommentOf(call.Pos())
+	commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
 	if commentGroup != nil {
 		comment := analyzer.ParseComment(commentGroup)
 		if comment != nil {
@@ -147,7 +147,7 @@ func (p *HandlerParser) primitiveParam(call *ast.CallExpr, in string) *spec.Para
 	name := strings.Trim(arg0Lit.Value, "\"")
 	res := &spec.Parameter{ParamProps: spec.ParamProps{Name: name, In: in}}
 
-	commentGroup := p.ctx.FindHeadCommentOf(call.Pos())
+	commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
 	if commentGroup != nil {
 		comment := analyzer.ParseComment(commentGroup)
 		if comment != nil {
@@ -183,7 +183,7 @@ func (p *HandlerParser) matchCustomResponseRule(node ast.Node) (matched bool) {
 				}
 
 				res := spec.NewResponse()
-				commentGroup := p.ctx.FindHeadCommentOf(call.Pos())
+				commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
 				if commentGroup != nil {
 					comment := analyzer.ParseComment(commentGroup)
 					if comment != nil {
@@ -230,7 +230,7 @@ func (p *HandlerParser) matchCustomRequestRule(node ast.Node) (matched bool) {
 					}
 					param := spec.BodyParam("payload", schema)
 
-					commentGroup := p.ctx.FindHeadCommentOf(call.Pos())
+					commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
 					if commentGroup != nil {
 						comment := analyzer.ParseComment(commentGroup)
 						if comment != nil {

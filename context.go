@@ -119,7 +119,7 @@ func (c *Context) GetSchemaByExpr(expr ast.Expr, contentType string) *spec.Schem
 	return NewSchemaBuilder(c, contentType).ParseExpr(expr)
 }
 
-func (c *Context) FindHeadCommentOf(pos token.Pos) *ast.CommentGroup {
+func (c *Context) GetHeadingCommentOf(pos token.Pos) *ast.CommentGroup {
 	if c.File() == nil {
 		return nil
 	}
@@ -128,6 +128,22 @@ func (c *Context) FindHeadCommentOf(pos token.Pos) *ast.CommentGroup {
 	for _, commentGroup := range c.File().Comments {
 		commentPos := c.Package().Fset.Position(commentGroup.End())
 		if commentPos.Line == position.Line-1 {
+			return commentGroup
+		}
+	}
+
+	return nil
+}
+
+func (c *Context) GetTrailingCommentOf(pos token.Pos) *ast.CommentGroup {
+	if c.File() == nil {
+		return nil
+	}
+
+	position := c.Package().Fset.Position(pos)
+	for _, commentGroup := range c.File().Comments {
+		commentPos := c.Package().Fset.Position(commentGroup.End())
+		if commentPos.Line == position.Line {
 			return commentGroup
 		}
 	}
