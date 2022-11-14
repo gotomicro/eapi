@@ -13,7 +13,7 @@ go install github.com/gotomicro/ego-gen-api/cmd/egogen@latest
 
 ## 如何使用 How to Use
 ### 通过配置文件
-**egen.yaml**:
+**egogen.yaml**:
 ```yaml
 output: docs
 plugin: gin
@@ -23,14 +23,14 @@ dir: 'api' # 需要解析的代码根目录
 
 在代码根目录下执行:
 ```shell
-egogen --config egen.yaml
+egogen --config egogen.yaml
 ```
 
 ### 通过命令行参数
 
 在代码根目录下执行:
 ```shell
-egen --output docs --plugin gin --dir api
+egogen --output docs --plugin gin --dir api
 ```
 
 执行以上命令后，会在 `/docs` 目录下生成 `swagger.json` 文件。
