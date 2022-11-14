@@ -23,7 +23,7 @@ dir: 'api' # 需要解析的代码根目录
 
 在代码根目录下执行:
 ```shell
-egen --config egn.yaml
+egogen --config egen.yaml
 ```
 
 ### 通过命令行参数
