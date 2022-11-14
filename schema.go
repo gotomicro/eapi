@@ -69,6 +69,9 @@ func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *spec.Schema) {
 
 	case *ast.UnaryExpr:
 		return s.ParseExpr(expr.X)
+
+	case *ast.CompositeLit:
+		return s.ParseExpr(expr.Type)
 	}
 
 	// TODO
@@ -88,6 +91,19 @@ func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *spec.Schema {
 		comment := ParseComment(field.Doc)
 		if comment != nil && comment.Ignore() {
 			continue // ignored field
+		}
+
+		if len(field.Names) == 0 { // type composition
+			fieldSchema := s.ParseExpr(field.Type)
+			if fieldSchema != nil {
+				// merge properties
+				fieldSchema = s.unRef(fieldSchema)
+				if fieldSchema != nil {
+					for name, value := range fieldSchema.Properties {
+						schema.Properties[name] = value
+					}
+				}
+			}
 		}
 
 		for _, name := range field.Names {
@@ -233,4 +249,25 @@ func (s *SchemaBuilder) parseType(t types.Type) *spec.Schema {
 	s.ctx.Doc().Definitions[typeDef.ModelKey()] = *payloadSchema
 
 	return spec.RefSchema(typeDef.RefKey())
+}
+
+func (s *SchemaBuilder) unRef(schema *spec.Schema) *spec.Schema {
+	ref := schema.Ref
+	if ref.GetURL() == nil {
+		return schema
+	}
+
+	tokens := ref.GetPointer().DecodedTokens()
+	if len(tokens) != 2 {
+		return nil
+	}
+	if tokens[0] != "definitions" {
+		return nil
+	}
+
+	def, ok := s.ctx.Doc().Definitions[tokens[1]]
+	if !ok {
+		return nil
+	}
+	return &def
 }
