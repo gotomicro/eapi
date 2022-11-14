@@ -89,6 +89,16 @@ func (c *Comment) Ignore() bool {
 	return false
 }
 
+func (c *Comment) Summary() string {
+	for _, annot := range c.Annotations {
+		summary, ok := annot.(*annotation.SummaryAnnotation)
+		if ok {
+			return strings.TrimSpace(summary.Text)
+		}
+	}
+	return ""
+}
+
 func ParseComment(commentGroup *ast.CommentGroup) *Comment {
 	if commentGroup == nil {
 		return nil
@@ -100,6 +110,10 @@ func ParseComment(commentGroup *ast.CommentGroup) *Comment {
 		annot := annotation.NewParser(line).Parse()
 		if annot != nil {
 			c.Annotations = append(c.Annotations, annot)
+			desc, ok := annot.(*annotation.DescriptionAnnotation)
+			if ok {
+				lines = append(lines, strings.TrimSpace(desc.Text))
+			}
 		} else {
 			lines = append(lines, strings.TrimSpace(line))
 		}

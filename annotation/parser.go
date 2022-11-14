@@ -48,8 +48,12 @@ func (p *Parser) parse() Annotation {
 		return &IgnoreAnnotation{}
 	case "@tag", "@tags":
 		return p.tags()
+	case "@description":
+		return p.description()
+	case "@summary":
+		return p.summary()
 	default: // unresolved plugin
-		return p.unresolvedAnnotation(tag)
+		return p.unresolved(tag)
 	}
 }
 
@@ -65,6 +69,16 @@ func (p *Parser) consume(typ TokenType) *Token {
 
 	t := p.lookahead()
 	if t == nil || t.Type != typ {
+		return nil
+	}
+
+	p.position += 1
+	return t
+}
+
+func (p *Parser) consumeAny() *Token {
+	t := p.lookahead()
+	if t == nil {
 		return nil
 	}
 
@@ -111,18 +125,36 @@ func (p *Parser) produceAnnotation() *ProduceAnnotation {
 	}
 }
 
-func (p *Parser) unresolvedAnnotation(tag *Token) Annotation {
+func (p *Parser) unresolved(tag *Token) Annotation {
 	return &UnresolvedAnnotation{
 		Tag:    tag.Image,
 		Tokens: p.tokens,
 	}
 }
 
-func (p *Parser) tags() *TagAnnotation {
+func (p *Parser) tags() Annotation {
 	res := &TagAnnotation{}
 	for p.hasMore() {
 		ident := p.consume(tokenIdentifier)
 		res.Tags = append(res.Tags, ident.Image)
+	}
+	return res
+}
+
+func (p *Parser) description() Annotation {
+	res := &DescriptionAnnotation{}
+	for p.hasMore() {
+		token := p.consumeAny()
+		res.Text += token.Image
+	}
+	return res
+}
+
+func (p *Parser) summary() Annotation {
+	res := &SummaryAnnotation{}
+	for p.hasMore() {
+		token := p.consumeAny()
+		res.Text += token.Image
 	}
 	return res
 }

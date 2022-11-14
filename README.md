@@ -8,7 +8,7 @@
 
 ## 安装 Install
 ```shell
-go install github.com/gotomicro/ego-gen-api/cmd/egen@latest
+go install github.com/gotomicro/ego-gen-api/cmd/egogen@latest
 ```
 
 ## 如何使用 How to Use
@@ -23,7 +23,7 @@ dir: 'api' # 需要解析的代码根目录
 
 在代码根目录下执行:
 ```shell
-egen --config egn.yaml
+egogen --config egen.yaml
 ```
 
 ### 通过命令行参数

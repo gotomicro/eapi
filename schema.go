@@ -88,7 +88,7 @@ func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *spec.Schema {
 	}
 
 	for _, field := range expr.Fields.List {
-		comment := ParseComment(field.Doc)
+		comment := s.parseCommentOfField(field)
 		if comment != nil && comment.Ignore() {
 			continue // ignored field
 		}
@@ -270,4 +270,15 @@ func (s *SchemaBuilder) unRef(schema *spec.Schema) *spec.Schema {
 		return nil
 	}
 	return &def
+}
+
+func (s *SchemaBuilder) parseCommentOfField(field *ast.Field) *Comment {
+	// heading comment
+	if field.Doc != nil && len(field.Doc.List) > 0 {
+		return ParseComment(field.Doc)
+	}
+
+	// parse trailing comment
+	commentGroup := s.ctx.GetTrailingCommentOf(field.Pos())
+	return ParseComment(commentGroup)
 }

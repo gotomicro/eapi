@@ -3,9 +3,8 @@ module github.com/gotomicro/ego-gen-api
 go 1.18
 
 require (
-	github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf
 	github.com/go-openapi/spec v0.20.7
-	github.com/google/cel-go v0.12.5
+	github.com/robertkrimen/otto v0.0.0-20221025135307-511d75fba9f8
 	github.com/samber/lo v1.28.2
 	github.com/spf13/viper v1.14.0
 	github.com/urfave/cli/v2 v2.23.4
@@ -26,7 +25,6 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
-	github.com/robertkrimen/otto v0.0.0-20221025135307-511d75fba9f8 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
@@ -37,8 +35,6 @@ require (
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
-	google.golang.org/genproto v0.0.0-20221024183307-1bc688fe9f3e // indirect
-	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/sourcemap.v1 v1.0.5 // indirect

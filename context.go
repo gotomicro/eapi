@@ -103,6 +103,13 @@ func (c *Context) ParseStatusCode(status ast.Expr) int {
 		return int(statusCode)
 
 	case *ast.BasicLit:
+		code, err := strconv.ParseInt(status.Value, 10, 64)
+		if err != nil {
+			fmt.Printf("unknown status code '%s' at %s\n", status.Value, c.LineColumn(status.Pos()))
+			break
+		}
+		return int(code)
+
 	default:
 		// unknown status code
 		fmt.Printf("unknown status code %s\n", c.LineColumn(status.Pos()))
@@ -119,7 +126,7 @@ func (c *Context) GetSchemaByExpr(expr ast.Expr, contentType string) *spec.Schem
 	return NewSchemaBuilder(c, contentType).ParseExpr(expr)
 }
 
-func (c *Context) FindHeadCommentOf(pos token.Pos) *ast.CommentGroup {
+func (c *Context) GetHeadingCommentOf(pos token.Pos) *ast.CommentGroup {
 	if c.File() == nil {
 		return nil
 	}
@@ -128,6 +135,22 @@ func (c *Context) FindHeadCommentOf(pos token.Pos) *ast.CommentGroup {
 	for _, commentGroup := range c.File().Comments {
 		commentPos := c.Package().Fset.Position(commentGroup.End())
 		if commentPos.Line == position.Line-1 {
+			return commentGroup
+		}
+	}
+
+	return nil
+}
+
+func (c *Context) GetTrailingCommentOf(pos token.Pos) *ast.CommentGroup {
+	if c.File() == nil {
+		return nil
+	}
+
+	position := c.Package().Fset.Position(pos)
+	for _, commentGroup := range c.File().Comments {
+		commentPos := c.Package().Fset.Position(commentGroup.End())
+		if commentPos.Line == position.Line {
 			return commentGroup
 		}
 	}
