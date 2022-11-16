@@ -7,6 +7,9 @@
 本工具目前支持了 `gin` 框架的文档生成。如果你需要将本项目进行扩展或应用于未支持的框架，可以通过编写自定义插件的方式进行实现。
 
 ## 安装 Install
+
+> goproxy 可能会存在缓存，可以优先尝试指定版本号进行安装。
+> 
 ```shell
 go install github.com/gotomicro/ego-gen-api/cmd/egogen@latest
 ```
@@ -38,6 +41,9 @@ egogen --output docs --plugin gin --dir api
 
 ## 配置文件
 如下是完整的配置文件示例:
+
+> 不同版本的配置格式可能会发生一些调整，请确保安装的是最新的版本。另 goproxy 可能会存在缓存，可以优先尝试指定版本号进行安装。
+
 ```yaml
 output: docs # 输出文档的目录
 plugin: gin # 暂时只支持 gin
@@ -52,16 +58,25 @@ depends:
 properties:
   # 自定义请求参数绑定
   request:
-    - type: '*github.com/clickvisual/clickvisual/api/pkg/component/core.Context'
+    - type: '*server/pkg/handler.CustomContext'
       method: 'Bind'
       return:
-        data: 'args[0]' # 指定第一个函数参数为请求参数
+        data:
+          type: 'args[0]' # 指定第一个函数参数为请求参数
   # 自定义响应函数
   response:
-    - type: '*github.com/clickvisual/clickvisual/api/pkg/component/core.Context'
+    - type: '*server/pkg/handler.CustomContext'
       method: 'JSONOK'
       return:
-        contentType: 'application/json' # 指定响应的 content-type
-        data: 'args[0]' # 指定为第一个参数为接口响应参数
+        contentType: 'application/json'  # 指定响应的 content-type
+        data: # 这是一个嵌套的数据格式示例 '{"code":0,"msg":"hello",data:{...}}'
+          type: 'object'
+          properties:
+            code:
+              type: 'number'
+            msg:
+              type: 'string'
+            data:
+              type: 'args[0]' # 指定为第一个函数参数
         status: 200 # 指定为 200 状态码
 ```

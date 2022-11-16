@@ -11,11 +11,24 @@ properties:
     - type: '*server/pkg/handler.CustomContext'
       method: 'Bind'
       return:
-        data: 'args[0]'
+        data:
+          type: 'args[0]'
   response:
     - type: '*server/pkg/handler.CustomContext'
       method: 'JSONOK'
       return:
         contentType: 'application/json'
-        data: 'args[0]'
+        data:
+          type: 'object'
+          properties:
+            array:
+              type: 'array'
+              item:
+                type: 'number'
+            code:
+              type: 'number'
+            msg:
+              type: 'string'
+            data:
+              type: 'args[0]'
         status: 200

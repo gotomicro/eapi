@@ -13,9 +13,9 @@ type ResponseRule struct {
 }
 
 type ResponseReturn struct {
-	Status      string `yaml:"status"`
-	Data        string `yaml:"data"`
-	ContentType string `yaml:"contentType"`
+	Status      string      `yaml:"status"`
+	Data        *DataSchema `yaml:"data"`
+	ContentType string      `yaml:"contentType"`
 }
 
 type RequestRule struct {
@@ -25,6 +25,29 @@ type RequestRule struct {
 }
 
 type RequestReturn struct {
-	Data        string `yaml:"data"`
-	ContentType string `yaml:"contentType"`
+	Data        *DataSchema `yaml:"data"`
+	ContentType string      `yaml:"contentType"`
 }
+
+type DataType string
+
+const (
+	DataTypeString  DataType = "string"
+	DataTypeNumber  DataType = "number"
+	DataTypeInteger DataType = "integer"
+	DataTypeBoolean DataType = "boolean"
+	DataTypeArray   DataType = "array"
+	DataTypeFile    DataType = "file"
+	DataTypeObject  DataType = "object"
+)
+
+type DataSchema struct {
+	Type   DataType `json:"type"`
+	Format string   `json:"format"`
+
+	Properties DataProperties `json:"properties"`
+	// set when Type='array'
+	Item *DataSchema `json:"item"`
+}
+
+type DataProperties map[string]*DataSchema
