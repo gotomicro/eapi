@@ -350,7 +350,7 @@ func (a *Analyzer) lookupGoModFile(pkgPath string) (string, string) {
 		fileName := filepath.Join(pkgPath, "go.mod")
 		_, err := os.Stat(fileName)
 		if err == nil {
-			return filepath.Dir(pkgPath), fileName
+			return strings.TrimSuffix(pkgPath, string(filepath.Separator)), fileName
 		}
 		var suffix string
 		pkgPath, suffix = filepath.Split(pkgPath)
