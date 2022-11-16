@@ -1,6 +1,7 @@
 package gin
 
 import (
+	"fmt"
 	"go/ast"
 	"log"
 	"net/http"
@@ -210,7 +211,7 @@ func (p *HandlerParser) matchCustomResponseRule(node ast.Node) (matched bool) {
 					}
 				}
 
-				res.Schema = p.parseSchemaInCall(call, rule.Return.Data, contentType)
+				res.Schema = p.parseDataType(call, rule.Return.Data, contentType)
 				statusCode := p.parseStatusCodeInCall(call, rule.Return.Status)
 				p.spec.RespondsWith(statusCode, res)
 			},
@@ -243,7 +244,7 @@ func (p *HandlerParser) matchCustomRequestRule(node ast.Node) (matched bool) {
 					}
 
 				default:
-					schema := p.parseSchemaInCall(call, rule.Return.Data, contentType)
+					schema := p.parseDataType(call, rule.Return.Data, contentType)
 					if schema == nil {
 						return
 					}
@@ -296,25 +297,69 @@ func (p *HandlerParser) parseStatusCodeInCall(call *ast.CallExpr, statusCode str
 	return
 }
 
-func (p *HandlerParser) parseSchemaInCall(call *ast.CallExpr, code string, contentType string) (schema *spec.Schema) {
-	output := p.evaluate(call, code)
-	expr, ok := output.(ast.Expr)
-	if !ok {
-		return nil
+func (p *HandlerParser) parseDataType(call *ast.CallExpr, dataType *DataSchema, contentType string) (schema *spec.Schema) {
+	switch dataType.Type {
+	case DataTypeString:
+		return p.basicSchemaType("string")
+	case DataTypeNumber:
+		return p.basicSchemaType("number")
+	case DataTypeInteger:
+		return p.basicSchemaType("integer")
+	case DataTypeBoolean:
+		return p.basicSchemaType("boolean")
+	case DataTypeFile:
+		return p.basicSchemaType("file")
+	case DataTypeArray:
+		schema := p.basicSchemaType("array")
+		schema.Items = &spec.SchemaOrArray{}
+		schema.Items.Schema = p.parseDataType(call, dataType.Item, contentType)
+		return schema
+	case DataTypeObject:
+		schema = p.basicSchemaType("object")
+		schema.Properties = make(spec.SchemaProperties)
+		for name, dataSchema := range dataType.Properties {
+			s := p.parseDataType(call, dataSchema, contentType)
+			if s != nil {
+				schema.Properties[name] = *s
+			}
+		}
+		return schema
+	default: // fallback to js expression
+		output := p.evaluate(call, string(dataType.Type))
+		expr, ok := output.(ast.Expr)
+		if !ok {
+			fmt.Printf("invalid data type '%s' in configuration file\n", dataType.Type)
+			return nil
+		}
+		return p.ctx.GetSchemaByExpr(expr, contentType)
 	}
-	schema = p.ctx.GetSchemaByExpr(expr, contentType)
-
-	return
 }
 
-func (p *HandlerParser) parseParamsInCall(call *ast.CallExpr, code string, contentType string) (params []*spec.Parameter) {
-	output := p.evaluate(call, code)
-	expr, ok := output.(ast.Expr)
-	if !ok {
-		return nil
-	}
+func (p *HandlerParser) basicSchemaType(t string) *spec.Schema {
+	return &spec.Schema{SchemaProps: spec.SchemaProps{Type: []string{t}}}
+}
 
-	return analyzer.NewParamParser(p.ctx, contentType).Parse(expr)
+func (p *HandlerParser) parseParamsInCall(call *ast.CallExpr, dataType *DataSchema, contentType string) (params []*spec.Parameter) {
+	switch dataType.Type {
+	case DataTypeString, DataTypeNumber, DataTypeInteger, DataTypeBoolean, DataTypeFile, DataTypeArray:
+		param := &spec.Parameter{}
+		param.Type = string(dataType.Type)
+		param.Format = dataType.Format
+		return append(params, param)
+
+	case DataTypeObject: // unsupported in form data
+		fmt.Printf("object is unsupported in form data\n")
+		return
+
+	default:
+		output := p.evaluate(call, string(dataType.Type))
+		expr, ok := output.(ast.Expr)
+		if !ok {
+			fmt.Printf("invalid data type '%s' in configuration file\n", dataType.Type)
+			return nil
+		}
+		return analyzer.NewParamParser(p.ctx, contentType).Parse(expr)
+	}
 }
 
 func (p *HandlerParser) evaluate(call *ast.CallExpr, code string) interface{} {
