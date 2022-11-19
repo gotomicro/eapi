@@ -14,11 +14,11 @@ var (
 	Generator = &generators.Generator{
 		Type: "ts",
 		Items: []*generators.Item{
-			Template,
+			TypeGenerator,
 		},
 	}
 
-	Template = &generators.Item{
+	TypeGenerator = &generators.Item{
 		FileName: "types.ts",
 		Print: func(schema *spec.Swagger) string {
 			return f.Format(NewPrinter(schema).Print(), &f.Options{IndentWidth: 2})
