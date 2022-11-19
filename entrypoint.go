@@ -10,50 +10,74 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/urfave/cli/v2"
+
+	_ "github.com/gotomicro/ego-gen-api/generators/ts"
 )
+
+type Config struct {
+	Plugin  string
+	Dir     string
+	Output  string
+	Depends []string
+
+	Generators []*GeneratorConfig
+}
+
+type GeneratorConfig struct {
+	Name   string
+	Output string
+}
 
 type Entrypoint struct {
 	plugins []Plugin
 
-	plugin  string
-	dir     string
-	output  string
-	depends []string
+	cfg Config
 }
 
 func NewEntrypoint(plugins ...Plugin) *Entrypoint {
 	return &Entrypoint{plugins: plugins}
 }
 
+const usageText = `Generate Doc:
+	egogen --config config.yaml
+or
+	egogen --plugin gin --dir src/ --output docs/
+
+Generate Frontend Code:
+	egogen --config config.yaml gencode
+or
+	egogen --plugin gin --dir src/ --output docs/ gencode`
+
 func (e *Entrypoint) Run(args []string) {
 	app := cli.NewApp()
 	app.Name = "egen"
-	app.Usage = "Tool for generating open API documentation by static-analysis"
-	app.Description = `Tool for generating open API documentation by static-analysis`
+	app.Usage = `Tool for generating OpenAPI documentation and Frontend Code by static-analysis`
+	app.UsageText = usageText
+	app.Description = `Tool for generating OpenAPI documentation and Frontend Code by static-analysis`
 	app.Flags = append(app.Flags, &cli.StringFlag{
 		Name:        "plugin",
 		Aliases:     []string{"p", "plug"},
 		Usage:       "specify plugin name",
-		Destination: &e.plugin,
+		Destination: &e.cfg.Plugin,
 	})
 	app.Flags = append(app.Flags, &cli.StringFlag{
 		Name:        "dir",
 		Aliases:     []string{"d"},
 		Usage:       "directory of your project which contains go.mod file",
-		Destination: &e.dir,
+		Destination: &e.cfg.Dir,
 	})
 	app.Flags = append(app.Flags, &cli.StringFlag{
 		Name:        "output",
 		Aliases:     []string{"o"},
 		Usage:       "output directory of swagger.json",
-		Destination: &e.output,
+		Destination: &e.cfg.Output,
 	})
 	app.Flags = append(app.Flags, &cli.StringSliceFlag{
 		Name:    "depends",
 		Aliases: []string{"dep"},
 		Usage:   "depended module name",
 		Action: func(context *cli.Context, depends []string) error {
-			e.depends = depends
+			e.cfg.Depends = depends
 			return nil
 		},
 	})
@@ -82,27 +106,19 @@ func (e *Entrypoint) before(c *cli.Context) error {
 			return err
 		}
 
-		if e.plugin == "" {
-			e.plugin = viper.GetString("plugin")
-		}
-		if e.dir == "" {
-			e.dir = viper.GetString("dir")
-		}
-		if e.output == "" {
-			e.output = viper.GetString("output")
-		}
-		if len(e.depends) == 0 {
-			e.depends = viper.GetStringSlice("depends")
+		err = viper.Unmarshal(&e.cfg)
+		if err != nil {
+			return err
 		}
 	}
 
-	if e.plugin == "" {
+	if e.cfg.Plugin == "" {
 		return fmt.Errorf("'plugin' is not set")
 	}
-	if e.dir == "" {
+	if e.cfg.Dir == "" {
 		return fmt.Errorf("'dir' is not set")
 	}
-	if e.output == "" {
+	if e.cfg.Output == "" {
 		return fmt.Errorf("'output' is not set")
 	}
 
@@ -118,37 +134,49 @@ func (e *Entrypoint) run(c *cli.Context) error {
 	var plugin Plugin
 
 	for _, p := range e.plugins {
-		if p.Name() == e.plugin {
+		if p.Name() == e.cfg.Plugin {
 			plugin = p
 			break
 		}
 	}
 	if plugin == nil {
-		return fmt.Errorf("plugin %s not exists", e.plugin)
+		return fmt.Errorf("plugin %s not exists", e.cfg.Plugin)
 	}
 
-	stat, err := os.Stat(e.dir)
+	stat, err := os.Stat(e.cfg.Dir)
 	if err != nil {
 		return err
 	}
 	if !stat.IsDir() {
-		return fmt.Errorf("%s is not a directory", e.dir)
+		return fmt.Errorf("%s is not a directory", e.cfg.Dir)
 	}
 
-	err = os.MkdirAll(e.output, os.ModePerm)
+	err = os.MkdirAll(e.cfg.Output, os.ModePerm)
 	if err != nil {
 		return err
 	}
 
-	a := NewAnalyzer().Plugin(plugin).Depends(e.depends...)
-	doc := a.Process(e.dir).Doc()
-	docContent, err := json.MarshalIndent(doc, "", "    ")
-	if err != nil {
-		return err
+	a := NewAnalyzer().Plugin(plugin).Depends(e.cfg.Depends...)
+	doc := a.Process(e.cfg.Dir).Doc()
+
+	// write documentation
+	{
+		docContent, err := json.MarshalIndent(doc, "", "    ")
+		if err != nil {
+			return err
+		}
+		err = ioutil.WriteFile(filepath.Join(e.cfg.Output, "swagger.json"), docContent, fs.ModePerm)
+		if err != nil {
+			return err
+		}
 	}
-	err = ioutil.WriteFile(filepath.Join(e.output, "swagger.json"), docContent, fs.ModePerm)
-	if err != nil {
-		return err
+
+	// execute templates
+	for _, item := range e.cfg.Generators {
+		err = newGeneratorExecutor(item, doc).execute()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
