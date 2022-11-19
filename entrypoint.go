@@ -171,7 +171,7 @@ func (e *Entrypoint) run(c *cli.Context) error {
 		}
 	}
 
-	// execute templates
+	// execute generators
 	for _, item := range e.cfg.Generators {
 		err = newGeneratorExecutor(item, doc).execute()
 		if err != nil {
