@@ -79,4 +79,9 @@ properties:
             data:
               type: 'args[0]' # 指定为第一个函数参数
         status: 200 # 指定为 200 状态码
+
+# 可选. 配置代码生成器
+generators:
+  - name: ts # 生成器名称. 暂时只支持 "ts" (用于生成 typescript 类型)
+    output: ./src/types # 输出文件的目录. 执行完成之后会在该目录下生成TS类型文件
 ```

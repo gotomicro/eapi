@@ -1,6 +1,6 @@
-output: docs
 plugin: gin
 dir: '.'
+output: docs # output directory of swagger.json
 
 depends:
   - github.com/gin-gonic/gin
@@ -21,10 +21,6 @@ properties:
         data:
           type: 'object'
           properties:
-            array:
-              type: 'array'
-              item:
-                type: 'number'
             code:
               type: 'number'
             msg:
@@ -32,3 +28,7 @@ properties:
             data:
               type: 'args[0]'
         status: 200
+
+generators:
+  - name: ts # generator name
+    output: ./src/types # output directory
