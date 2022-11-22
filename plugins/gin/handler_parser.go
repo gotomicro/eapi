@@ -326,6 +326,9 @@ func (p *HandlerParser) parseDataType(call *ast.CallExpr, dataType *DataSchema, 
 		return schema
 	default: // fallback to js expression
 		output := p.evaluate(call, string(dataType.Type))
+		if output == nil {
+			return nil
+		}
 		expr, ok := output.(ast.Expr)
 		if !ok {
 			fmt.Printf("invalid data type '%s' in configuration file\n", dataType.Type)
