@@ -52,6 +52,8 @@ func (p *Parser) parse() Annotation {
 		return p.description()
 	case "@summary":
 		return p.summary()
+	case "@id":
+		return p.id()
 	default: // unresolved plugin
 		return p.unresolved(tag)
 	}
@@ -152,6 +154,15 @@ func (p *Parser) description() Annotation {
 
 func (p *Parser) summary() Annotation {
 	res := &SummaryAnnotation{}
+	for p.hasMore() {
+		token := p.consumeAny()
+		res.Text += token.Image
+	}
+	return res
+}
+
+func (p *Parser) id() Annotation {
+	res := &IdAnnotation{}
 	for p.hasMore() {
 		token := p.consumeAny()
 		res.Text += token.Image

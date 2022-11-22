@@ -14,7 +14,7 @@
                 "tags": [
                     "Shop"
                 ],
-                "operationId": "POST./api/goods",
+                "operationId": "GoodsCreate",
                 "parameters": [
                     {
                         "name": "payload",
@@ -46,7 +46,7 @@
                 "consumes": [
                     "multipart/form-data"
                 ],
-                "operationId": "DELETE./api/goods/{guid}",
+                "operationId": "GoodsDelete",
                 "parameters": [
                     {
                         "type": "string",
@@ -62,7 +62,7 @@
                 "produces": [
                     "application/xml"
                 ],
-                "operationId": "POST./api/goods/{guid}/down",
+                "operationId": "GoodsDown",
                 "parameters": [
                     {
                         "description": "商品 GUID",
@@ -103,7 +103,7 @@
                 "produces": [
                     "application/json"
                 ],
-                "operationId": "GET./api/v2/goods/{guid}",
+                "operationId": "GoodsInfo",
                 "parameters": [
                     {
                         "name": "guid",
@@ -125,7 +125,7 @@
                 "produces": [
                     "application/json"
                 ],
-                "operationId": "GET./wrapped-handler",
+                "operationId": "WrappedHandler",
                 "parameters": [
                     {
                         "name": "hello",

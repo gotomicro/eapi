@@ -99,6 +99,16 @@ func (c *Comment) Summary() string {
 	return ""
 }
 
+func (c *Comment) ID() string {
+	for _, annot := range c.Annotations {
+		id, ok := annot.(*annotation.IdAnnotation)
+		if ok {
+			return strings.TrimSpace(id.Text)
+		}
+	}
+	return ""
+}
+
 func ParseComment(commentGroup *ast.CommentGroup) *Comment {
 	if commentGroup == nil {
 		return nil

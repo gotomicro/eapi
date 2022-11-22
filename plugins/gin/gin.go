@@ -161,6 +161,9 @@ func (e *Plugin) parseAPI(ctx *analyzer.Context, callExpr *ast.CallExpr) (api *a
 	method := selExpr.Sel.Name
 	api = analyzer.NewAPI(method, fullPath)
 	api.Spec.LoadFromFuncDecl(handlerFnDef.Decl)
+	if api.Spec.ID == "" {
+		api.Spec.ID = handlerFnDef.Pkg().Name + "." + handlerFnDef.Decl.Name.Name
+	}
 	NewHandlerParser(
 		ctx.NewEnv().WithPackage(handlerFnDef.Pkg()).WithFile(handlerFnDef.File()),
 		api,

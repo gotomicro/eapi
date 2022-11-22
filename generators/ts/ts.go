@@ -32,6 +32,10 @@ func init() {
 
 type Printer struct {
 	schema *spec.Swagger
+
+	ReferencedTypes []string
+	// 类型的字段是否在一行
+	TypeFieldsInLine bool
 }
 
 func NewPrinter(schema *spec.Swagger) *Printer {
@@ -49,11 +53,11 @@ func (p *Printer) Print() f.Doc {
 func (p *Printer) definition(definition spec.Schema) f.Doc {
 	return f.Group(
 		f.Content("export type "+definition.Title+" = "),
-		p.printType(definition),
+		p.PrintType(definition),
 	)
 }
 
-func (p *Printer) printType(definition spec.Schema) f.Doc {
+func (p *Printer) PrintType(definition spec.Schema) f.Doc {
 	var t = "object"
 	if len(definition.Type) > 0 {
 		t = definition.Type[0]
@@ -64,19 +68,21 @@ func (p *Printer) printType(definition spec.Schema) f.Doc {
 		if len(tokens) != 2 || tokens[0] != "definitions" {
 			return f.Content("unknown")
 		}
-		return f.Content(p.schema.Definitions[tokens[1]].Title)
+		typeName := p.schema.Definitions[tokens[1]].Title
+		p.ReferencedTypes = append(p.ReferencedTypes, typeName)
+		return f.Content(typeName)
 	}
 
 	switch t {
 	case "object":
 		return p.printInterface(definition)
 	case "array":
-		schema := definition.Items.Schema
-		if schema == nil {
+		if definition.Items == nil || definition.Items.Schema == nil {
 			return f.Content("any[]")
 		}
+		schema := definition.Items.Schema
 		return f.Group(
-			p.printType(*schema),
+			p.PrintType(*schema),
 			f.Content("[]"),
 		)
 	default:
@@ -89,6 +95,14 @@ func (p *Printer) printInterface(definition spec.Schema) f.Doc {
 	for name, schema := range definition.Properties {
 		required := lo.Contains(definition.Required, name)
 		fields = append(fields, p.property(name, schema, required))
+	}
+
+	if p.TypeFieldsInLine {
+		return f.Group(
+			f.Content("{ "),
+			f.Indent(f.Join(f.Content(" "), fields...)),
+			f.Content(" }"),
+		)
 	}
 
 	return f.Group(
@@ -109,7 +123,7 @@ func (p *Printer) property(name string, schema spec.Schema, required bool) f.Doc
 
 	return f.Group(
 		f.Content(content),
-		p.printType(schema),
+		p.PrintType(schema),
 		f.Content(";"),
 	)
 }

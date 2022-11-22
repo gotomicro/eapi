@@ -12,6 +12,7 @@ const (
 	Tag
 	Description
 	Summary
+	ID
 )
 
 type Annotation interface {
@@ -82,5 +83,13 @@ type SummaryAnnotation struct {
 }
 
 func (a *SummaryAnnotation) Type() Type {
-	return Description
+	return Summary
+}
+
+type IdAnnotation struct {
+	Text string
+}
+
+func (a *IdAnnotation) Type() Type {
+	return ID
 }
