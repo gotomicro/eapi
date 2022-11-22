@@ -85,3 +85,32 @@ generators:
   - name: ts # 生成器名称. 暂时只支持 "ts" (用于生成 typescript 类型)
     output: ./src/types # 输出文件的目录. 执行完成之后会在该目录下生成TS类型文件
 ```
+
+## 代码生成
+如果需要使用代码生成功能，需要在配置文件内添加如下配置:
+```yaml
+# 可选
+generators:
+  - name: ts # 生成器名称. 暂时支持 "ts" | "umi" 
+    output: ./src/types # 输出文件的目录. 执行完成之后会在该目录下生成TS类型文件
+```
+
+### 代码生成器
+1. umi 
+   
+   umi 代码生成器用于生成适用于使用 `umi.js` 框架的前端接口请求代码及 TypeScript 类型。
+   示例配置：
+   ```yaml
+   generators:
+     - name: umi
+       output: ./src/requests # 输出文件的目录
+   ```
+2. ts
+
+   ts 代码生成器用于生成 TypeScript 类型代码。
+   示例配置：
+   ```yaml
+   generators:
+     - name: ts
+       output: ./src/types # 输出文件的目录
+   ```

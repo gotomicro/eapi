@@ -31,4 +31,6 @@ properties:
 
 generators:
   - name: ts # generator name
-    output: ./src/types # output directory
+    output: ./frontend/src/types # output directory
+  - name: umi # generator name
+    output: ./frontend/src/requests # output directory

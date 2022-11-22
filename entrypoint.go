@@ -12,6 +12,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	_ "github.com/gotomicro/ego-gen-api/generators/ts"
+	_ "github.com/gotomicro/ego-gen-api/generators/umi"
 )
 
 type Config struct {
