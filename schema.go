@@ -269,40 +269,30 @@ func (s *SchemaBuilder) parseCommentOfField(field *ast.Field) *Comment {
 }
 
 func (s *SchemaBuilder) parseCallExpr(expr *ast.CallExpr) *openapi3.SchemaRef {
-	return s.parseFunReturnVal(expr.Fun)
-}
-
-func (s *SchemaBuilder) parseFunReturnVal(fun ast.Expr) *openapi3.SchemaRef {
-	switch fun := fun.(type) {
-	case *ast.SelectorExpr:
-		return s.parseFunReturnVal(fun.Sel)
-	case *ast.Ident:
-		t := s.ctx.Package().TypesInfo.TypeOf(fun)
-		switch t := t.(type) {
-		case *types.Signature:
-			callInfo := s.ctx.parseCallInfoByIdent(fun)
-			if callInfo == nil {
-				return nil
-			}
-			def := s.ctx.GetDefinition(callInfo.Type, callInfo.Method)
-			if def == nil {
-				fmt.Printf("unknown function %s.%s at %s\n", callInfo.Type, callInfo.Method, s.ctx.LineColumn(fun.Pos()))
-				return nil
-			}
-			fnDef, ok := def.(*FuncDefinition)
-			if !ok {
-				return nil
-			}
-			if fnDef.Decl.Type.Results.NumFields() == 0 {
-				return nil
-			}
-			ret := fnDef.Decl.Type.Results.List[0]
-			return newSchemaBuilderWithStack(s.ctx.WithPackage(fnDef.pkg).WithFile(fnDef.file), s.contentType, append(s.stack, fnDef.Key())).
-				ParseExpr(ret.Type)
-		default:
-			return s.parseType(t)
-		}
+	typeName, method, err := s.ctx.GetCallInfo(expr)
+	if err != nil {
+		return nil
+	}
+	def := s.ctx.GetDefinition(typeName, method)
+	if def == nil {
+		fmt.Printf("unknown function %s.%s at %s\n", typeName, method, s.ctx.LineColumn(expr.Pos()))
+		return nil
 	}
 
-	return nil
+	switch def := def.(type) {
+	case *FuncDefinition:
+		if def.Decl.Type.Results.NumFields() == 0 {
+			return nil
+		}
+		ret := def.Decl.Type.Results.List[0]
+		return newSchemaBuilderWithStack(s.ctx.WithPackage(def.pkg).WithFile(def.file), s.contentType, append(s.stack, def.Key())).
+			ParseExpr(ret.Type)
+
+	case *TypeDefinition:
+		return newSchemaBuilderWithStack(s.ctx.WithPackage(def.pkg).WithFile(def.file), s.contentType, append(s.stack, def.Key())).
+			FromTypeSpec(def.Spec)
+
+	default:
+		return nil
+	}
 }
