@@ -61,13 +61,18 @@ func (e *Plugin) assignStmt(ctx *analyzer.Context, node ast.Node) {
 		return
 	}
 
+	callRule := analyzer.NewCallRule().
+		WithRule(ginRouterGroupTypeName, routerGroupMethodName).
+		WithRule(ginIRouterTypeName, routerGroupMethodName).
+		WithRule(ginIRoutesTypeName, routerGroupMethodName)
+	for _, router := range e.config.RouterNames {
+		callRule = callRule.WithRule(router, routerGroupMethodName)
+	}
+
 	rh := assign.Rhs[0]
 	ctx.MatchCall(
 		rh,
-		analyzer.NewCallRule().
-			WithRule(ginRouterGroupTypeName, routerGroupMethodName).
-			WithRule(ginIRouterTypeName, routerGroupMethodName).
-			WithRule(ginIRoutesTypeName, routerGroupMethodName),
+		callRule,
 		func(callExpr *ast.CallExpr, typeName, fnName string) {
 			if len(callExpr.Args) <= 0 {
 				return
@@ -113,12 +118,21 @@ func (e *Plugin) assignStmt(ctx *analyzer.Context, node ast.Node) {
 }
 
 func (e *Plugin) callExpr(ctx *analyzer.Context, callExpr *ast.CallExpr) {
+	callRule := analyzer.NewCallRule().WithRule(ginRouterGroupTypeName, routeMethods...).
+		WithRule(ginIRouterTypeName, routeMethods...).
+		WithRule(ginIRoutesTypeName, routeMethods...)
+	for _, router := range e.config.RouterNames {
+		callRule = callRule.WithRule(router, routeMethods...)
+	}
+
 	ctx.MatchCall(
 		callExpr,
-		analyzer.NewCallRule().WithRule(ginRouterGroupTypeName, routeMethods...).
-			WithRule(ginIRouterTypeName, routeMethods...).
-			WithRule(ginIRoutesTypeName, routeMethods...),
+		callRule,
 		func(call *ast.CallExpr, typeName, fnName string) {
+			comment := analyzer.ParseComment(ctx.GetHeadingCommentOf(call.Lparen))
+			if comment.Ignore() {
+				return
+			}
 			api := e.parseAPI(ctx, callExpr)
 			if api == nil {
 				return
@@ -161,8 +175,8 @@ func (e *Plugin) parseAPI(ctx *analyzer.Context, callExpr *ast.CallExpr) (api *a
 	method := selExpr.Sel.Name
 	api = analyzer.NewAPI(method, fullPath)
 	api.Spec.LoadFromFuncDecl(handlerFnDef.Decl)
-	if api.Spec.ID == "" {
-		api.Spec.ID = handlerFnDef.Pkg().Name + "." + handlerFnDef.Decl.Name.Name
+	if api.Spec.OperationID == "" {
+		api.Spec.OperationID = handlerFnDef.Pkg().Name + "." + handlerFnDef.Decl.Name.Name
 	}
 	NewHandlerParser(
 		ctx.NewEnv().WithPackage(handlerFnDef.Pkg()).WithFile(handlerFnDef.File()),

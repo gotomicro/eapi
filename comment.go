@@ -4,10 +4,9 @@ import (
 	"go/ast"
 	"strings"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gotomicro/ego-gen-api/annotation"
 	"github.com/samber/lo"
-
-	"github.com/go-openapi/spec"
 )
 
 type Comment struct {
@@ -21,6 +20,10 @@ func (c *Comment) TrimPrefix(prefix string) string {
 }
 
 func (c *Comment) Required() bool {
+	if c == nil {
+		return false
+	}
+
 	for _, a := range c.Annotations {
 		if a.Type() == annotation.Required {
 			return true
@@ -38,12 +41,20 @@ func (c *Comment) Nullable() bool {
 	return false
 }
 
-func (c *Comment) transformIntoSchema(schema *spec.Schema) {
-	if schema == nil {
+func (c *Comment) ApplyToSchema(schema *openapi3.SchemaRef) {
+	if c == nil || schema == nil {
 		return
 	}
-	schema.Description = c.Text
-	schema.Nullable = c.Nullable()
+	if schema.Ref != "" {
+		schema.Description = c.Text
+		return
+	}
+
+	value := schema.Value
+	if value == nil {
+		return
+	}
+	value.Description = c.Text
 }
 
 func (c *Comment) Consumes() []string {
@@ -73,13 +84,16 @@ func (c *Comment) Tags() []string {
 	for _, annot := range c.Annotations {
 		tags, ok := annot.(*annotation.TagAnnotation)
 		if ok {
-			res = append(res, tags.Tags...)
+			res = append(res, tags.Tag)
 		}
 	}
 	return res
 }
 
 func (c *Comment) Ignore() bool {
+	if c == nil {
+		return false
+	}
 	for _, annot := range c.Annotations {
 		_, ok := annot.(*annotation.IgnoreAnnotation)
 		if ok {
@@ -128,6 +142,6 @@ func ParseComment(commentGroup *ast.CommentGroup) *Comment {
 			lines = append(lines, strings.TrimSpace(line))
 		}
 	}
-	c.Text = strings.Join(lines, "\n")
+	c.Text = strings.Join(lines, "\n\n")
 	return c
 }

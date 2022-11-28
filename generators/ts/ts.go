@@ -3,9 +3,10 @@ package ts
 import (
 	_ "embed"
 
-	"github.com/go-openapi/spec"
+	"github.com/getkin/kin-openapi/openapi3"
 	f "github.com/gotomicro/ego-gen-api/formatter"
 	"github.com/gotomicro/ego-gen-api/generators"
+	"github.com/gotomicro/ego-gen-api/spec"
 	"github.com/samber/lo"
 )
 
@@ -20,7 +21,7 @@ var (
 
 	TypeGenerator = &generators.Item{
 		FileName: "types.ts",
-		Print: func(schema *spec.Swagger) string {
+		Print: func(schema *openapi3.T) string {
 			return f.Format(NewPrinter(schema).Print(), &f.Options{IndentWidth: 2})
 		},
 	}
@@ -31,58 +32,54 @@ func init() {
 }
 
 type Printer struct {
-	schema *spec.Swagger
+	schema *openapi3.T
 
 	ReferencedTypes []string
 	// 类型的字段是否在一行
 	TypeFieldsInLine bool
 }
 
-func NewPrinter(schema *spec.Swagger) *Printer {
+func NewPrinter(schema *openapi3.T) *Printer {
 	return &Printer{schema: schema}
 }
 
 func (p *Printer) Print() f.Doc {
 	var docs []f.Doc
-	for _, definition := range p.schema.Definitions {
-		docs = append(docs, p.definition(definition))
+	for _, schema := range p.schema.Components.Schemas {
+		docs = append(docs, p.definition(schema))
 	}
 	return f.Join(f.Group(f.LineBreak(), f.LineBreak()), docs...)
 }
 
-func (p *Printer) definition(definition spec.Schema) f.Doc {
+func (p *Printer) definition(definition *openapi3.SchemaRef) f.Doc {
 	return f.Group(
-		f.Content("export type "+definition.Title+" = "),
+		f.Content("export type "+definition.Value.Title+" = "),
 		p.PrintType(definition),
 	)
 }
 
-func (p *Printer) PrintType(definition spec.Schema) f.Doc {
-	var t = "object"
-	if len(definition.Type) > 0 {
-		t = definition.Type[0]
-	}
-
-	if !definition.Ref.GetPointer().IsEmpty() {
-		tokens := definition.Ref.GetPointer().DecodedTokens()
-		if len(tokens) != 2 || tokens[0] != "definitions" {
+func (p *Printer) PrintType(definition *openapi3.SchemaRef) f.Doc {
+	if definition.Ref != "" {
+		referencedType := spec.Unref(p.schema, definition)
+		if referencedType == nil {
 			return f.Content("unknown")
 		}
-		typeName := p.schema.Definitions[tokens[1]].Title
+		typeName := referencedType.Value.Title
 		p.ReferencedTypes = append(p.ReferencedTypes, typeName)
 		return f.Content(typeName)
 	}
 
+	var t = definition.Value.Type
 	switch t {
 	case "object":
 		return p.printInterface(definition)
 	case "array":
-		if definition.Items == nil || definition.Items.Schema == nil {
+		if definition.Value.Items == nil {
 			return f.Content("any[]")
 		}
-		schema := definition.Items.Schema
+		schema := definition.Value.Items
 		return f.Group(
-			p.PrintType(*schema),
+			p.PrintType(schema),
 			f.Content("[]"),
 		)
 	default:
@@ -90,10 +87,10 @@ func (p *Printer) PrintType(definition spec.Schema) f.Doc {
 	}
 }
 
-func (p *Printer) printInterface(definition spec.Schema) f.Doc {
+func (p *Printer) printInterface(definition *openapi3.SchemaRef) f.Doc {
 	var fields []f.Doc
-	for name, schema := range definition.Properties {
-		required := lo.Contains(definition.Required, name)
+	for name, schema := range definition.Value.Properties {
+		required := lo.Contains(definition.Value.Required, name)
 		fields = append(fields, p.property(name, schema, required))
 	}
 
@@ -114,7 +111,7 @@ func (p *Printer) printInterface(definition spec.Schema) f.Doc {
 	)
 }
 
-func (p *Printer) property(name string, schema spec.Schema, required bool) f.Doc {
+func (p *Printer) property(name string, schema *openapi3.SchemaRef, required bool) f.Doc {
 	var content = name
 	if !required {
 		content += "?"

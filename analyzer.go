@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/go-openapi/spec"
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/samber/lo"
 	"golang.org/x/mod/modfile"
 	"golang.org/x/tools/go/ast/inspector"
@@ -23,7 +23,7 @@ type Analyzer struct {
 	definitions Definitions
 	depends     []string
 
-	doc      *spec.Swagger
+	doc      *openapi3.T
 	packages []*packages.Package
 }
 
@@ -35,13 +35,14 @@ func NewAnalyzer() *Analyzer {
 		definitions: make(Definitions),
 	}
 
-	doc := &spec.Swagger{}
-	doc.Info = &spec.Info{}
-	doc.Swagger = "2.0"
-	doc.Definitions = make(spec.Definitions)
-	paths := spec.Paths{}
-	paths.Paths = make(map[string]spec.PathItem)
-	doc.Paths = &paths
+	components := openapi3.NewComponents()
+	components.Schemas = make(openapi3.Schemas)
+	doc := &openapi3.T{
+		OpenAPI:    "3.0.3",
+		Info:       &openapi3.Info{},
+		Components: components,
+		Paths:      make(openapi3.Paths),
+	}
 	a.doc = doc
 
 	return a
@@ -103,7 +104,7 @@ func (a *Analyzer) APIs() *APIs {
 	return &a.routes
 }
 
-func (a *Analyzer) Doc() *spec.Swagger {
+func (a *Analyzer) Doc() *openapi3.T {
 	return a.doc
 }
 
@@ -187,6 +188,11 @@ func (a *Analyzer) processPkg(packagePath string) {
 }
 
 func (a *Analyzer) processFile(ctx *Context, file *ast.File, pkg *packages.Package) {
+	comment := ParseComment(file.Doc)
+	if comment.Ignore() {
+		return
+	}
+
 	ast.Inspect(file, func(node ast.Node) bool {
 		switch node := node.(type) {
 		case *ast.FuncDecl:
@@ -203,6 +209,11 @@ func (a *Analyzer) processFile(ctx *Context, file *ast.File, pkg *packages.Packa
 }
 
 func (a *Analyzer) funDecl(ctx *Context, node *ast.FuncDecl, file *ast.File, pkg *packages.Package) {
+	comment := ParseComment(node.Doc)
+	if comment.Ignore() {
+		return
+	}
+
 	ast.Inspect(node, func(node ast.Node) bool {
 		switch node := node.(type) {
 		case *ast.BlockStmt:
@@ -252,6 +263,11 @@ func (a *Analyzer) loadDefinitionsFromPkg(pkg *packages.Package, moduleDir strin
 }
 
 func (a *Analyzer) blockStmt(ctx *Context, node *ast.BlockStmt, file *ast.File, pkg *packages.Package) {
+	comment := ParseComment(a.context().WithPackage(pkg).WithFile(file).GetHeadingCommentOf(node.Lbrace))
+	if comment.Ignore() {
+		return
+	}
+
 	a.analyze(ctx, node)
 
 	for _, node := range node.List {
@@ -370,8 +386,11 @@ func (a *Analyzer) AddRoutes(items ...*API) {
 	a.routes.add(items...)
 
 	for _, item := range items {
-		path := a.doc.Paths.Paths[item.FullPath]
-		item.applyToPathItem(&path)
-		a.doc.Paths.Paths[item.FullPath] = path
+		path := a.doc.Paths[item.FullPath]
+		if path == nil {
+			path = &openapi3.PathItem{}
+		}
+		item.applyToPathItem(path)
+		a.doc.Paths[item.FullPath] = path
 	}
 }

@@ -136,10 +136,12 @@ func (p *Parser) unresolved(tag *Token) Annotation {
 
 func (p *Parser) tags() Annotation {
 	res := &TagAnnotation{}
+	var tag []string
 	for p.hasMore() {
 		ident := p.consume(tokenIdentifier)
-		res.Tags = append(res.Tags, ident.Image)
+		tag = append(tag, ident.Image)
 	}
+	res.Tag = strings.Join(tag, " ")
 	return res
 }
 

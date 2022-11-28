@@ -1,8 +1,9 @@
 package gin
 
 type Config struct {
-	Request  []RequestRule  `yaml:"request"`
-	Response []ResponseRule `yaml:"response"`
+	RouterNames []string       `yaml:"routerNames"`
+	Request     []RequestRule  `yaml:"request"`
+	Response    []ResponseRule `yaml:"response"`
 }
 
 type ResponseRule struct {

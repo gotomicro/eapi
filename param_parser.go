@@ -4,7 +4,7 @@ import (
 	"go/ast"
 	"go/types"
 
-	"github.com/go-openapi/spec"
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gotomicro/ego-gen-api/tag"
 )
 
@@ -17,8 +17,8 @@ func NewParamParser(ctx *Context, contentType string) *ParamParser {
 	return &ParamParser{ctx: ctx, contentType: contentType}
 }
 
-// Parse 根据 ast.Expr 解析出 []*spec.Parameter
-func (p *ParamParser) Parse(expr ast.Expr) (params []*spec.Parameter) {
+// Parse 根据 ast.Expr 解析出 []*openapi3.Parameter
+func (p *ParamParser) Parse(expr ast.Expr) (params []*openapi3.Parameter) {
 	switch expr := expr.(type) {
 	case *ast.Ident:
 		return p.parseIdent(expr)
@@ -32,7 +32,7 @@ func (p *ParamParser) Parse(expr ast.Expr) (params []*spec.Parameter) {
 	return
 }
 
-func (p *ParamParser) parseIdent(expr *ast.Ident) (params []*spec.Parameter) {
+func (p *ParamParser) parseIdent(expr *ast.Ident) (params []*openapi3.Parameter) {
 	t := p.ctx.Package().TypesInfo.TypeOf(expr)
 	if t == nil {
 		return
@@ -41,7 +41,7 @@ func (p *ParamParser) parseIdent(expr *ast.Ident) (params []*spec.Parameter) {
 	return p.parseType(t)
 }
 
-func (p *ParamParser) parseType(t types.Type) (params []*spec.Parameter) {
+func (p *ParamParser) parseType(t types.Type) (params []*openapi3.Parameter) {
 	def := p.ctx.ParseType(t)
 	typeDef, ok := def.(*TypeDefinition)
 	if !ok {
@@ -59,7 +59,7 @@ func (p *ParamParser) parseType(t types.Type) (params []*spec.Parameter) {
 	return
 }
 
-func (p *ParamParser) parseStructType(structType *ast.StructType) (params []*spec.Parameter) {
+func (p *ParamParser) parseStructType(structType *ast.StructType) (params []*openapi3.Parameter) {
 	for _, field := range structType.Fields.List {
 		for _, name := range field.Names {
 			param := p.parseField(name, field)
@@ -69,7 +69,7 @@ func (p *ParamParser) parseStructType(structType *ast.StructType) (params []*spe
 	return
 }
 
-func (p *ParamParser) parseField(name *ast.Ident, field *ast.Field) (param *spec.Parameter) {
+func (p *ParamParser) parseField(name *ast.Ident, field *ast.Field) (param *openapi3.Parameter) {
 	param = p.typeOf(field.Type)
 
 	tagValues := tag.Parse(field.Tag.Value)
@@ -83,41 +83,40 @@ func (p *ParamParser) parseField(name *ast.Ident, field *ast.Field) (param *spec
 	comments := ParseComment(field.Doc)
 	if comments != nil {
 		param.Required = comments.Required()
-		param.Nullable = comments.Nullable()
 		param.Description = comments.Text
 	}
 
 	return
 }
 
-func (p *ParamParser) typeOf(expr ast.Expr) *spec.Parameter {
+func (p *ParamParser) typeOf(expr ast.Expr) *openapi3.Parameter {
 	switch t := expr.(type) {
 	case *ast.Ident:
-		param := &spec.Parameter{}
-		param.Type, param.Format = p.typeOfIdent(t)
+		param := &openapi3.Parameter{}
+		paramSchema := &openapi3.Schema{}
+		paramSchema.Type, paramSchema.Format = p.typeOfIdent(t)
+		param.WithSchema(paramSchema)
 		return param
 
 	case *ast.SelectorExpr:
 		return p.typeOf(t.Sel)
 
 	case *ast.ArrayType:
-		param := &spec.Parameter{}
-		param.Type = "array"
-		param.Items = spec.NewItems()
-		param.Items.SimpleSchema = p.typeOf(t.Elt).SimpleSchema
+		param := &openapi3.Parameter{}
+		paramSchema := openapi3.NewArraySchema()
+		paramSchema.WithItems(p.typeOf(t.Elt).Schema.Value)
 		return param
 
 	case *ast.SliceExpr:
-		param := &spec.Parameter{}
-		param.Type = "array"
-		param.Items = spec.NewItems()
-		param.Items.SimpleSchema = p.typeOf(t.X).SimpleSchema
+		param := &openapi3.Parameter{}
+		paramSchema := openapi3.NewArraySchema()
+		paramSchema.WithItems(p.typeOf(t.X).Schema.Value)
 		return param
 	}
 
 	// fallback
-	param := &spec.Parameter{}
-	param.Type = "string"
+	param := &openapi3.Parameter{}
+	param.WithSchema(openapi3.NewStringSchema())
 	return param
 }
 
@@ -164,15 +163,6 @@ func (p *ParamParser) basicType(name string) string {
 	}
 
 	return ""
-}
-
-// type:
-//		The value MUST be one of "string", "number", "integer", "boolean", "array" or "file".
-//		If type is "file", the consumes MUST be either "multipart/form-data", " application/x-www-form-urlencoded" or
-//		both and the parameter MUST be in "formData".
-func (p *ParamParser) param(name, paramType string, repeated bool) {
-	param := &spec.Parameter{}
-	param.Type = ""
 }
 
 func (p *ParamParser) parseTypeOfType(t types.Type) (string, string) {
