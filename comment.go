@@ -4,8 +4,8 @@ import (
 	"go/ast"
 	"strings"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gotomicro/ego-gen-api/annotation"
+	"github.com/gotomicro/ego-gen-api/spec"
 	"github.com/samber/lo"
 )
 
@@ -41,7 +41,7 @@ func (c *Comment) Nullable() bool {
 	return false
 }
 
-func (c *Comment) ApplyToSchema(schema *openapi3.SchemaRef) {
+func (c *Comment) ApplyToSchema(schema *spec.SchemaRef) {
 	if c == nil || schema == nil {
 		return
 	}

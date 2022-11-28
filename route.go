@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/gotomicro/ego-gen-api/spec"
 )
 
 type RouteGroup struct {
@@ -26,7 +26,7 @@ func NewAPI(method string, fullPath string) *API {
 	}
 }
 
-func (r *API) applyToPathItem(pathItem *openapi3.PathItem) {
+func (r *API) applyToPathItem(pathItem *spec.PathItem) {
 	switch r.Method {
 	case http.MethodGet:
 		pathItem.Get = r.Operation()
@@ -47,7 +47,7 @@ func (r *API) applyToPathItem(pathItem *openapi3.PathItem) {
 	}
 }
 
-func (r *API) Operation() *openapi3.Operation {
+func (r *API) Operation() *spec.Operation {
 	return r.Spec.Operation
 }
 
@@ -59,12 +59,12 @@ func (r *APIs) add(items ...*API) {
 
 type APISpec struct {
 	Consumes []string
-	*openapi3.Operation
+	*spec.Operation
 }
 
 func NewAPISpec(id string) *APISpec {
-	op := openapi3.NewOperation()
-	op.Responses = openapi3.NewResponses()
+	op := spec.NewOperation()
+	op.Responses = spec.NewResponses()
 	delete(op.Responses, "default")
 	op.OperationID = id
 

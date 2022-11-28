@@ -3,7 +3,6 @@ package ts
 import (
 	_ "embed"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	f "github.com/gotomicro/ego-gen-api/formatter"
 	"github.com/gotomicro/ego-gen-api/generators"
 	"github.com/gotomicro/ego-gen-api/spec"
@@ -21,7 +20,7 @@ var (
 
 	TypeGenerator = &generators.Item{
 		FileName: "types.ts",
-		Print: func(schema *openapi3.T) string {
+		Print: func(schema *spec.T) string {
 			return f.Format(NewPrinter(schema).Print(), &f.Options{IndentWidth: 2})
 		},
 	}
@@ -32,14 +31,14 @@ func init() {
 }
 
 type Printer struct {
-	schema *openapi3.T
+	schema *spec.T
 
 	ReferencedTypes []string
 	// 类型的字段是否在一行
 	TypeFieldsInLine bool
 }
 
-func NewPrinter(schema *openapi3.T) *Printer {
+func NewPrinter(schema *spec.T) *Printer {
 	return &Printer{schema: schema}
 }
 
@@ -51,14 +50,14 @@ func (p *Printer) Print() f.Doc {
 	return f.Join(f.Group(f.LineBreak(), f.LineBreak()), docs...)
 }
 
-func (p *Printer) definition(definition *openapi3.SchemaRef) f.Doc {
+func (p *Printer) definition(definition *spec.SchemaRef) f.Doc {
 	return f.Group(
 		f.Content("export type "+definition.Value.Title+" = "),
 		p.PrintType(definition),
 	)
 }
 
-func (p *Printer) PrintType(definition *openapi3.SchemaRef) f.Doc {
+func (p *Printer) PrintType(definition *spec.SchemaRef) f.Doc {
 	if definition.Ref != "" {
 		referencedType := spec.Unref(p.schema, definition)
 		if referencedType == nil {
@@ -87,7 +86,7 @@ func (p *Printer) PrintType(definition *openapi3.SchemaRef) f.Doc {
 	}
 }
 
-func (p *Printer) printInterface(definition *openapi3.SchemaRef) f.Doc {
+func (p *Printer) printInterface(definition *spec.SchemaRef) f.Doc {
 	var fields []f.Doc
 	for name, schema := range definition.Value.Properties {
 		required := lo.Contains(definition.Value.Required, name)
@@ -111,7 +110,7 @@ func (p *Printer) printInterface(definition *openapi3.SchemaRef) f.Doc {
 	)
 }
 
-func (p *Printer) property(name string, schema *openapi3.SchemaRef, required bool) f.Doc {
+func (p *Printer) property(name string, schema *spec.SchemaRef, required bool) f.Doc {
 	var content = name
 	if !required {
 		content += "?"

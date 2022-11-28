@@ -5,7 +5,7 @@ import (
 	"go/ast"
 	"strings"
 
-	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/gotomicro/ego-gen-api/spec"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -94,7 +94,7 @@ func (t *TypeDefinition) Key() string {
 	return t.pkg.PkgPath + "." + t.Spec.Name.Name
 }
 
-func (t *TypeDefinition) ToSwaggerSchema(ctx *Context, contentType string) *openapi3.SchemaRef {
+func (t *TypeDefinition) ToSwaggerSchema(ctx *Context, contentType string) *spec.SchemaRef {
 	return NewSchemaBuilder(ctx.WithPackage(t.pkg).WithFile(t.file), contentType).FromTypeSpec(t.Spec)
 }
 

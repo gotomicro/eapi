@@ -7,7 +7,7 @@ import (
 	"go/types"
 	"strconv"
 
-	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/gotomicro/ego-gen-api/spec"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -75,7 +75,7 @@ func (c *Context) ParseType(t types.Type) Definition {
 	return nil
 }
 
-func (c *Context) Doc() *openapi3.T {
+func (c *Context) Doc() *spec.T {
 	return c.analyzer.Doc()
 }
 
@@ -122,7 +122,7 @@ func (c *Context) ParseStatusCode(status ast.Expr) int {
 	return 200
 }
 
-func (c *Context) GetSchemaByExpr(expr ast.Expr, contentType string) *openapi3.SchemaRef {
+func (c *Context) GetSchemaByExpr(expr ast.Expr, contentType string) *spec.SchemaRef {
 	return NewSchemaBuilder(c, contentType).ParseExpr(expr)
 }
 
@@ -213,7 +213,6 @@ type CallInfo struct {
 // GetCallInfo returns the package or type and name associated with a call expression
 //
 // e.g. GetCallInfo(`c.GET("/ping", ...)`) returns ("*github/gin-gonic/gin.RouterGroup", "GET", nil)
-//
 func (c *Context) GetCallInfo(n ast.Node) (string, string, error) {
 	switch node := n.(type) {
 	case *ast.CallExpr:
@@ -272,6 +271,12 @@ func (c *Context) GetCallInfo(n ast.Node) (string, string, error) {
 				}
 			}
 		case *ast.Ident:
+			// try to parse type of sel.Sel
+			info := c.parseCallInfoByIdent(fn)
+			if info != nil {
+				return info.Type, info.Method, nil
+			}
+
 			return c.Package().Name, fn.Name, nil
 		}
 	}

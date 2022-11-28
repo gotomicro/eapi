@@ -2,25 +2,23 @@ package spec
 
 import (
 	"strings"
-
-	"github.com/getkin/kin-openapi/openapi3"
 )
 
-func RefSchema(id string) *openapi3.SchemaRef {
-	return openapi3.NewSchemaRef(id, nil)
+func RefSchema(id string) *SchemaRef {
+	return NewSchemaRef(id, nil)
 }
 
-func ArrayProperty(item *openapi3.SchemaRef) *openapi3.SchemaRef {
-	val := openapi3.NewArraySchema()
+func ArrayProperty(item *SchemaRef) *SchemaRef {
+	val := NewArraySchema()
 	val.Items = item
-	return openapi3.NewSchemaRef("", val)
+	return NewSchemaRef("", val)
 }
 
-func MapProperty(value *openapi3.SchemaRef) *openapi3.SchemaRef {
-	return openapi3.NewSchemaRef("", openapi3.NewObjectSchema().WithAdditionalProperties(value.Value))
+func MapProperty(value *SchemaRef) *SchemaRef {
+	return NewSchemaRef("", NewObjectSchema().WithAdditionalProperties(value.Value))
 }
 
-func Unref(t *openapi3.T, schema *openapi3.SchemaRef) *openapi3.SchemaRef {
+func Unref(t *T, schema *SchemaRef) *SchemaRef {
 	if schema.Ref == "" {
 		return schema
 	}

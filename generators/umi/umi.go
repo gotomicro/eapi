@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	f "github.com/gotomicro/ego-gen-api/formatter"
 	"github.com/gotomicro/ego-gen-api/generators"
 	"github.com/gotomicro/ego-gen-api/generators/ts"
@@ -27,7 +26,7 @@ var (
 
 	RequestGenerator = &generators.Item{
 		FileName: "request.ts",
-		Print: func(schema *openapi3.T) string {
+		Print: func(schema *spec.T) string {
 			return f.Format(NewPrinter(schema).Print(), &f.Options{IndentWidth: 2})
 		},
 	}
@@ -38,12 +37,12 @@ func init() {
 }
 
 type Printer struct {
-	schema *openapi3.T
+	schema *spec.T
 
 	importTypes []string
 }
 
-func NewPrinter(schema *openapi3.T) *Printer {
+func NewPrinter(schema *spec.T) *Printer {
 	return &Printer{schema: schema}
 }
 
@@ -66,7 +65,7 @@ func (p *Printer) header() f.Doc {
 
 type pathItem struct {
 	path string
-	*openapi3.PathItem
+	*spec.PathItem
 }
 
 func (p *Printer) requests() f.Doc {
@@ -109,10 +108,10 @@ func (p *Printer) requests() f.Doc {
 
 var pathParamPattern = regexp.MustCompile("\\{([\\w-]+)\\}")
 
-func (p *Printer) request(path string, method string, item *openapi3.Operation) f.Doc {
+func (p *Printer) request(path string, method string, item *spec.Operation) f.Doc {
 	var params []f.Doc
-	var queryParams []*openapi3.ParameterRef
-	var pathParams []*openapi3.ParameterRef
+	var queryParams []*spec.ParameterRef
+	var pathParams []*spec.ParameterRef
 	for _, parameter := range item.Parameters {
 		p := parameter
 		switch parameter.Value.In {
@@ -130,11 +129,11 @@ func (p *Printer) request(path string, method string, item *openapi3.Operation) 
 		name := p.toLowerCamelCase(originalName)
 		if name != originalName {
 			pathName = strings.ReplaceAll(pathName, "{"+originalName+"}", "{"+name+"}")
-			pathParams = lo.Filter(pathParams, func(p *openapi3.ParameterRef, _ int) bool { return p.Value.Name != originalName })
+			pathParams = lo.Filter(pathParams, func(p *spec.ParameterRef, _ int) bool { return p.Value.Name != originalName })
 		}
-		exists := lo.ContainsBy(pathParams, func(p *openapi3.ParameterRef) bool { return p.Value.Name == name })
+		exists := lo.ContainsBy(pathParams, func(p *spec.ParameterRef) bool { return p.Value.Name == name })
 		if !exists {
-			pathParams = append(pathParams, &openapi3.ParameterRef{Value: openapi3.NewPathParameter(name)})
+			pathParams = append(pathParams, &spec.ParameterRef{Value: spec.NewPathParameter(name)})
 		}
 	}
 
@@ -179,7 +178,7 @@ var (
 	}
 )
 
-func (p *Printer) getRequestMediaType(item *openapi3.Operation) (string, *openapi3.MediaType) {
+func (p *Printer) getRequestMediaType(item *spec.Operation) (string, *spec.MediaType) {
 	if item.RequestBody == nil || item.RequestBody.Value == nil || item.RequestBody.Value.Content == nil {
 		return "", nil
 	}
@@ -198,7 +197,7 @@ func (p *Printer) getRequestMediaType(item *openapi3.Operation) (string, *openap
 	return "", nil
 }
 
-func (p *Printer) requestFunctionBody(pathName string, method string, queryParams []*openapi3.ParameterRef, item *openapi3.Operation) *f.DocGroup {
+func (p *Printer) requestFunctionBody(pathName string, method string, queryParams []*spec.ParameterRef, item *spec.Operation) *f.DocGroup {
 	res := f.Group()
 
 	reqContentType, mediaType := p.getRequestMediaType(item)
@@ -247,7 +246,7 @@ func (p *Printer) toLowerCamelCase(id string) string {
 	return strcase.ToLowerCamel(id)
 }
 
-func (p *Printer) paramsType(params []*openapi3.ParameterRef) f.Doc {
+func (p *Printer) paramsType(params []*spec.ParameterRef) f.Doc {
 	var fields []f.Doc
 	for _, param := range params {
 		typeName := param.Value.Schema.Value.Type
@@ -302,7 +301,7 @@ func (p *Printer) imports() f.Doc {
 	)
 }
 
-func (p *Printer) jsDoc(item *openapi3.Operation) f.Doc {
+func (p *Printer) jsDoc(item *spec.Operation) f.Doc {
 	desc := strings.TrimSpace(item.Description)
 	if desc == "" {
 		return f.Group()
@@ -321,7 +320,7 @@ func (p *Printer) jsDoc(item *openapi3.Operation) f.Doc {
 	return res
 }
 
-func (p *Printer) responseType(res *openapi3.Response) f.Doc {
+func (p *Printer) responseType(res *spec.Response) f.Doc {
 	for _, mediaType := range res.Content {
 		schema := mediaType.Schema
 		schema = spec.Unref(p.schema, schema)
@@ -335,7 +334,7 @@ func (p *Printer) responseType(res *openapi3.Response) f.Doc {
 	return f.Content("any")
 }
 
-func (p *Printer) requestFnName(item *openapi3.Operation) string {
+func (p *Printer) requestFnName(item *spec.Operation) string {
 	slices := strings.Split(item.OperationID, ".")
 	if len(slices) == 1 {
 		return p.toLowerCamelCase(item.OperationID)

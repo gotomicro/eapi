@@ -5,16 +5,16 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gotomicro/ego-gen-api/generators"
+	"github.com/gotomicro/ego-gen-api/spec"
 )
 
 type generatorExecutor struct {
 	cfg *GeneratorConfig
-	doc *openapi3.T
+	doc *spec.T
 }
 
-func newGeneratorExecutor(cfg *GeneratorConfig, doc *openapi3.T) *generatorExecutor {
+func newGeneratorExecutor(cfg *GeneratorConfig, doc *spec.T) *generatorExecutor {
 	return &generatorExecutor{cfg: cfg, doc: doc}
 }
 
