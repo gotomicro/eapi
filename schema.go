@@ -72,6 +72,9 @@ func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *openapi3.SchemaRef) {
 
 	case *ast.CompositeLit:
 		return s.ParseExpr(expr.Type)
+
+	case *ast.InterfaceType:
+		return openapi3.NewSchemaRef("", openapi3.NewSchema())
 	}
 
 	// TODO
