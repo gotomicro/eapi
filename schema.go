@@ -165,7 +165,7 @@ func (s *SchemaBuilder) commonUsedType(t types.Type) *spec.SchemaRef {
 		if !ok {
 			return nil
 		}
-		return spec.NewSchemaRef("", commonType)
+		return spec.NewSchemaRef("", commonType.Clone())
 
 	case *types.Pointer:
 		return s.commonUsedType(t.Elem())
@@ -273,7 +273,7 @@ func (s *SchemaBuilder) parseCallExpr(expr *ast.CallExpr) *spec.SchemaRef {
 
 	commonType, ok := commonTypes[typeName+"."+method]
 	if ok {
-		return spec.NewSchemaRef("", commonType)
+		return spec.NewSchemaRef("", commonType.Clone())
 	}
 
 	def := s.ctx.GetDefinition(typeName, method)
