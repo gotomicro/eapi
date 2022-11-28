@@ -1,8 +1,6 @@
 package generators
 
-import (
-	"github.com/go-openapi/spec"
-)
+import "github.com/getkin/kin-openapi/openapi3"
 
 type Generator struct {
 	Type  string
@@ -11,7 +9,7 @@ type Generator struct {
 
 type Item struct {
 	FileName string
-	Print    func(schema *spec.Swagger) string
+	Print    func(schema *openapi3.T) string
 }
 
 var Generators = make(map[string]*Generator)

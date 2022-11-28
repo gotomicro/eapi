@@ -3,8 +3,9 @@ package analyzer
 import (
 	"go/ast"
 	"net/http"
+	"strings"
 
-	"github.com/go-openapi/spec"
+	"github.com/getkin/kin-openapi/openapi3"
 )
 
 type RouteGroup struct {
@@ -21,7 +22,7 @@ func NewAPI(method string, fullPath string) *API {
 	return &API{Method: method, FullPath: fullPath, Spec: NewAPISpec(method + "." + fullPath)}
 }
 
-func (r *API) applyToPathItem(pathItem *spec.PathItem) {
+func (r *API) applyToPathItem(pathItem *openapi3.PathItem) {
 	switch r.Method {
 	case http.MethodGet:
 		pathItem.Get = r.Operation()
@@ -37,10 +38,12 @@ func (r *API) applyToPathItem(pathItem *spec.PathItem) {
 		pathItem.Delete = r.Operation()
 	case http.MethodOptions:
 		pathItem.Options = r.Operation()
+	case http.MethodTrace:
+		pathItem.Trace = r.Operation()
 	}
 }
 
-func (r *API) Operation() *spec.Operation {
+func (r *API) Operation() *openapi3.Operation {
 	return r.Spec.Operation
 }
 
@@ -51,12 +54,15 @@ func (r *APIs) add(items ...*API) {
 }
 
 type APISpec struct {
-	*spec.Operation
+	Consumes []string
+	*openapi3.Operation
 }
 
 func NewAPISpec(id string) *APISpec {
+	op := openapi3.NewOperation()
+	op.OperationID = id
 	return &APISpec{
-		Operation: spec.NewOperation(id),
+		Operation: op,
 	}
 }
 
@@ -65,11 +71,13 @@ func (s *APISpec) LoadFromFuncDecl(funcDecl *ast.FuncDecl) {
 	cg := funcDecl.Doc
 	comment := ParseComment(cg)
 	if comment != nil {
-		s.WithSummary(comment.Summary())
-		s.WithConsumes(comment.Consumes()...)
-		s.WithProduces(comment.Produces()...)
-		s.WithDescription(comment.TrimPrefix(funcDecl.Name.Name))
-		s.WithTags(comment.Tags()...)
-		s.WithID(comment.ID())
+		s.Summary = comment.Summary()
+		s.Description = strings.TrimSpace(comment.TrimPrefix(funcDecl.Name.Name))
+		if s.Summary == "" {
+			s.Summary = s.Description
+		}
+		s.Tags = comment.Tags()
+		s.OperationID = comment.ID()
+		s.Consumes = append(s.Consumes, comment.Consumes()...)
 	}
 }

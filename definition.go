@@ -4,7 +4,7 @@ import (
 	"go/ast"
 	"strings"
 
-	"github.com/go-openapi/spec"
+	"github.com/getkin/kin-openapi/openapi3"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -70,7 +70,7 @@ func (t *TypeDefinition) Key() string {
 	return t.pkg.PkgPath + "." + t.Spec.Name.Name
 }
 
-func (t *TypeDefinition) ToSwaggerSchema(ctx *Context, contentType string) *spec.Schema {
+func (t *TypeDefinition) ToSwaggerSchema(ctx *Context, contentType string) *openapi3.SchemaRef {
 	return NewSchemaBuilder(ctx.WithPackage(t.pkg).WithFile(t.file), contentType).FromTypeSpec(t.Spec)
 }
 
@@ -79,7 +79,7 @@ func (t *TypeDefinition) ModelKey() string {
 }
 
 func (t *TypeDefinition) RefKey() string {
-	return "#/definitions/" + t.ModelKey()
+	return "#/components/schemas/" + t.ModelKey()
 }
 
 type Definitions map[string]Definition

@@ -4,10 +4,9 @@ import (
 	"go/ast"
 	"strings"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gotomicro/ego-gen-api/annotation"
 	"github.com/samber/lo"
-
-	"github.com/go-openapi/spec"
 )
 
 type Comment struct {
@@ -38,12 +37,20 @@ func (c *Comment) Nullable() bool {
 	return false
 }
 
-func (c *Comment) transformIntoSchema(schema *spec.Schema) {
+func (c *Comment) transformIntoSchema(schema *openapi3.SchemaRef) {
 	if schema == nil {
 		return
 	}
-	schema.Description = c.Text
-	schema.Nullable = c.Nullable()
+	if schema.Ref != "" {
+		schema.Description = c.Text
+		return
+	}
+
+	value := schema.Value
+	if value == nil {
+		return
+	}
+	value.Description = c.Text
 }
 
 func (c *Comment) Consumes() []string {

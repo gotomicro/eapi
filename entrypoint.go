@@ -8,11 +8,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/spf13/viper"
-	"github.com/urfave/cli/v2"
-
 	_ "github.com/gotomicro/ego-gen-api/generators/ts"
 	_ "github.com/gotomicro/ego-gen-api/generators/umi"
+	"github.com/spf13/viper"
+	"github.com/urfave/cli/v2"
 )
 
 type Config struct {
@@ -20,8 +19,13 @@ type Config struct {
 	Dir     string
 	Output  string
 	Depends []string
+	OpenAPI OpenAPIConfig
 
 	Generators []*GeneratorConfig
+}
+
+type OpenAPIConfig struct {
+	Version string // OpenAPI version 3.0.0|3.0.3|3.1.0
 }
 
 type GeneratorConfig struct {
@@ -159,6 +163,9 @@ func (e *Entrypoint) run(c *cli.Context) error {
 
 	a := NewAnalyzer().Plugin(plugin).Depends(e.cfg.Depends...)
 	doc := a.Process(e.cfg.Dir).Doc()
+	if e.cfg.OpenAPI.Version != "" {
+		doc.OpenAPI = e.cfg.OpenAPI.Version
+	}
 
 	// write documentation
 	{

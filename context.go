@@ -7,7 +7,7 @@ import (
 	"go/types"
 	"strconv"
 
-	"github.com/go-openapi/spec"
+	"github.com/getkin/kin-openapi/openapi3"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -75,7 +75,7 @@ func (c *Context) ParseType(t types.Type) Definition {
 	return nil
 }
 
-func (c *Context) Doc() *spec.Swagger {
+func (c *Context) Doc() *openapi3.T {
 	return c.analyzer.Doc()
 }
 
@@ -122,7 +122,7 @@ func (c *Context) ParseStatusCode(status ast.Expr) int {
 	return 200
 }
 
-func (c *Context) GetSchemaByExpr(expr ast.Expr, contentType string) *spec.Schema {
+func (c *Context) GetSchemaByExpr(expr ast.Expr, contentType string) *openapi3.SchemaRef {
 	return NewSchemaBuilder(c, contentType).ParseExpr(expr)
 }
 

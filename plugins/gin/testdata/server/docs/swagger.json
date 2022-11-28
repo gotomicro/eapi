@@ -1,304 +1,365 @@
 {
-    "swagger": "2.0",
-    "info": {},
+    "components": {
+        "schemas": {
+            "github.com_gin-gonic_gin.Param": {
+                "properties": {
+                    "Key": {
+                        "type": "string"
+                    },
+                    "Value": {
+                        "type": "string"
+                    }
+                },
+                "title": "Param",
+                "type": "object"
+            },
+            "github.com_gin-gonic_gin.Params": {
+                "items": {
+                    "$ref": "#/components/schemas/github.com_gin-gonic_gin.Param"
+                },
+                "title": "Params",
+                "type": "array"
+            },
+            "server_pkg_view.Error": {
+                "properties": {
+                    "code": {
+                        "type": "string"
+                    }
+                },
+                "title": "Error",
+                "type": "object"
+            },
+            "server_pkg_view.GoodsCreateReq": {
+                "properties": {
+                    "cover": {
+                        "description": "封面图",
+                        "type": "string"
+                    },
+                    "images": {
+                        "description": "详情图",
+                        "items": {
+                            "$ref": "#/components/schemas/server_pkg_view.Image"
+                        },
+                        "type": "array"
+                    },
+                    "price": {
+                        "description": "价格(分)",
+                        "type": "integer"
+                    },
+                    "subTitle": {
+                        "description": "商品描述",
+                        "type": "string"
+                    },
+                    "title": {
+                        "description": "商品标题",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "title",
+                    "price"
+                ],
+                "title": "GoodsCreateReq",
+                "type": "object"
+            },
+            "server_pkg_view.GoodsCreateRes": {
+                "properties": {
+                    "Status": {
+                        "description": "测试引用第三方包",
+                        "$ref": "#/components/schemas/github.com_gin-gonic_gin.Params"
+                    },
+                    "guid": {
+                        "description": "商品 GUID",
+                        "type": "string"
+                    },
+                    "raw": {
+                        "description": "测试引用内置包类型",
+                        "format": "byte",
+                        "type": "string"
+                    },
+                    "selfRef": {
+                        "description": "测试循环引用",
+                        "$ref": "#/components/schemas/server_pkg_view.SelfRefType"
+                    },
+                    "stringAlias": {
+                        "description": "测试类型别名",
+                        "type": "string"
+                    }
+                },
+                "title": "GoodsCreateRes",
+                "type": "object"
+            },
+            "server_pkg_view.GoodsDeleteRequest": {
+                "properties": {
+                    "formDataField": {
+                        "type": "string"
+                    }
+                },
+                "title": "GoodsDeleteRequest",
+                "type": "object"
+            },
+            "server_pkg_view.GoodsDownRes": {
+                "properties": {
+                    "Status": {
+                        "type": "string"
+                    }
+                },
+                "title": "GoodsDownRes",
+                "type": "object"
+            },
+            "server_pkg_view.GoodsInfoRes": {
+                "properties": {
+                    "cover": {
+                        "type": "string"
+                    },
+                    "price": {
+                        "type": "integer"
+                    },
+                    "subTitle": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    }
+                },
+                "title": "GoodsInfoRes",
+                "type": "object"
+            },
+            "server_pkg_view.Image": {
+                "properties": {
+                    "url": {
+                        "description": "图片链接",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "url"
+                ],
+                "title": "Image",
+                "type": "object"
+            },
+            "server_pkg_view.SelfRefType": {
+                "properties": {
+                    "data": {
+                        "type": "string"
+                    },
+                    "parent": {
+                        "$ref": "#/components/schemas/server_pkg_view.SelfRefType"
+                    }
+                },
+                "title": "SelfRefType",
+                "type": "object"
+            }
+        }
+    },
+    "info": {
+        "title": "",
+        "version": ""
+    },
+    "openapi": "3.0.3",
     "paths": {
         "/api/goods": {
             "post": {
-                "description": " 创建商品",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Shop"
-                ],
-                "operationId": "GoodsCreate",
-                "parameters": [
-                    {
-                        "name": "payload",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/server_pkg_view.GoodsCreateReq"
+                "description": "创建商品接口",
+                "operationId": "shop.GoodsCreate",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/server_pkg_view.GoodsCreateReq"
+                            }
                         }
                     }
-                ],
+                },
                 "responses": {
                     "200": {
-                        "description": "创建成功",
-                        "schema": {
-                            "$ref": "#/definitions/server_pkg_view.GoodsCreateRes"
-                        }
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/server_pkg_view.GoodsCreateRes"
+                                }
+                            }
+                        },
+                        "description": "创建成功"
                     },
                     "400": {
-                        "description": "参数无效",
-                        "schema": {
-                            "$ref": "#/definitions/server_pkg_view.Error"
-                        }
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/server_pkg_view.Error"
+                                }
+                            }
+                        },
+                        "description": "参数无效"
+                    },
+                    "default": {
+                        "description": ""
                     }
-                }
+                },
+                "summary": "创建商品",
+                "tags": [
+                    "Shop"
+                ]
             }
         },
         "/api/goods/{guid}": {
             "delete": {
-                "description": " 删除商品",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "operationId": "GoodsDelete",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "name": "formDataField",
-                        "in": "form"
-                    }
+                "description": "删除商品",
+                "operationId": "shop.GoodsDelete",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/server_pkg_view.GoodsDeleteRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": null,
+                "summary": "删除商品",
+                "tags": [
+                    "Shop"
                 ]
             }
         },
         "/api/goods/{guid}/down": {
             "post": {
-                "description": " 下架商品",
-                "produces": [
-                    "application/xml"
-                ],
-                "operationId": "GoodsDown",
+                "description": "下架商品",
+                "operationId": "shop.GoodsDown",
                 "parameters": [
                     {
                         "description": "商品 GUID",
+                        "in": "path",
                         "name": "guid",
-                        "in": "path"
+                        "required": true,
+                        "schema": {
+                            "title": "guid"
+                        }
                     },
                     {
                         "description": "操作人 UID",
+                        "in": "path",
                         "name": "operatorUid",
-                        "in": "formData"
+                        "required": true,
+                        "schema": {
+                            "title": "operatorUid"
+                        }
                     },
                     {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
                         "description": "日期范围",
+                        "in": "path",
                         "name": "dateRange",
-                        "in": "formData"
+                        "required": true,
+                        "schema": {
+                            "items": {
+                                "type": "string"
+                            },
+                            "title": "dateRange",
+                            "type": "array"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "",
-                        "schema": {
-                            "$ref": "#/definitions/server_pkg_view.GoodsDownRes"
+                        "content": {
+                            "application/xml": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/server_pkg_view.GoodsDownRes"
+                                }
+                            }
                         }
+                    },
+                    "default": {
+                        "description": ""
                     }
-                }
+                },
+                "summary": "下架商品",
+                "tags": [
+                    "Shop"
+                ]
             }
         },
         "/api/v2/goods/{guid}": {
             "get": {
-                "description": " 商品详情",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "operationId": "GoodsInfo",
+                "description": "商品详情",
+                "operationId": "shop.GoodsInfo",
                 "parameters": [
                     {
+                        "in": "path",
                         "name": "guid",
-                        "in": "path"
+                        "required": true,
+                        "schema": {
+                            "title": "guid"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "",
-                        "schema": {
-                            "$ref": "#/definitions/server_pkg_view.GoodsInfoRes"
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/server_pkg_view.GoodsInfoRes"
+                                }
+                            }
                         }
+                    },
+                    "default": {
+                        "description": ""
                     }
-                }
+                },
+                "summary": "商品详情",
+                "tags": [
+                    "Shop"
+                ]
             }
         },
         "/wrapped-handler": {
             "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "operationId": "WrappedHandler",
+                "operationId": "GET./wrapped-handler",
                 "parameters": [
                     {
+                        "in": "path",
                         "name": "hello",
-                        "in": "query"
+                        "required": true,
+                        "schema": {
+                            "title": "hello"
+                        }
                     },
                     {
+                        "in": "path",
                         "name": "world",
-                        "in": "query"
+                        "required": true,
+                        "schema": {
+                            "title": "world"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "自定义响应函数",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "code": {
-                                    "type": "number"
-                                },
-                                "data": {
-                                    "$ref": "#/definitions/server_pkg_view.GoodsInfoRes"
-                                },
-                                "msg": {
-                                    "type": "string"
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "code": {
+                                            "type": "number"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/server_pkg_view.GoodsInfoRes"
+                                        },
+                                        "msg": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
                                 }
                             }
-                        }
+                        },
+                        "description": "自定义响应函数"
+                    },
+                    "default": {
+                        "description": ""
                     }
-                }
-            }
-        }
-    },
-    "definitions": {
-        "github.com_gin-gonic_gin.Param": {
-            "id": "github.com_gin-gonic_gin.Param",
-            "title": "Param",
-            "properties": {
-                "Key": {
-                    "type": "string"
-                },
-                "Value": {
-                    "type": "string"
-                }
-            }
-        },
-        "github.com_gin-gonic_gin.Params": {
-            "id": "github.com_gin-gonic_gin.Params",
-            "type": "array",
-            "title": "Params",
-            "items": {
-                "$ref": "#/definitions/github.com_gin-gonic_gin.Param"
-            }
-        },
-        "server_pkg_view.Error": {
-            "id": "server_pkg_view.Error",
-            "title": "Error",
-            "properties": {
-                "code": {
-                    "type": "string"
-                }
-            }
-        },
-        "server_pkg_view.GoodsCreateReq": {
-            "id": "server_pkg_view.GoodsCreateReq",
-            "title": "GoodsCreateReq",
-            "required": [
-                "title",
-                "price"
-            ],
-            "properties": {
-                "cover": {
-                    "description": "封面图",
-                    "type": "string"
-                },
-                "images": {
-                    "description": "详情图",
-                    "type": "array",
-                    "nullable": true,
-                    "items": {
-                        "$ref": "#/definitions/server_pkg_view.Image"
-                    }
-                },
-                "price": {
-                    "description": "价格(分)",
-                    "type": "integer"
-                },
-                "subTitle": {
-                    "description": "商品描述",
-                    "type": "string",
-                    "nullable": true
-                },
-                "title": {
-                    "description": "商品标题",
-                    "type": "string"
-                }
-            }
-        },
-        "server_pkg_view.GoodsCreateRes": {
-            "id": "server_pkg_view.GoodsCreateRes",
-            "title": "GoodsCreateRes",
-            "properties": {
-                "Status": {
-                    "description": "测试引用第三方包",
-                    "$ref": "#/definitions/github.com_gin-gonic_gin.Params"
-                },
-                "guid": {
-                    "description": "商品 GUID",
-                    "type": "string"
-                },
-                "raw": {
-                    "description": "测试引用内置包类型",
-                    "type": "string",
-                    "format": "byte"
-                },
-                "selfRef": {
-                    "description": "测试循环引用",
-                    "$ref": "#/definitions/server_pkg_view.SelfRefType"
-                },
-                "stringAlias": {
-                    "description": "测试类型别名",
-                    "type": "string"
-                }
-            }
-        },
-        "server_pkg_view.GoodsDownRes": {
-            "id": "server_pkg_view.GoodsDownRes",
-            "title": "GoodsDownRes",
-            "properties": {
-                "Status": {
-                    "type": "string"
-                }
-            }
-        },
-        "server_pkg_view.GoodsInfoRes": {
-            "id": "server_pkg_view.GoodsInfoRes",
-            "title": "GoodsInfoRes",
-            "properties": {
-                "cover": {
-                    "type": "string"
-                },
-                "price": {
-                    "type": "integer"
-                },
-                "subTitle": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "server_pkg_view.Image": {
-            "id": "server_pkg_view.Image",
-            "title": "Image",
-            "required": [
-                "url"
-            ],
-            "properties": {
-                "url": {
-                    "description": "图片链接",
-                    "type": "string"
-                }
-            }
-        },
-        "server_pkg_view.SelfRefType": {
-            "id": "server_pkg_view.SelfRefType",
-            "title": "SelfRefType",
-            "properties": {
-                "data": {
-                    "type": "string"
-                },
-                "parent": {
-                    "$ref": "#/definitions/server_pkg_view.SelfRefType"
                 }
             }
         }
