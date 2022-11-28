@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"fmt"
 	"go/ast"
 	"strings"
 
@@ -30,6 +31,29 @@ func NewFuncDefinition(pkg *packages.Package, file *ast.File, decl *ast.FuncDecl
 }
 
 func (f *FuncDefinition) Key() string {
+	if f.Decl.Recv.NumFields() == 1 {
+		receiver := f.Decl.Recv.List[0]
+		switch t := receiver.Type.(type) {
+		case *ast.Ident:
+			return f.pkg.PkgPath + "." + t.Name + "." + f.Decl.Name.Name
+		case *ast.StarExpr:
+			i, ok := t.X.(*ast.Ident)
+			if !ok {
+				fmt.Printf("invalid function receiver at %s", f.pkg.Fset.Position(receiver.Pos()).String())
+				break
+			}
+			return "*" + f.pkg.PkgPath + "." + i.Name + "." + f.Decl.Name.Name
+		default:
+			fmt.Printf("invalid function receiver at %s", f.pkg.Fset.Position(receiver.Pos()).String())
+		}
+		ident, ok := receiver.Type.(*ast.Ident)
+		if !ok {
+			fmt.Printf("invalid function receiver at %s", f.pkg.Fset.Position(receiver.Pos()).String())
+			return f.pkg.PkgPath + "." + f.Decl.Name.Name
+		}
+		return f.pkg.PkgPath + "." + ident.Name + f.Decl.Name.Name
+	}
+
 	return f.pkg.PkgPath + "." + f.Decl.Name.Name
 }
 
