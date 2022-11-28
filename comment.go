@@ -20,6 +20,10 @@ func (c *Comment) TrimPrefix(prefix string) string {
 }
 
 func (c *Comment) Required() bool {
+	if c == nil {
+		return false
+	}
+
 	for _, a := range c.Annotations {
 		if a.Type() == annotation.Required {
 			return true
@@ -37,8 +41,8 @@ func (c *Comment) Nullable() bool {
 	return false
 }
 
-func (c *Comment) transformIntoSchema(schema *openapi3.SchemaRef) {
-	if schema == nil {
+func (c *Comment) ApplyToSchema(schema *openapi3.SchemaRef) {
+	if c == nil || schema == nil {
 		return
 	}
 	if schema.Ref != "" {
@@ -87,6 +91,9 @@ func (c *Comment) Tags() []string {
 }
 
 func (c *Comment) Ignore() bool {
+	if c == nil {
+		return false
+	}
 	for _, annot := range c.Annotations {
 		_, ok := annot.(*annotation.IgnoreAnnotation)
 		if ok {

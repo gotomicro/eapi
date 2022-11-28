@@ -188,6 +188,11 @@ func (a *Analyzer) processPkg(packagePath string) {
 }
 
 func (a *Analyzer) processFile(ctx *Context, file *ast.File, pkg *packages.Package) {
+	comment := ParseComment(file.Doc)
+	if comment.Ignore() {
+		return
+	}
+
 	ast.Inspect(file, func(node ast.Node) bool {
 		switch node := node.(type) {
 		case *ast.FuncDecl:
@@ -204,6 +209,11 @@ func (a *Analyzer) processFile(ctx *Context, file *ast.File, pkg *packages.Packa
 }
 
 func (a *Analyzer) funDecl(ctx *Context, node *ast.FuncDecl, file *ast.File, pkg *packages.Package) {
+	comment := ParseComment(node.Doc)
+	if comment.Ignore() {
+		return
+	}
+
 	ast.Inspect(node, func(node ast.Node) bool {
 		switch node := node.(type) {
 		case *ast.BlockStmt:
@@ -253,6 +263,11 @@ func (a *Analyzer) loadDefinitionsFromPkg(pkg *packages.Package, moduleDir strin
 }
 
 func (a *Analyzer) blockStmt(ctx *Context, node *ast.BlockStmt, file *ast.File, pkg *packages.Package) {
+	comment := ParseComment(a.context().WithPackage(pkg).WithFile(file).GetHeadingCommentOf(node.Lbrace))
+	if comment.Ignore() {
+		return
+	}
+
 	a.analyze(ctx, node)
 
 	for _, node := range node.List {

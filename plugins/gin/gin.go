@@ -129,6 +129,10 @@ func (e *Plugin) callExpr(ctx *analyzer.Context, callExpr *ast.CallExpr) {
 		callExpr,
 		callRule,
 		func(call *ast.CallExpr, typeName, fnName string) {
+			comment := analyzer.ParseComment(ctx.GetHeadingCommentOf(call.Lparen))
+			if comment.Ignore() {
+				return
+			}
 			api := e.parseAPI(ctx, callExpr)
 			if api == nil {
 				return

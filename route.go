@@ -19,7 +19,11 @@ type API struct {
 }
 
 func NewAPI(method string, fullPath string) *API {
-	return &API{Method: method, FullPath: fullPath, Spec: NewAPISpec(method + "." + fullPath)}
+	return &API{
+		Method:   method,
+		FullPath: fullPath,
+		Spec:     NewAPISpec(method + "." + fullPath),
+	}
 }
 
 func (r *API) applyToPathItem(pathItem *openapi3.PathItem) {
@@ -60,7 +64,10 @@ type APISpec struct {
 
 func NewAPISpec(id string) *APISpec {
 	op := openapi3.NewOperation()
+	op.Responses = openapi3.NewResponses()
+	delete(op.Responses, "default")
 	op.OperationID = id
+
 	return &APISpec{
 		Operation: op,
 	}

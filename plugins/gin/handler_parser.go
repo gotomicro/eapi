@@ -9,6 +9,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	analyzer "github.com/gotomicro/ego-gen-api"
+	"github.com/gotomicro/ego-gen-api/spec"
 	"github.com/robertkrimen/otto"
 	"github.com/samber/lo"
 )
@@ -16,7 +17,7 @@ import (
 const ginContextIdentName = "*github.com/gin-gonic/gin.Context"
 
 var (
-	interestedGinContextMethods = []string{"Bind", "JSON", "Query", "Param", "GetPostForm", "PostFormArray", "XML", "Redirect"}
+	interestedGinContextMethods = []string{"Bind", "JSON", "Query", "Param", "GetPostForm", "PostFormArray", "XML", "Redirect", "FormFile"}
 )
 
 type HandlerParser struct {
@@ -63,7 +64,9 @@ func (p *HandlerParser) Parse() {
 				case "Param": // path parameter
 					p.parsePrimitiveParam(call, "path")
 				case "GetPostForm":
-					p.parsePrimitiveParam(call, "formData")
+					p.parseFormData(call, "string")
+				case "FormFile":
+					p.parseFormData(call, "file")
 				case "PostFormArray":
 					p.parsePrimitiveParamArray(call, "formData")
 				case "Redirect":
@@ -83,11 +86,10 @@ func (p *HandlerParser) parseBinding(call *ast.CallExpr) {
 	arg0 := call.Args[0]
 
 	switch p.api.Method {
-	case http.MethodGet, http.MethodHead, http.MethodOptions:
-		in := p.getFormDataIn()
+	case http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodDelete:
 		params := analyzer.NewParamParser(p.ctx, analyzer.MimeTypeFormData).Parse(arg0)
 		for _, param := range params {
-			param.In = in
+			param.In = "query"
 			p.spec.AddParameter(param)
 		}
 	default:
@@ -148,6 +150,48 @@ func (p *HandlerParser) parseRedirectRes(call *ast.CallExpr) {
 func (p *HandlerParser) parsePrimitiveParam(call *ast.CallExpr, in string) {
 	param := p.primitiveParam(call, in)
 	p.spec.AddParameter(param)
+}
+
+func (p *HandlerParser) parseFormData(call *ast.CallExpr, fieldType string) {
+	if len(call.Args) <= 0 {
+		return
+	}
+	arg0 := call.Args[0]
+	arg0Lit, ok := arg0.(*ast.BasicLit)
+	if !ok {
+		return
+	}
+
+	name := strings.Trim(arg0Lit.Value, "\"")
+	paramSchema := openapi3.NewSchema()
+	paramSchema.Title = name
+	paramSchema.Type = fieldType
+
+	mediaType := openapi3.NewMediaType()
+	requestBody := p.spec.RequestBody
+	if requestBody == nil {
+		requestBody = &openapi3.RequestBodyRef{Value: openapi3.NewRequestBody().WithContent(openapi3.NewContent())}
+		p.spec.RequestBody = requestBody
+	}
+	if requestBody.Value.GetMediaType(analyzer.MimeTypeFormData) != nil {
+		mediaType = p.spec.RequestBody.Value.GetMediaType(analyzer.MimeTypeFormData)
+	}
+
+	var schema *openapi3.SchemaRef
+	if mediaType.Schema != nil {
+		schema = spec.Unref(p.ctx.Doc(), mediaType.Schema)
+		schema.Value.WithProperty(name, paramSchema)
+	} else {
+		schema = openapi3.NewSchemaRef("", openapi3.NewObjectSchema())
+		schema.Value.WithProperty(name, paramSchema)
+		mediaType.Schema = schema
+		p.spec.RequestBody.Value.Content[analyzer.MimeTypeFormData] = mediaType
+	}
+
+	comment := analyzer.ParseComment(p.ctx.GetHeadingCommentOf(call.Lparen))
+	if comment.Required() {
+		schema.Value.Required = append(schema.Value.Required, name)
+	}
 }
 
 func (p *HandlerParser) primitiveParam(call *ast.CallExpr, in string) *openapi3.Parameter {
@@ -231,7 +275,7 @@ func (p *HandlerParser) matchCustomRequestRule(node ast.Node) (matched bool) {
 				matched = true
 
 				switch p.api.Method {
-				case http.MethodGet, http.MethodHead, http.MethodOptions:
+				case http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodDelete:
 					params := p.parseParamsInCall(call, rule.Return.Data, analyzer.MimeTypeFormData)
 					for _, param := range params {
 						param.In = "query"
@@ -265,9 +309,9 @@ func (p *HandlerParser) matchCustomRequestRule(node ast.Node) (matched bool) {
 }
 
 func (p *HandlerParser) getFormDataIn() string {
-	var in = "query"
+	var in string
 	switch p.api.Method {
-	case http.MethodGet, http.MethodHead, http.MethodOptions:
+	case http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodDelete:
 		in = "query"
 	default:
 		in = "form"
