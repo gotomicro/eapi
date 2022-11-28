@@ -80,7 +80,7 @@ func (c *Comment) Tags() []string {
 	for _, annot := range c.Annotations {
 		tags, ok := annot.(*annotation.TagAnnotation)
 		if ok {
-			res = append(res, tags.Tags...)
+			res = append(res, tags.Tag)
 		}
 	}
 	return res
@@ -135,6 +135,6 @@ func ParseComment(commentGroup *ast.CommentGroup) *Comment {
 			lines = append(lines, strings.TrimSpace(line))
 		}
 	}
-	c.Text = strings.Join(lines, "\n")
+	c.Text = strings.Join(lines, "\n\n")
 	return c
 }

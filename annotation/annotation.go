@@ -63,7 +63,7 @@ func (a *IgnoreAnnotation) Type() Type {
 }
 
 type TagAnnotation struct {
-	Tags []string
+	Tag string
 }
 
 func (a *TagAnnotation) Type() Type {
