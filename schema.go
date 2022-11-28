@@ -75,6 +75,9 @@ func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *openapi3.SchemaRef) {
 
 	case *ast.InterfaceType:
 		return openapi3.NewSchemaRef("", openapi3.NewSchema())
+
+	case *ast.CallExpr:
+		return s.parseCallExpr(expr)
 	}
 
 	// TODO
@@ -121,7 +124,7 @@ func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *openapi3.SchemaRef {
 			}
 
 			if comment != nil {
-				comment.transformIntoSchema(fieldSchema)
+				comment.ApplyToSchema(fieldSchema)
 				if comment.Required() {
 					schema.Required = append(schema.Required, propName)
 				}
@@ -263,4 +266,43 @@ func (s *SchemaBuilder) parseCommentOfField(field *ast.Field) *Comment {
 	// parse trailing comment
 	commentGroup := s.ctx.GetTrailingCommentOf(field.Pos())
 	return ParseComment(commentGroup)
+}
+
+func (s *SchemaBuilder) parseCallExpr(expr *ast.CallExpr) *openapi3.SchemaRef {
+	return s.parseFunReturnVal(expr.Fun)
+}
+
+func (s *SchemaBuilder) parseFunReturnVal(fun ast.Expr) *openapi3.SchemaRef {
+	switch fun := fun.(type) {
+	case *ast.SelectorExpr:
+		return s.parseFunReturnVal(fun.Sel)
+	case *ast.Ident:
+		t := s.ctx.Package().TypesInfo.TypeOf(fun)
+		switch t := t.(type) {
+		case *types.Signature:
+			callInfo := s.ctx.parseCallInfoByIdent(fun)
+			if callInfo == nil {
+				return nil
+			}
+			def := s.ctx.GetDefinition(callInfo.Type, callInfo.Method)
+			if def == nil {
+				fmt.Printf("unknown function %s.%s at %s\n", callInfo.Type, callInfo.Method, s.ctx.LineColumn(fun.Pos()))
+				return nil
+			}
+			fnDef, ok := def.(*FuncDefinition)
+			if !ok {
+				return nil
+			}
+			if fnDef.Decl.Type.Results.NumFields() == 0 {
+				return nil
+			}
+			ret := fnDef.Decl.Type.Results.List[0]
+			return newSchemaBuilderWithStack(s.ctx.WithPackage(fnDef.pkg).WithFile(fnDef.file), s.contentType, append(s.stack, fnDef.Key())).
+				ParseExpr(ret.Type)
+		default:
+			return s.parseType(t)
+		}
+	}
+
+	return nil
 }
