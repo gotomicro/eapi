@@ -4,7 +4,7 @@ import (
 	"go/ast"
 	"go/types"
 
-	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/gotomicro/ego-gen-api/spec"
 	"github.com/gotomicro/ego-gen-api/tag"
 )
 
@@ -17,8 +17,8 @@ func NewParamParser(ctx *Context, contentType string) *ParamParser {
 	return &ParamParser{ctx: ctx, contentType: contentType}
 }
 
-// Parse 根据 ast.Expr 解析出 []*openapi3.Parameter
-func (p *ParamParser) Parse(expr ast.Expr) (params []*openapi3.Parameter) {
+// Parse 根据 ast.Expr 解析出 []*spec.Parameter
+func (p *ParamParser) Parse(expr ast.Expr) (params []*spec.Parameter) {
 	switch expr := expr.(type) {
 	case *ast.Ident:
 		return p.parseIdent(expr)
@@ -32,7 +32,7 @@ func (p *ParamParser) Parse(expr ast.Expr) (params []*openapi3.Parameter) {
 	return
 }
 
-func (p *ParamParser) parseIdent(expr *ast.Ident) (params []*openapi3.Parameter) {
+func (p *ParamParser) parseIdent(expr *ast.Ident) (params []*spec.Parameter) {
 	t := p.ctx.Package().TypesInfo.TypeOf(expr)
 	if t == nil {
 		return
@@ -41,7 +41,7 @@ func (p *ParamParser) parseIdent(expr *ast.Ident) (params []*openapi3.Parameter)
 	return p.parseType(t)
 }
 
-func (p *ParamParser) parseType(t types.Type) (params []*openapi3.Parameter) {
+func (p *ParamParser) parseType(t types.Type) (params []*spec.Parameter) {
 	def := p.ctx.ParseType(t)
 	typeDef, ok := def.(*TypeDefinition)
 	if !ok {
@@ -59,7 +59,7 @@ func (p *ParamParser) parseType(t types.Type) (params []*openapi3.Parameter) {
 	return
 }
 
-func (p *ParamParser) parseStructType(structType *ast.StructType) (params []*openapi3.Parameter) {
+func (p *ParamParser) parseStructType(structType *ast.StructType) (params []*spec.Parameter) {
 	for _, field := range structType.Fields.List {
 		for _, name := range field.Names {
 			param := p.parseField(name, field)
@@ -69,7 +69,7 @@ func (p *ParamParser) parseStructType(structType *ast.StructType) (params []*ope
 	return
 }
 
-func (p *ParamParser) parseField(name *ast.Ident, field *ast.Field) (param *openapi3.Parameter) {
+func (p *ParamParser) parseField(name *ast.Ident, field *ast.Field) (param *spec.Parameter) {
 	param = p.typeOf(field.Type)
 
 	tagValues := tag.Parse(field.Tag.Value)
@@ -89,11 +89,11 @@ func (p *ParamParser) parseField(name *ast.Ident, field *ast.Field) (param *open
 	return
 }
 
-func (p *ParamParser) typeOf(expr ast.Expr) *openapi3.Parameter {
+func (p *ParamParser) typeOf(expr ast.Expr) *spec.Parameter {
 	switch t := expr.(type) {
 	case *ast.Ident:
-		param := &openapi3.Parameter{}
-		paramSchema := &openapi3.Schema{}
+		param := &spec.Parameter{}
+		paramSchema := &spec.Schema{}
 		paramSchema.Type, paramSchema.Format = p.typeOfIdent(t)
 		param.WithSchema(paramSchema)
 		return param
@@ -102,21 +102,21 @@ func (p *ParamParser) typeOf(expr ast.Expr) *openapi3.Parameter {
 		return p.typeOf(t.Sel)
 
 	case *ast.ArrayType:
-		param := &openapi3.Parameter{}
-		paramSchema := openapi3.NewArraySchema()
+		param := &spec.Parameter{}
+		paramSchema := spec.NewArraySchema()
 		paramSchema.WithItems(p.typeOf(t.Elt).Schema.Value)
 		return param.WithSchema(paramSchema)
 
 	case *ast.SliceExpr:
-		param := &openapi3.Parameter{}
-		paramSchema := openapi3.NewArraySchema()
+		param := &spec.Parameter{}
+		paramSchema := spec.NewArraySchema()
 		paramSchema.WithItems(p.typeOf(t.X).Schema.Value)
 		return param.WithSchema(paramSchema)
 	}
 
 	// fallback
-	param := &openapi3.Parameter{}
-	param.WithSchema(openapi3.NewStringSchema())
+	param := &spec.Parameter{}
+	param.WithSchema(spec.NewStringSchema())
 	return param
 }
 

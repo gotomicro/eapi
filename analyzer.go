@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/gotomicro/ego-gen-api/spec"
 	"github.com/samber/lo"
 	"golang.org/x/mod/modfile"
 	"golang.org/x/tools/go/ast/inspector"
@@ -23,7 +23,7 @@ type Analyzer struct {
 	definitions Definitions
 	depends     []string
 
-	doc      *openapi3.T
+	doc      *spec.T
 	packages []*packages.Package
 }
 
@@ -35,13 +35,13 @@ func NewAnalyzer() *Analyzer {
 		definitions: make(Definitions),
 	}
 
-	components := openapi3.NewComponents()
-	components.Schemas = make(openapi3.Schemas)
-	doc := &openapi3.T{
+	components := spec.NewComponents()
+	components.Schemas = make(spec.Schemas)
+	doc := &spec.T{
 		OpenAPI:    "3.0.3",
-		Info:       &openapi3.Info{},
+		Info:       &spec.Info{},
 		Components: components,
-		Paths:      make(openapi3.Paths),
+		Paths:      make(spec.Paths),
 	}
 	a.doc = doc
 
@@ -104,7 +104,7 @@ func (a *Analyzer) APIs() *APIs {
 	return &a.routes
 }
 
-func (a *Analyzer) Doc() *openapi3.T {
+func (a *Analyzer) Doc() *spec.T {
 	return a.doc
 }
 
@@ -127,16 +127,12 @@ func (a *Analyzer) load(pkgPath string) []*packages.Package {
 
 	config := &packages.Config{
 		Mode: packages.NeedName |
-			packages.NeedFiles |
-			packages.NeedCompiledGoFiles |
 			packages.NeedImports |
 			packages.NeedDeps |
-			packages.NeedExportFile |
 			packages.NeedTypes |
 			packages.NeedSyntax |
 			packages.NeedModule |
-			packages.NeedTypesInfo |
-			packages.NeedTypesSizes,
+			packages.NeedTypesInfo,
 		BuildFlags: []string{},
 		Tests:      false,
 		Dir:        absPath,
@@ -388,7 +384,7 @@ func (a *Analyzer) AddRoutes(items ...*API) {
 	for _, item := range items {
 		path := a.doc.Paths[item.FullPath]
 		if path == nil {
-			path = &openapi3.PathItem{}
+			path = &spec.PathItem{}
 		}
 		item.applyToPathItem(path)
 		a.doc.Paths[item.FullPath] = path

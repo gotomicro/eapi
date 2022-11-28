@@ -6,7 +6,6 @@ import (
 	"go/types"
 	"strings"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gotomicro/ego-gen-api/spec"
 	"github.com/gotomicro/ego-gen-api/tag"
 	"github.com/samber/lo"
@@ -34,7 +33,7 @@ func newSchemaBuilderWithStack(ctx *Context, contentType string, stack Stack[str
 	return &SchemaBuilder{ctx: ctx, contentType: contentType, stack: stack}
 }
 
-func (s *SchemaBuilder) FromTypeSpec(t *ast.TypeSpec) *openapi3.SchemaRef {
+func (s *SchemaBuilder) FromTypeSpec(t *ast.TypeSpec) *spec.SchemaRef {
 	schema := s.ParseExpr(t.Type)
 	if schema == nil {
 		return nil
@@ -44,7 +43,7 @@ func (s *SchemaBuilder) FromTypeSpec(t *ast.TypeSpec) *openapi3.SchemaRef {
 	return schema
 }
 
-func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *openapi3.SchemaRef) {
+func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *spec.SchemaRef) {
 	switch expr := expr.(type) {
 	case *ast.StructType:
 		return s.parseStruct(expr)
@@ -74,7 +73,7 @@ func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *openapi3.SchemaRef) {
 		return s.ParseExpr(expr.Type)
 
 	case *ast.InterfaceType:
-		return openapi3.NewSchemaRef("", openapi3.NewSchema())
+		return spec.NewSchemaRef("", spec.NewSchema())
 
 	case *ast.CallExpr:
 		return s.parseCallExpr(expr)
@@ -84,9 +83,9 @@ func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *openapi3.SchemaRef) {
 	return nil
 }
 
-func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *openapi3.SchemaRef {
-	schema := openapi3.NewObjectSchema()
-	schema.Properties = make(openapi3.Schemas)
+func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *spec.SchemaRef {
+	schema := spec.NewObjectSchema()
+	schema.Properties = make(spec.Schemas)
 
 	var contentType = s.contentType
 	if s.contentType == "" {
@@ -133,10 +132,10 @@ func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *openapi3.SchemaRef {
 		}
 	}
 
-	return openapi3.NewSchemaRef("", schema)
+	return spec.NewSchemaRef("", schema)
 }
 
-func (s *SchemaBuilder) parseIdent(expr *ast.Ident) *openapi3.SchemaRef {
+func (s *SchemaBuilder) parseIdent(expr *ast.Ident) *spec.SchemaRef {
 	t := s.ctx.Package().TypesInfo.TypeOf(expr)
 	switch t := t.(type) {
 	case *types.Basic:
@@ -152,12 +151,13 @@ func (s *SchemaBuilder) parseIdent(expr *ast.Ident) *openapi3.SchemaRef {
 	return s.parseType(t)
 }
 
-var commonTypes = map[string][]string{
-	"time.Time":                {"string", "datetime"},
-	"encoding/json.RawMessage": {"string", "byte"},
+var commonTypes = map[string]*spec.Schema{
+	"time.Time":                spec.NewSchema().WithType("string").WithFormat("datetime"),
+	"encoding/json.RawMessage": spec.NewSchema().WithType("object").WithDescription("Any Json Type"),
+	"json.RawMessage":          spec.NewSchema().WithType("object").WithDescription("Any Json Type"),
 }
 
-func (s *SchemaBuilder) commonUsedType(t types.Type) *openapi3.SchemaRef {
+func (s *SchemaBuilder) commonUsedType(t types.Type) *spec.SchemaRef {
 	switch t := t.(type) {
 	case *types.Named:
 		typeName := t.Obj().Pkg().Path() + "." + t.Obj().Name()
@@ -165,10 +165,7 @@ func (s *SchemaBuilder) commonUsedType(t types.Type) *openapi3.SchemaRef {
 		if !ok {
 			return nil
 		}
-		schema := openapi3.NewSchema()
-		schema.Type = commonType[0]
-		schema.Format = commonType[1]
-		return openapi3.NewSchemaRef("", schema)
+		return spec.NewSchemaRef("", commonType)
 
 	case *types.Pointer:
 		return s.commonUsedType(t.Elem())
@@ -177,7 +174,7 @@ func (s *SchemaBuilder) commonUsedType(t types.Type) *openapi3.SchemaRef {
 	return nil
 }
 
-func (s *SchemaBuilder) parseSelectorExpr(expr *ast.SelectorExpr) *openapi3.SchemaRef {
+func (s *SchemaBuilder) parseSelectorExpr(expr *ast.SelectorExpr) *spec.SchemaRef {
 	return s.ParseExpr(expr.Sel)
 }
 
@@ -204,25 +201,25 @@ func (s *SchemaBuilder) getPropName(fieldName string, field *ast.Field, contentT
 	return
 }
 
-func (s *SchemaBuilder) basicType(name string) *openapi3.SchemaRef {
+func (s *SchemaBuilder) basicType(name string) *spec.SchemaRef {
 	switch name {
 	case "uint", "int", "uint8", "int8", "uint16", "int16",
 		"uint32", "int32", "uint64", "int64":
-		return openapi3.NewSchemaRef("", openapi3.NewIntegerSchema())
+		return spec.NewSchemaRef("", spec.NewIntegerSchema())
 	case "byte", "rune":
-		return openapi3.NewSchemaRef("", openapi3.NewBytesSchema())
+		return spec.NewSchemaRef("", spec.NewBytesSchema())
 	case "float32", "float64":
-		return openapi3.NewSchemaRef("", openapi3.NewFloat64Schema())
+		return spec.NewSchemaRef("", spec.NewFloat64Schema())
 	case "bool":
-		return openapi3.NewSchemaRef("", openapi3.NewBoolSchema())
+		return spec.NewSchemaRef("", spec.NewBoolSchema())
 	case "string":
-		return openapi3.NewSchemaRef("", openapi3.NewStringSchema())
+		return spec.NewSchemaRef("", spec.NewStringSchema())
 	}
 
 	return nil
 }
 
-func (s *SchemaBuilder) parseType(t types.Type) *openapi3.SchemaRef {
+func (s *SchemaBuilder) parseType(t types.Type) *spec.SchemaRef {
 	switch t := t.(type) {
 	case *types.Slice:
 		return spec.ArrayProperty(s.parseType(t.Elem()))
@@ -268,14 +265,20 @@ func (s *SchemaBuilder) parseCommentOfField(field *ast.Field) *Comment {
 	return ParseComment(commentGroup)
 }
 
-func (s *SchemaBuilder) parseCallExpr(expr *ast.CallExpr) *openapi3.SchemaRef {
+func (s *SchemaBuilder) parseCallExpr(expr *ast.CallExpr) *spec.SchemaRef {
 	typeName, method, err := s.ctx.GetCallInfo(expr)
 	if err != nil {
 		return nil
 	}
+
+	commonType, ok := commonTypes[typeName+"."+method]
+	if ok {
+		return spec.NewSchemaRef("", commonType)
+	}
+
 	def := s.ctx.GetDefinition(typeName, method)
 	if def == nil {
-		fmt.Printf("unknown function %s.%s at %s\n", typeName, method, s.ctx.LineColumn(expr.Pos()))
+		fmt.Printf("unknown type/function %s.%s at %s\n", typeName, method, s.ctx.LineColumn(expr.Pos()))
 		return nil
 	}
 

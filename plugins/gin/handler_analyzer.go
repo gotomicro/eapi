@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	analyzer "github.com/gotomicro/ego-gen-api"
 	"github.com/gotomicro/ego-gen-api/spec"
 	"github.com/robertkrimen/otto"
@@ -20,7 +19,7 @@ var (
 	interestedGinContextMethods = []string{"Bind", "JSON", "Query", "Param", "GetPostForm", "PostFormArray", "XML", "Redirect", "FormFile"}
 )
 
-type HandlerParser struct {
+type handlerAnalyzer struct {
 	ctx  *analyzer.Context
 	api  *analyzer.API
 	spec *analyzer.APISpec
@@ -29,16 +28,16 @@ type HandlerParser struct {
 	c *Config
 }
 
-func NewHandlerParser(ctx *analyzer.Context, api *analyzer.API, decl *ast.FuncDecl) *HandlerParser {
-	return &HandlerParser{ctx: ctx, api: api, spec: api.Spec, decl: decl}
+func newHandlerParser(ctx *analyzer.Context, api *analyzer.API, decl *ast.FuncDecl) *handlerAnalyzer {
+	return &handlerAnalyzer{ctx: ctx, api: api, spec: api.Spec, decl: decl}
 }
 
-func (p *HandlerParser) WithConfig(c *Config) *HandlerParser {
+func (p *handlerAnalyzer) WithConfig(c *Config) *handlerAnalyzer {
 	p.c = c
 	return p
 }
 
-func (p *HandlerParser) Parse() {
+func (p *handlerAnalyzer) Parse() {
 	ast.Inspect(p.decl, func(node ast.Node) bool {
 		matched := p.matchCustomResponseRule(node)
 		if matched {
@@ -79,7 +78,7 @@ func (p *HandlerParser) Parse() {
 	})
 }
 
-func (p *HandlerParser) parseBinding(call *ast.CallExpr) {
+func (p *handlerAnalyzer) parseBinding(call *ast.CallExpr) {
 	if len(call.Args) != 1 {
 		return
 	}
@@ -105,17 +104,17 @@ func (p *HandlerParser) parseBinding(call *ast.CallExpr) {
 				schema.Description = comment.Text
 			}
 		}
-		reqBody := openapi3.NewRequestBody().WithSchemaRef(schema, []string{contentType})
-		p.spec.RequestBody = &openapi3.RequestBodyRef{Value: reqBody}
+		reqBody := spec.NewRequestBody().WithSchemaRef(schema, []string{contentType})
+		p.spec.RequestBody = &spec.RequestBodyRef{Value: reqBody}
 	}
 }
 
-func (p *HandlerParser) parseResBody(call *ast.CallExpr, contentType string) {
+func (p *handlerAnalyzer) parseResBody(call *ast.CallExpr, contentType string) {
 	if len(call.Args) != 2 {
 		return
 	}
 
-	res := openapi3.NewResponse()
+	res := spec.NewResponse()
 	commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
 	if commentGroup != nil {
 		comment := analyzer.ParseComment(commentGroup)
@@ -125,17 +124,17 @@ func (p *HandlerParser) parseResBody(call *ast.CallExpr, contentType string) {
 	}
 
 	schema := p.ctx.GetSchemaByExpr(call.Args[1], contentType)
-	res.Content = openapi3.NewContentWithSchemaRef(schema, []string{contentType})
+	res.Content = spec.NewContentWithSchemaRef(schema, []string{contentType})
 	statusCode := p.ctx.ParseStatusCode(call.Args[0])
 	p.spec.AddResponse(statusCode, res)
 }
 
-func (p *HandlerParser) parseRedirectRes(call *ast.CallExpr) {
+func (p *handlerAnalyzer) parseRedirectRes(call *ast.CallExpr) {
 	if len(call.Args) == 0 {
 		return
 	}
 
-	res := openapi3.NewResponse()
+	res := spec.NewResponse()
 	commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
 	if commentGroup != nil {
 		comment := analyzer.ParseComment(commentGroup)
@@ -147,12 +146,12 @@ func (p *HandlerParser) parseRedirectRes(call *ast.CallExpr) {
 	p.spec.AddResponse(statusCode, res)
 }
 
-func (p *HandlerParser) parsePrimitiveParam(call *ast.CallExpr, in string) {
+func (p *handlerAnalyzer) parsePrimitiveParam(call *ast.CallExpr, in string) {
 	param := p.primitiveParam(call, in)
 	p.spec.AddParameter(param)
 }
 
-func (p *HandlerParser) parseFormData(call *ast.CallExpr, fieldType string) {
+func (p *handlerAnalyzer) parseFormData(call *ast.CallExpr, fieldType string) {
 	if len(call.Args) <= 0 {
 		return
 	}
@@ -163,26 +162,26 @@ func (p *HandlerParser) parseFormData(call *ast.CallExpr, fieldType string) {
 	}
 
 	name := strings.Trim(arg0Lit.Value, "\"")
-	paramSchema := openapi3.NewSchema()
+	paramSchema := spec.NewSchema()
 	paramSchema.Title = name
 	paramSchema.Type = fieldType
 
-	mediaType := openapi3.NewMediaType()
+	mediaType := spec.NewMediaType()
 	requestBody := p.spec.RequestBody
 	if requestBody == nil {
-		requestBody = &openapi3.RequestBodyRef{Value: openapi3.NewRequestBody().WithContent(openapi3.NewContent())}
+		requestBody = &spec.RequestBodyRef{Value: spec.NewRequestBody().WithContent(spec.NewContent())}
 		p.spec.RequestBody = requestBody
 	}
 	if requestBody.Value.GetMediaType(analyzer.MimeTypeFormData) != nil {
 		mediaType = p.spec.RequestBody.Value.GetMediaType(analyzer.MimeTypeFormData)
 	}
 
-	var schema *openapi3.SchemaRef
+	var schema *spec.SchemaRef
 	if mediaType.Schema != nil {
 		schema = spec.Unref(p.ctx.Doc(), mediaType.Schema)
 		schema.Value.WithProperty(name, paramSchema)
 	} else {
-		schema = openapi3.NewSchemaRef("", openapi3.NewObjectSchema())
+		schema = spec.NewSchemaRef("", spec.NewObjectSchema())
 		schema.Value.WithProperty(name, paramSchema)
 		mediaType.Schema = schema
 		p.spec.RequestBody.Value.Content[analyzer.MimeTypeFormData] = mediaType
@@ -194,7 +193,7 @@ func (p *HandlerParser) parseFormData(call *ast.CallExpr, fieldType string) {
 	}
 }
 
-func (p *HandlerParser) primitiveParam(call *ast.CallExpr, in string) *openapi3.Parameter {
+func (p *handlerAnalyzer) primitiveParam(call *ast.CallExpr, in string) *spec.Parameter {
 	if len(call.Args) <= 0 {
 		return nil
 	}
@@ -204,10 +203,10 @@ func (p *HandlerParser) primitiveParam(call *ast.CallExpr, in string) *openapi3.
 		return nil
 	}
 	name := strings.Trim(arg0Lit.Value, "\"")
-	paramSchema := openapi3.NewSchema()
+	paramSchema := spec.NewSchema()
 	paramSchema.Title = name
 
-	res := openapi3.NewPathParameter(name).WithSchema(paramSchema)
+	res := spec.NewPathParameter(name).WithSchema(paramSchema)
 	commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
 	if commentGroup != nil {
 		comment := analyzer.ParseComment(commentGroup)
@@ -219,14 +218,14 @@ func (p *HandlerParser) primitiveParam(call *ast.CallExpr, in string) *openapi3.
 	return res
 }
 
-func (p *HandlerParser) parsePrimitiveParamArray(call *ast.CallExpr, in string) {
+func (p *handlerAnalyzer) parsePrimitiveParamArray(call *ast.CallExpr, in string) {
 	param := p.primitiveParam(call, in)
 	param.Schema.Value.Type = "array"
-	param.Schema.Value.Items = openapi3.NewSchemaRef("", openapi3.NewStringSchema())
+	param.Schema.Value.Items = spec.NewSchemaRef("", spec.NewStringSchema())
 	p.spec.AddParameter(param)
 }
 
-func (p *HandlerParser) matchCustomResponseRule(node ast.Node) (matched bool) {
+func (p *handlerAnalyzer) matchCustomResponseRule(node ast.Node) (matched bool) {
 	if p.c == nil || len(p.c.Response) == 0 {
 		return false
 	}
@@ -243,7 +242,7 @@ func (p *HandlerParser) matchCustomResponseRule(node ast.Node) (matched bool) {
 				//	p.spec.Produces = append(p.spec.Produces, contentType)
 				//}
 
-				res := openapi3.NewResponse()
+				res := spec.NewResponse()
 				commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
 				if commentGroup != nil {
 					comment := analyzer.ParseComment(commentGroup)
@@ -252,7 +251,7 @@ func (p *HandlerParser) matchCustomResponseRule(node ast.Node) (matched bool) {
 					}
 				}
 				schema := p.parseDataType(call, rule.Return.Data, contentType)
-				res.WithContent(openapi3.NewContentWithSchemaRef(schema, []string{contentType}))
+				res.WithContent(spec.NewContentWithSchemaRef(schema, []string{contentType}))
 				statusCode := p.parseStatusCodeInCall(call, rule.Return.Status)
 				p.spec.AddResponse(statusCode, res)
 			},
@@ -262,7 +261,7 @@ func (p *HandlerParser) matchCustomResponseRule(node ast.Node) (matched bool) {
 	return
 }
 
-func (p *HandlerParser) matchCustomRequestRule(node ast.Node) (matched bool) {
+func (p *handlerAnalyzer) matchCustomRequestRule(node ast.Node) (matched bool) {
 	if p.c == nil || len(p.c.Request) == 0 {
 		return false
 	}
@@ -288,7 +287,7 @@ func (p *HandlerParser) matchCustomRequestRule(node ast.Node) (matched bool) {
 					if schema == nil {
 						return
 					}
-					reqBody := openapi3.NewRequestBody()
+					reqBody := spec.NewRequestBody()
 					reqBody.Required = true
 					commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
 					if commentGroup != nil {
@@ -298,7 +297,7 @@ func (p *HandlerParser) matchCustomRequestRule(node ast.Node) (matched bool) {
 						}
 					}
 					reqBody.WithSchemaRef(schema, []string{contentType})
-					p.spec.RequestBody = &openapi3.RequestBodyRef{Value: reqBody}
+					p.spec.RequestBody = &spec.RequestBodyRef{Value: reqBody}
 				}
 
 			},
@@ -308,7 +307,7 @@ func (p *HandlerParser) matchCustomRequestRule(node ast.Node) (matched bool) {
 	return
 }
 
-func (p *HandlerParser) getFormDataIn() string {
+func (p *handlerAnalyzer) getFormDataIn() string {
 	var in string
 	switch p.api.Method {
 	case http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodDelete:
@@ -319,7 +318,7 @@ func (p *HandlerParser) getFormDataIn() string {
 	return in
 }
 
-func (p *HandlerParser) parseStatusCodeInCall(call *ast.CallExpr, statusCode string) (code int) {
+func (p *handlerAnalyzer) parseStatusCodeInCall(call *ast.CallExpr, statusCode string) (code int) {
 	if statusCode == "" {
 		return 200 // default to 200
 	}
@@ -337,7 +336,7 @@ func (p *HandlerParser) parseStatusCodeInCall(call *ast.CallExpr, statusCode str
 	return
 }
 
-func (p *HandlerParser) parseDataType(call *ast.CallExpr, dataType *DataSchema, contentType string) (schema *openapi3.SchemaRef) {
+func (p *handlerAnalyzer) parseDataType(call *ast.CallExpr, dataType *DataSchema, contentType string) (schema *spec.SchemaRef) {
 	switch dataType.Type {
 	case DataTypeString:
 		return p.basicSchemaType("string")
@@ -350,12 +349,12 @@ func (p *HandlerParser) parseDataType(call *ast.CallExpr, dataType *DataSchema, 
 	case DataTypeFile:
 		return p.basicSchemaType("file")
 	case DataTypeArray:
-		schema := openapi3.NewArraySchema()
+		schema := spec.NewArraySchema()
 		schema.Items = p.parseDataType(call, dataType.Item, contentType)
-		return openapi3.NewSchemaRef("", schema)
+		return spec.NewSchemaRef("", schema)
 	case DataTypeObject:
-		schema := openapi3.NewObjectSchema()
-		properties := make(openapi3.Schemas)
+		schema := spec.NewObjectSchema()
+		properties := make(spec.Schemas)
 		for name, dataSchema := range dataType.Properties {
 			s := p.parseDataType(call, dataSchema, contentType)
 			if s != nil {
@@ -363,7 +362,7 @@ func (p *HandlerParser) parseDataType(call *ast.CallExpr, dataType *DataSchema, 
 			}
 		}
 		schema.Properties = properties
-		return openapi3.NewSchemaRef("", schema)
+		return spec.NewSchemaRef("", schema)
 	default: // fallback to js expression
 		output := p.evaluate(call, string(dataType.Type))
 		if output == nil {
@@ -378,22 +377,22 @@ func (p *HandlerParser) parseDataType(call *ast.CallExpr, dataType *DataSchema, 
 	}
 }
 
-func (p *HandlerParser) basicSchemaType(t string) *openapi3.SchemaRef {
-	return &openapi3.SchemaRef{
-		Value: &openapi3.Schema{
+func (p *handlerAnalyzer) basicSchemaType(t string) *spec.SchemaRef {
+	return &spec.SchemaRef{
+		Value: &spec.Schema{
 			Type: t,
 		},
 	}
 }
 
-func (p *HandlerParser) parseParamsInCall(call *ast.CallExpr, dataType *DataSchema, contentType string) (params []*openapi3.Parameter) {
+func (p *handlerAnalyzer) parseParamsInCall(call *ast.CallExpr, dataType *DataSchema, contentType string) (params []*spec.Parameter) {
 	switch dataType.Type {
 	case DataTypeString, DataTypeNumber, DataTypeInteger, DataTypeBoolean, DataTypeFile, DataTypeArray:
-		param := &openapi3.Parameter{}
-		schema := openapi3.NewSchema()
+		param := &spec.Parameter{}
+		schema := spec.NewSchema()
 		schema.Type = string(dataType.Type)
 		schema.Format = dataType.Format
-		param.Schema = openapi3.NewSchemaRef("", schema)
+		param.Schema = spec.NewSchemaRef("", schema)
 		return append(params, param)
 
 	case DataTypeObject: // unsupported in form data
@@ -411,7 +410,7 @@ func (p *HandlerParser) parseParamsInCall(call *ast.CallExpr, dataType *DataSche
 	}
 }
 
-func (p *HandlerParser) evaluate(call *ast.CallExpr, code string) interface{} {
+func (p *handlerAnalyzer) evaluate(call *ast.CallExpr, code string) interface{} {
 	env := otto.New()
 	env.Set("args", call.Args)
 	output, err := env.Run(code)
@@ -428,7 +427,7 @@ func (p *HandlerParser) evaluate(call *ast.CallExpr, code string) interface{} {
 }
 
 // 获取一个尽可能正确的 request payload contentType
-func (p *HandlerParser) getRequestContentType(contentType string) string {
+func (p *handlerAnalyzer) getRequestContentType(contentType string) string {
 	if contentType != "" {
 		if !lo.Contains(p.spec.Consumes, contentType) {
 			p.spec.Consumes = append(p.spec.Consumes, contentType)

@@ -1,6 +1,6 @@
 package generators
 
-import "github.com/getkin/kin-openapi/openapi3"
+import "github.com/gotomicro/ego-gen-api/spec"
 
 type Generator struct {
 	Type  string
@@ -9,7 +9,7 @@ type Generator struct {
 
 type Item struct {
 	FileName string
-	Print    func(schema *openapi3.T) string
+	Print    func(schema *spec.T) string
 }
 
 var Generators = make(map[string]*Generator)
