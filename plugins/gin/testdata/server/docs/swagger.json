@@ -89,15 +89,6 @@
                 "title": "GoodsCreateRes",
                 "type": "object"
             },
-            "server_pkg_view.GoodsDeleteRequest": {
-                "properties": {
-                    "formDataField": {
-                        "type": "string"
-                    }
-                },
-                "title": "GoodsDeleteRequest",
-                "type": "object"
-            },
             "server_pkg_view.GoodsDownRes": {
                 "properties": {
                     "Status": {
@@ -191,9 +182,6 @@
                             }
                         },
                         "description": "参数无效"
-                    },
-                    "default": {
-                        "description": ""
                     }
                 },
                 "summary": "创建商品",
@@ -206,17 +194,16 @@
             "delete": {
                 "description": "删除商品",
                 "operationId": "shop.GoodsDelete",
-                "requestBody": {
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "$ref": "#/components/schemas/server_pkg_view.GoodsDeleteRequest"
-                            }
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "formDataField",
+                        "schema": {
+                            "type": "string"
                         }
-                    },
-                    "required": true
-                },
-                "responses": null,
+                    }
+                ],
+                "responses": {},
                 "summary": "删除商品",
                 "tags": [
                     "Shop"
@@ -238,15 +225,6 @@
                         }
                     },
                     {
-                        "description": "操作人 UID",
-                        "in": "path",
-                        "name": "operatorUid",
-                        "required": true,
-                        "schema": {
-                            "title": "operatorUid"
-                        }
-                    },
-                    {
                         "description": "日期范围",
                         "in": "path",
                         "name": "dateRange",
@@ -260,6 +238,21 @@
                         }
                     }
                 ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "operatorUid": {
+                                        "title": "operatorUid",
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
                         "content": {
@@ -269,9 +262,6 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": ""
                     }
                 },
                 "summary": "下架商品",
@@ -303,9 +293,6 @@
                                 }
                             }
                         }
-                    },
-                    "default": {
-                        "description": ""
                     }
                 },
                 "summary": "商品详情",
@@ -356,9 +343,6 @@
                             }
                         },
                         "description": "自定义响应函数"
-                    },
-                    "default": {
-                        "description": ""
                     }
                 }
             }

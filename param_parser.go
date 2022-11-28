@@ -105,13 +105,13 @@ func (p *ParamParser) typeOf(expr ast.Expr) *openapi3.Parameter {
 		param := &openapi3.Parameter{}
 		paramSchema := openapi3.NewArraySchema()
 		paramSchema.WithItems(p.typeOf(t.Elt).Schema.Value)
-		return param
+		return param.WithSchema(paramSchema)
 
 	case *ast.SliceExpr:
 		param := &openapi3.Parameter{}
 		paramSchema := openapi3.NewArraySchema()
 		paramSchema.WithItems(p.typeOf(t.X).Schema.Value)
-		return param
+		return param.WithSchema(paramSchema)
 	}
 
 	// fallback
