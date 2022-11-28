@@ -1676,6 +1676,11 @@ func (schema *Schema) WithDescription(s string) *Schema {
 	return schema
 }
 
+func (schema *Schema) Clone() *Schema {
+	res := *schema
+	return &res
+}
+
 type SchemaError struct {
 	Value                 interface{}
 	reversePath           []string
