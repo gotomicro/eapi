@@ -61,13 +61,18 @@ func (e *Plugin) assignStmt(ctx *analyzer.Context, node ast.Node) {
 		return
 	}
 
+	callRule := analyzer.NewCallRule().
+		WithRule(ginRouterGroupTypeName, routerGroupMethodName).
+		WithRule(ginIRouterTypeName, routerGroupMethodName).
+		WithRule(ginIRoutesTypeName, routerGroupMethodName)
+	for _, router := range e.config.RouterNames {
+		callRule = callRule.WithRule(router, routerGroupMethodName)
+	}
+
 	rh := assign.Rhs[0]
 	ctx.MatchCall(
 		rh,
-		analyzer.NewCallRule().
-			WithRule(ginRouterGroupTypeName, routerGroupMethodName).
-			WithRule(ginIRouterTypeName, routerGroupMethodName).
-			WithRule(ginIRoutesTypeName, routerGroupMethodName),
+		callRule,
 		func(callExpr *ast.CallExpr, typeName, fnName string) {
 			if len(callExpr.Args) <= 0 {
 				return
@@ -113,11 +118,16 @@ func (e *Plugin) assignStmt(ctx *analyzer.Context, node ast.Node) {
 }
 
 func (e *Plugin) callExpr(ctx *analyzer.Context, callExpr *ast.CallExpr) {
+	callRule := analyzer.NewCallRule().WithRule(ginRouterGroupTypeName, routeMethods...).
+		WithRule(ginIRouterTypeName, routeMethods...).
+		WithRule(ginIRoutesTypeName, routeMethods...)
+	for _, router := range e.config.RouterNames {
+		callRule = callRule.WithRule(router, routeMethods...)
+	}
+
 	ctx.MatchCall(
 		callExpr,
-		analyzer.NewCallRule().WithRule(ginRouterGroupTypeName, routeMethods...).
-			WithRule(ginIRouterTypeName, routeMethods...).
-			WithRule(ginIRoutesTypeName, routeMethods...),
+		callRule,
 		func(call *ast.CallExpr, typeName, fnName string) {
 			api := e.parseAPI(ctx, callExpr)
 			if api == nil {
