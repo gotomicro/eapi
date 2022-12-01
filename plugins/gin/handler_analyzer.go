@@ -9,6 +9,7 @@ import (
 
 	analyzer "github.com/gotomicro/ego-gen-api"
 	"github.com/gotomicro/ego-gen-api/spec"
+	"github.com/iancoleman/strcase"
 	"github.com/robertkrimen/otto"
 	"github.com/samber/lo"
 )
@@ -182,6 +183,7 @@ func (p *handlerAnalyzer) parseFormData(call *ast.CallExpr, fieldType string) {
 		schema.Value.WithProperty(name, paramSchema)
 	} else {
 		schema = spec.NewSchemaRef("", spec.NewObjectSchema())
+		schema.Value.Title = strcase.ToCamel(p.spec.OperationID) + "Request"
 		schema.Value.WithProperty(name, paramSchema)
 		mediaType.Schema = schema
 		p.spec.RequestBody.Value.Content[analyzer.MimeTypeFormData] = mediaType
@@ -205,8 +207,16 @@ func (p *handlerAnalyzer) primitiveParam(call *ast.CallExpr, in string) *spec.Pa
 	name := strings.Trim(arg0Lit.Value, "\"")
 	paramSchema := spec.NewSchema()
 	paramSchema.Title = name
+	paramSchema.Type = "string"
 
-	res := spec.NewPathParameter(name).WithSchema(paramSchema)
+	var res *spec.Parameter
+	switch in {
+	case "path":
+		res = spec.NewPathParameter(name).WithSchema(paramSchema)
+	case "query":
+		res = spec.NewQueryParameter(name).WithSchema(paramSchema)
+	}
+
 	commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
 	if commentGroup != nil {
 		comment := analyzer.ParseComment(commentGroup)
@@ -356,6 +366,9 @@ func (p *handlerAnalyzer) parseDataType(call *ast.CallExpr, dataType *DataSchema
 		schema := spec.NewObjectSchema()
 		properties := make(spec.Schemas)
 		for name, dataSchema := range dataType.Properties {
+			if !dataSchema.Optional {
+				schema.Required = append(schema.Required, name)
+			}
 			s := p.parseDataType(call, dataSchema, contentType)
 			if s != nil {
 				properties[name] = s

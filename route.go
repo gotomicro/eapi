@@ -22,7 +22,7 @@ func NewAPI(method string, fullPath string) *API {
 	return &API{
 		Method:   method,
 		FullPath: fullPath,
-		Spec:     NewAPISpec(method + "." + fullPath),
+		Spec:     NewAPISpec(),
 	}
 }
 
@@ -62,11 +62,10 @@ type APISpec struct {
 	*spec.Operation
 }
 
-func NewAPISpec(id string) *APISpec {
+func NewAPISpec() *APISpec {
 	op := spec.NewOperation()
 	op.Responses = spec.NewResponses()
 	delete(op.Responses, "default")
-	op.OperationID = id
 
 	return &APISpec{
 		Operation: op,

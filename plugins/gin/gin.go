@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	analyzer "github.com/gotomicro/ego-gen-api"
-	"github.com/spf13/viper"
+	"github.com/knadh/koanf"
 )
 
 var (
@@ -33,8 +33,8 @@ func NewPlugin() *Plugin {
 	return &Plugin{}
 }
 
-func (e *Plugin) Mount() error {
-	err := viper.UnmarshalKey("properties", &e.config)
+func (e *Plugin) Mount(k *koanf.Koanf) error {
+	err := k.Unmarshal("properties", &e.config)
 	if err != nil {
 		return err
 	}

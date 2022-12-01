@@ -135,5 +135,5 @@ func (p *Printer) printBasicType(t string) f.Doc {
 	case "file":
 		return f.Content("File")
 	}
-	return f.Content("unknown")
+	return f.Content("any")
 }

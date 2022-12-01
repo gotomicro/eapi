@@ -48,7 +48,8 @@ type DataSchema struct {
 
 	Properties DataProperties `json:"properties"`
 	// set when Type='array'
-	Item *DataSchema `json:"item"`
+	Item     *DataSchema `json:"item"`
+	Optional bool        `json:"optional"`
 }
 
 type DataProperties map[string]*DataSchema

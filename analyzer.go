@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/gotomicro/ego-gen-api/spec"
+	"github.com/knadh/koanf"
 	"github.com/samber/lo"
 	"golang.org/x/mod/modfile"
 	"golang.org/x/tools/go/ast/inspector"
@@ -22,17 +23,19 @@ type Analyzer struct {
 	plugins     []Plugin
 	definitions Definitions
 	depends     []string
+	k           *koanf.Koanf
 
 	doc      *spec.T
 	packages []*packages.Package
 }
 
-func NewAnalyzer() *Analyzer {
+func NewAnalyzer(k *koanf.Koanf) *Analyzer {
 	a := &Analyzer{
 		routes:      make(APIs, 0),
 		globalEnv:   NewEnvironment(nil),
 		plugins:     make([]Plugin, 0),
 		definitions: make(Definitions),
+		k:           k,
 	}
 
 	components := spec.NewComponents()
@@ -50,7 +53,7 @@ func NewAnalyzer() *Analyzer {
 
 func (a *Analyzer) Plugin(plugins ...Plugin) *Analyzer {
 	for _, plugin := range plugins {
-		err := plugin.Mount()
+		err := plugin.Mount(a.k)
 		if err != nil {
 			panic(fmt.Sprintf("mount plugin '%s' failed. error: %s", plugin.Name(), err.Error()))
 		}
