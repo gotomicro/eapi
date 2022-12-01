@@ -61,6 +61,10 @@ func (p *ParamParser) parseType(t types.Type) (params []*spec.Parameter) {
 
 func (p *ParamParser) parseStructType(structType *ast.StructType) (params []*spec.Parameter) {
 	for _, field := range structType.Fields.List {
+		if len(field.Names) == 0 { // type composition
+			params = append(params, p.Parse(field.Type)...)
+		}
+
 		for _, name := range field.Names {
 			param := p.parseField(name, field)
 			params = append(params, param)
@@ -112,6 +116,9 @@ func (p *ParamParser) typeOf(expr ast.Expr) *spec.Parameter {
 		paramSchema := spec.NewArraySchema()
 		paramSchema.WithItems(p.typeOf(t.X).Schema.Value)
 		return param.WithSchema(paramSchema)
+
+	case *ast.StarExpr:
+		return p.typeOf(t.X)
 	}
 
 	// fallback
