@@ -253,6 +253,17 @@ func (p *Printer) paramsType(params []*spec.ParameterRef) f.Doc {
 		switch typeName {
 		case "integer":
 			typeName = "number"
+		case "array":
+			var itemType string
+			items := param.Value.Schema.Value.Items
+			if items != nil && items.Value != nil {
+				itemType = items.Value.Type
+			}
+			if itemType == "" {
+				itemType = "string"
+			}
+			typeName = itemType + "[]"
+
 		case "":
 			typeName = "string"
 		}
