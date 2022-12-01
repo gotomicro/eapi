@@ -132,7 +132,8 @@ func (a *Analyzer) load(pkgPath string) []*packages.Package {
 			packages.NeedTypes |
 			packages.NeedSyntax |
 			packages.NeedModule |
-			packages.NeedTypesInfo,
+			packages.NeedTypesInfo |
+			0,
 		BuildFlags: []string{},
 		Tests:      false,
 		Dir:        absPath,
