@@ -149,9 +149,16 @@ func (p *Printer) request(path string, method string, item *spec.Operation) f.Do
 	if item.RequestBody != nil {
 		_, mediaType := p.getRequestMediaType(item)
 		if mediaType != nil {
-			s := spec.Unref(p.schema, mediaType.Schema)
-			p.importTypes = append(p.importTypes, s.Value.Title)
-			params = append(params, f.Content("data: "+s.Value.Title))
+			if mediaType.Schema.Ref != "" {
+				s := spec.Unref(p.schema, mediaType.Schema)
+				p.importType(s.Value.Title)
+				params = append(params, f.Content("data: "+s.Value.Title))
+			} else {
+				params = append(params, f.Group(
+					f.Content("data: "),
+					ts.NewPrinter(p.schema).PrintType(mediaType.Schema),
+				))
+			}
 		}
 	}
 
@@ -207,7 +214,7 @@ func (p *Printer) requestFunctionBody(pathName string, method string, queryParam
 				f.Content("let formData = new FormData();"), f.LineBreak(),
 				f.Content("for (const key in data) {"), f.LineBreak(),
 				f.Indent(f.Group(
-					f.Content("formData.append(key, data[key as keyof typeof data] as string);"), f.LineBreak(),
+					f.Content("formData.append(key, data[key as keyof typeof data] as string | Blob);"), f.LineBreak(),
 				)),
 				f.Content("}"),
 				f.LineBreak(),
@@ -249,25 +256,10 @@ func (p *Printer) toLowerCamelCase(id string) string {
 func (p *Printer) paramsType(params []*spec.ParameterRef) f.Doc {
 	var fields []f.Doc
 	for _, param := range params {
-		typeName := param.Value.Schema.Value.Type
-		switch typeName {
-		case "integer":
-			typeName = "number"
-		case "array":
-			var itemType string
-			items := param.Value.Schema.Value.Items
-			if items != nil && items.Value != nil {
-				itemType = items.Value.Type
-			}
-			if itemType == "" {
-				itemType = "string"
-			}
-			typeName = itemType + "[]"
-
-		case "":
-			typeName = "string"
-		}
-		fields = append(fields, f.Content(param.Value.Name+": "+typeName))
+		fields = append(fields, f.Group(
+			f.Content(param.Value.Name+": "),
+			ts.NewPrinter(p.schema).PrintType(param.Value.Schema),
+		))
 	}
 
 	return f.Group(
@@ -338,7 +330,7 @@ func (p *Printer) responseType(res *spec.Response) f.Doc {
 		tsPrinter := ts.NewPrinter(p.schema)
 		tsPrinter.TypeFieldsInLine = true
 		ret := tsPrinter.PrintType(schema)
-		p.importTypes = append(p.importTypes, tsPrinter.ReferencedTypes...)
+		p.importType(tsPrinter.ReferencedTypes...)
 		return ret
 	}
 
@@ -356,4 +348,8 @@ func (p *Printer) requestFnName(item *spec.Operation) string {
 		res += strcase.ToCamel(s)
 	}
 	return res
+}
+
+func (p *Printer) importType(types ...string) {
+	p.importTypes = append(p.importTypes, types...)
 }
