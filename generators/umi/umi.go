@@ -257,7 +257,7 @@ func (p *Printer) paramsType(params []*spec.ParameterRef) f.Doc {
 	var fields []f.Doc
 	for _, param := range params {
 		fields = append(fields, f.Group(
-			f.Content(param.Value.Name+": "),
+			f.Content(param.Value.Name+"?: "),
 			ts.NewPrinter(p.schema).PrintType(param.Value.Schema),
 		))
 	}
