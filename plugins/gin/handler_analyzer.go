@@ -366,6 +366,9 @@ func (p *handlerAnalyzer) parseDataType(call *ast.CallExpr, dataType *DataSchema
 		schema := spec.NewObjectSchema()
 		properties := make(spec.Schemas)
 		for name, dataSchema := range dataType.Properties {
+			if !dataSchema.Optional {
+				schema.Required = append(schema.Required, name)
+			}
 			s := p.parseDataType(call, dataSchema, contentType)
 			if s != nil {
 				properties[name] = s

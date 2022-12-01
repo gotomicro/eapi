@@ -7,7 +7,9 @@ import (
 	"testing"
 
 	analyzer "github.com/gotomicro/ego-gen-api"
-	"github.com/spf13/viper"
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/file"
 )
 
 func currentDir() string {
@@ -16,15 +18,15 @@ func currentDir() string {
 }
 
 func TestGinPlugin(t *testing.T) {
-	viper.SetConfigFile(filepath.Join(currentDir(), "testdata/server/config.gin.yaml"))
-	err := viper.ReadInConfig()
+	k := koanf.New(".")
+	err := k.Load(file.Provider(filepath.Join(currentDir(), "testdata/server/config.gin.yaml")), yaml.Parser())
 	if err != nil {
 		t.Error(err)
 	}
 
 	path := filepath.Join(currentDir(), "testdata/server")
 	plugin := NewPlugin()
-	a := analyzer.NewAnalyzer().Plugin(plugin)
+	a := analyzer.NewAnalyzer(k).Plugin(plugin)
 	a.Depends("github.com/gin-gonic/gin", "encoding/json")
 	a.Process(path)
 	doc := a.Doc()

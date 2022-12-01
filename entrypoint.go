@@ -10,7 +10,9 @@ import (
 
 	_ "github.com/gotomicro/ego-gen-api/generators/ts"
 	_ "github.com/gotomicro/ego-gen-api/generators/umi"
-	"github.com/spf13/viper"
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/file"
 	"github.com/urfave/cli/v2"
 )
 
@@ -34,13 +36,14 @@ type GeneratorConfig struct {
 }
 
 type Entrypoint struct {
+	k       *koanf.Koanf
 	plugins []Plugin
 
 	cfg Config
 }
 
 func NewEntrypoint(plugins ...Plugin) *Entrypoint {
-	return &Entrypoint{plugins: plugins}
+	return &Entrypoint{plugins: plugins, k: koanf.New(".")}
 }
 
 const usageText = `Generate Doc:
@@ -111,7 +114,7 @@ func (e *Entrypoint) before(c *cli.Context) error {
 			return err
 		}
 
-		err = viper.Unmarshal(&e.cfg)
+		err = e.k.Unmarshal("", &e.cfg)
 		if err != nil {
 			return err
 		}
@@ -131,8 +134,7 @@ func (e *Entrypoint) before(c *cli.Context) error {
 }
 
 func (e *Entrypoint) loadConfig(cfg string) error {
-	viper.SetConfigFile(cfg)
-	return viper.ReadInConfig()
+	return e.k.Load(file.Provider(cfg), yaml.Parser())
 }
 
 func (e *Entrypoint) run(c *cli.Context) error {
@@ -161,7 +163,7 @@ func (e *Entrypoint) run(c *cli.Context) error {
 		return err
 	}
 
-	a := NewAnalyzer().Plugin(plugin).Depends(e.cfg.Depends...)
+	a := NewAnalyzer(e.k).Plugin(plugin).Depends(e.cfg.Depends...)
 	doc := a.Process(e.cfg.Dir).Doc()
 	if e.cfg.OpenAPI.Version != "" {
 		doc.OpenAPI = e.cfg.OpenAPI.Version
