@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/go-openapi/jsonpointer"
+	"github.com/samber/lo"
 
 	"github.com/getkin/kin-openapi/jsoninfo"
 )
@@ -106,6 +107,11 @@ func (operation Operation) JSONLookup(token string) (interface{}, error) {
 }
 
 func (operation *Operation) AddParameter(p *Parameter) {
+	exists := lo.ContainsBy(operation.Parameters, func(item *ParameterRef) bool { return item.Value.Name == p.Name && item.Value.In == p.In })
+	if exists {
+		return
+	}
+
 	operation.Parameters = append(operation.Parameters, &ParameterRef{
 		Value: p,
 	})
