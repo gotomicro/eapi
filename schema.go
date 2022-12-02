@@ -58,7 +58,14 @@ func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *spec.SchemaRef) {
 		return s.ParseExpr(expr.Sel)
 
 	case *ast.MapType:
-		return spec.MapProperty(s.ParseExpr(expr.Value))
+		return spec.NewSchemaRef(
+			"",
+			spec.NewSchema().
+				WithExtendedType(spec.NewMapExtendedType(
+					s.ParseExpr(expr.Key),
+					s.ParseExpr(expr.Value),
+				)),
+		)
 
 	case *ast.ArrayType:
 		return spec.ArrayProperty(s.ParseExpr(expr.Elt))
@@ -152,9 +159,15 @@ func (s *SchemaBuilder) parseIdent(expr *ast.Ident) *spec.SchemaRef {
 }
 
 var commonTypes = map[string]*spec.Schema{
-	"time.Time":                spec.NewSchema().WithType("string").WithFormat("datetime"),
-	"encoding/json.RawMessage": spec.NewSchema().WithType("object").WithDescription("Any Json Type"),
-	"json.RawMessage":          spec.NewSchema().WithType("object").WithDescription("Any Json Type"),
+	"time.Time": spec.NewSchema().WithType("string").WithFormat("datetime"),
+	"encoding/json.RawMessage": spec.NewSchema().
+		WithType("object").
+		WithDescription("Any Json Type").
+		WithExtendedType(spec.NewAnyExtendedType()),
+	"json.RawMessage": spec.NewSchema().
+		WithType("object").
+		WithDescription("Any Json Type").
+		WithExtendedType(spec.NewAnyExtendedType()),
 }
 
 func (s *SchemaBuilder) commonUsedType(t types.Type) *spec.SchemaRef {

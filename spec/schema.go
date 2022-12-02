@@ -165,12 +165,20 @@ type Schema struct {
 	AdditionalPropertiesAllowed *bool          `multijson:"additionalProperties,omitempty" json:"-" yaml:"-"` // In this order...
 	AdditionalProperties        *SchemaRef     `multijson:"additionalProperties,omitempty" json:"-" yaml:"-"` // ...for multijson
 	Discriminator               *Discriminator `json:"discriminator,omitempty" yaml:"discriminator,omitempty"`
+
+	// 拓展类型信息. 用于代码生成
+	ExtendedTypeInfo *ExtendedTypeInfo `json:"-" yaml:"-"`
 }
 
 var _ jsonpointer.JSONPointable = (*Schema)(nil)
 
 func NewSchema() *Schema {
 	return &Schema{}
+}
+
+func (schema *Schema) WithExtendedType(t *ExtendedTypeInfo) *Schema {
+	schema.ExtendedTypeInfo = t
+	return schema
 }
 
 // MarshalJSON returns the JSON encoding of Schema.
@@ -184,7 +192,7 @@ func (schema *Schema) UnmarshalJSON(data []byte) error {
 }
 
 // JSONLookup implements github.com/go-openapi/jsonpointer#JSONPointable
-func (schema Schema) JSONLookup(token string) (interface{}, error) {
+func (schema *Schema) JSONLookup(token string) (interface{}, error) {
 	switch token {
 	case "additionalProperties":
 		if schema.AdditionalProperties != nil {

@@ -74,8 +74,7 @@
                     },
                     "raw": {
                         "description": "测试引用内置包类型",
-                        "format": "byte",
-                        "type": "string"
+                        "type": "object"
                     },
                     "selfRef": {
                         "description": "测试循环引用",
@@ -103,9 +102,11 @@
                     "cover": {
                         "type": "string"
                     },
+                    "mapInt": {},
                     "price": {
                         "type": "integer"
                     },
+                    "properties": {},
                     "subTitle": {
                         "type": "string"
                     },
@@ -127,6 +128,15 @@
                     "url"
                 ],
                 "title": "Image",
+                "type": "object"
+            },
+            "server_pkg_view.Property": {
+                "properties": {
+                    "title": {
+                        "type": "string"
+                    }
+                },
+                "title": "Property",
                 "type": "object"
             },
             "server_pkg_view.SelfRefType": {
@@ -221,20 +231,8 @@
                         "name": "guid",
                         "required": true,
                         "schema": {
-                            "title": "guid"
-                        }
-                    },
-                    {
-                        "description": "日期范围",
-                        "in": "path",
-                        "name": "dateRange",
-                        "required": true,
-                        "schema": {
-                            "items": {
-                                "type": "string"
-                            },
-                            "title": "dateRange",
-                            "type": "array"
+                            "title": "guid",
+                            "type": "string"
                         }
                     }
                 ],
@@ -243,11 +241,19 @@
                         "multipart/form-data": {
                             "schema": {
                                 "properties": {
+                                    "dateRange": {
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "title": "dateRange",
+                                        "type": "array"
+                                    },
                                     "operatorUid": {
                                         "title": "operatorUid",
                                         "type": "string"
                                     }
                                 },
+                                "title": "ShopGoodsDownRequest",
                                 "type": "object"
                             }
                         }
@@ -280,7 +286,8 @@
                         "name": "guid",
                         "required": true,
                         "schema": {
-                            "title": "guid"
+                            "title": "guid",
+                            "type": "string"
                         }
                     }
                 ],
@@ -303,22 +310,22 @@
         },
         "/wrapped-handler": {
             "get": {
-                "operationId": "GET./wrapped-handler",
+                "operationId": "shop.WrappedHandler",
                 "parameters": [
                     {
-                        "in": "path",
+                        "in": "query",
                         "name": "hello",
-                        "required": true,
                         "schema": {
-                            "title": "hello"
+                            "title": "hello",
+                            "type": "string"
                         }
                     },
                     {
-                        "in": "path",
+                        "in": "query",
                         "name": "world",
-                        "required": true,
                         "schema": {
-                            "title": "world"
+                            "title": "world",
+                            "type": "string"
                         }
                     }
                 ],
@@ -338,6 +345,11 @@
                                             "type": "string"
                                         }
                                     },
+                                    "required": [
+                                        "data",
+                                        "code",
+                                        "msg"
+                                    ],
                                     "type": "object"
                                 }
                             }
