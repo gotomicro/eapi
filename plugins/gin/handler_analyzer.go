@@ -68,7 +68,9 @@ func (p *handlerAnalyzer) Parse() {
 				case "FormFile":
 					p.parseFormData(call, "file")
 				case "PostFormArray":
-					p.parsePrimitiveParamArray(call, "formData")
+					p.parseFormData(call, spec.TypeArray, func(s *spec.Schema) {
+						s.Items = spec.NewSchemaRef("", spec.NewStringSchema())
+					})
 				case "Redirect":
 					p.parseRedirectRes(call)
 					// TODO: supporting more methods (FileForm(), HTML(), Data(), etc...)
@@ -152,7 +154,7 @@ func (p *handlerAnalyzer) parsePrimitiveParam(call *ast.CallExpr, in string) {
 	p.spec.AddParameter(param)
 }
 
-func (p *handlerAnalyzer) parseFormData(call *ast.CallExpr, fieldType string) {
+func (p *handlerAnalyzer) parseFormData(call *ast.CallExpr, fieldType string, options ...func(s *spec.Schema)) {
 	if len(call.Args) <= 0 {
 		return
 	}
@@ -166,6 +168,9 @@ func (p *handlerAnalyzer) parseFormData(call *ast.CallExpr, fieldType string) {
 	paramSchema := spec.NewSchema()
 	paramSchema.Title = name
 	paramSchema.Type = fieldType
+	for _, option := range options {
+		option(paramSchema)
+	}
 
 	mediaType := spec.NewMediaType()
 	requestBody := p.spec.RequestBody
@@ -226,13 +231,6 @@ func (p *handlerAnalyzer) primitiveParam(call *ast.CallExpr, in string) *spec.Pa
 	}
 
 	return res
-}
-
-func (p *handlerAnalyzer) parsePrimitiveParamArray(call *ast.CallExpr, in string) {
-	param := p.primitiveParam(call, in)
-	param.Schema.Value.Type = "array"
-	param.Schema.Value.Items = spec.NewSchemaRef("", spec.NewStringSchema())
-	p.spec.AddParameter(param)
 }
 
 func (p *handlerAnalyzer) matchCustomResponseRule(node ast.Node) (matched bool) {

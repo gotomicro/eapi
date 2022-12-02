@@ -74,8 +74,7 @@
                     },
                     "raw": {
                         "description": "测试引用内置包类型",
-                        "format": "byte",
-                        "type": "string"
+                        "type": "object"
                     },
                     "selfRef": {
                         "description": "测试循环引用",
@@ -221,20 +220,8 @@
                         "name": "guid",
                         "required": true,
                         "schema": {
-                            "title": "guid"
-                        }
-                    },
-                    {
-                        "description": "日期范围",
-                        "in": "path",
-                        "name": "dateRange",
-                        "required": true,
-                        "schema": {
-                            "items": {
-                                "type": "string"
-                            },
-                            "title": "dateRange",
-                            "type": "array"
+                            "title": "guid",
+                            "type": "string"
                         }
                     }
                 ],
@@ -243,11 +230,19 @@
                         "multipart/form-data": {
                             "schema": {
                                 "properties": {
+                                    "dateRange": {
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "title": "dateRange",
+                                        "type": "array"
+                                    },
                                     "operatorUid": {
                                         "title": "operatorUid",
                                         "type": "string"
                                     }
                                 },
+                                "title": "ShopGoodsDownRequest",
                                 "type": "object"
                             }
                         }
@@ -280,7 +275,8 @@
                         "name": "guid",
                         "required": true,
                         "schema": {
-                            "title": "guid"
+                            "title": "guid",
+                            "type": "string"
                         }
                     }
                 ],
@@ -303,22 +299,22 @@
         },
         "/wrapped-handler": {
             "get": {
-                "operationId": "GET./wrapped-handler",
+                "operationId": "shop.WrappedHandler",
                 "parameters": [
                     {
-                        "in": "path",
+                        "in": "query",
                         "name": "hello",
-                        "required": true,
                         "schema": {
-                            "title": "hello"
+                            "title": "hello",
+                            "type": "string"
                         }
                     },
                     {
-                        "in": "path",
+                        "in": "query",
                         "name": "world",
-                        "required": true,
                         "schema": {
-                            "title": "world"
+                            "title": "world",
+                            "type": "string"
                         }
                     }
                 ],
@@ -338,6 +334,11 @@
                                             "type": "string"
                                         }
                                     },
+                                    "required": [
+                                        "msg",
+                                        "data",
+                                        "code"
+                                    ],
                                     "type": "object"
                                 }
                             }
