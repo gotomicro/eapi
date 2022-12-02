@@ -1,6 +1,6 @@
 package generators
 
-import "github.com/gotomicro/ego-gen-api/spec"
+import "github.com/gotomicro/eapi/spec"
 
 type Generator struct {
 	Type  string

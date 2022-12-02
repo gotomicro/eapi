@@ -346,9 +346,9 @@
                                         }
                                     },
                                     "required": [
+                                        "msg",
                                         "data",
-                                        "code",
-                                        "msg"
+                                        "code"
                                     ],
                                     "type": "object"
                                 }

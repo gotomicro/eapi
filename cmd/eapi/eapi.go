@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
-	analyzer "github.com/gotomicro/ego-gen-api"
-	"github.com/gotomicro/ego-gen-api/plugins/gin"
+	analyzer "github.com/gotomicro/eapi"
+	"github.com/gotomicro/eapi/plugins/gin"
 )
 
 func main() {

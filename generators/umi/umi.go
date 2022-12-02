@@ -7,10 +7,10 @@ import (
 	"sort"
 	"strings"
 
-	f "github.com/gotomicro/ego-gen-api/formatter"
-	"github.com/gotomicro/ego-gen-api/generators"
-	"github.com/gotomicro/ego-gen-api/generators/ts"
-	"github.com/gotomicro/ego-gen-api/spec"
+	f "github.com/gotomicro/eapi/formatter"
+	"github.com/gotomicro/eapi/generators"
+	"github.com/gotomicro/eapi/generators/ts"
+	"github.com/gotomicro/eapi/spec"
 	"github.com/iancoleman/strcase"
 	"github.com/samber/lo"
 )

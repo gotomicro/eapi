@@ -1,11 +1,11 @@
-package analyzer
+package eapi
 
 import (
 	"fmt"
 	"go/ast"
 	"strings"
 
-	"github.com/gotomicro/ego-gen-api/spec"
+	"github.com/gotomicro/eapi/spec"
 	"golang.org/x/tools/go/packages"
 )
 

@@ -3,9 +3,9 @@ package ts
 import (
 	_ "embed"
 
-	f "github.com/gotomicro/ego-gen-api/formatter"
-	"github.com/gotomicro/ego-gen-api/generators"
-	"github.com/gotomicro/ego-gen-api/spec"
+	f "github.com/gotomicro/eapi/formatter"
+	"github.com/gotomicro/eapi/generators"
+	"github.com/gotomicro/eapi/spec"
 	"github.com/samber/lo"
 )
 

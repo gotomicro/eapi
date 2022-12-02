@@ -1,4 +1,4 @@
-module github.com/gotomicro/ego-gen-api
+module github.com/gotomicro/eapi
 
 go 1.18
 
