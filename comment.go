@@ -1,11 +1,11 @@
-package analyzer
+package eapi
 
 import (
 	"go/ast"
 	"strings"
 
-	"github.com/gotomicro/ego-gen-api/annotation"
-	"github.com/gotomicro/ego-gen-api/spec"
+	"github.com/gotomicro/eapi/annotation"
+	"github.com/gotomicro/eapi/spec"
 	"github.com/samber/lo"
 )
 

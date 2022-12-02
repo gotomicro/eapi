@@ -1,4 +1,4 @@
-package analyzer
+package eapi
 
 import (
 	"golang.org/x/mod/modfile"

@@ -1,4 +1,4 @@
-package analyzer
+package eapi
 
 import (
 	"io/ioutil"

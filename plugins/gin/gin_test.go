@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"testing"
 
-	analyzer "github.com/gotomicro/ego-gen-api"
+	analyzer "github.com/gotomicro/eapi"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"

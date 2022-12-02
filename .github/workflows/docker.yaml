@@ -17,7 +17,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            gotomicro/egogen
+            gotomicro/eapi
           tags: |
             type=schedule
             type=ref,event=branch

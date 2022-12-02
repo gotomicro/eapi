@@ -1,11 +1,11 @@
-package analyzer
+package eapi
 
 import (
 	"go/ast"
 	"net/http"
 	"strings"
 
-	"github.com/gotomicro/ego-gen-api/spec"
+	"github.com/gotomicro/eapi/spec"
 )
 
 type RouteGroup struct {

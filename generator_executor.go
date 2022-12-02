@@ -1,12 +1,12 @@
-package analyzer
+package eapi
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
 
-	"github.com/gotomicro/ego-gen-api/generators"
-	"github.com/gotomicro/ego-gen-api/spec"
+	"github.com/gotomicro/eapi/generators"
+	"github.com/gotomicro/eapi/spec"
 )
 
 type generatorExecutor struct {

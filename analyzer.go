@@ -1,4 +1,4 @@
-package analyzer
+package eapi
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/gotomicro/ego-gen-api/spec"
+	"github.com/gotomicro/eapi/spec"
 	"github.com/knadh/koanf"
 	"github.com/samber/lo"
 	"golang.org/x/mod/modfile"

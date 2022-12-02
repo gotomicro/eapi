@@ -1,22 +1,22 @@
-# ego-gen [WIP]
+# eapi
 
-`ego-gen-api` 通过分析 AST 解析出代码中的路由（方法/路径）和 Handler 函数（请求响应参数/响应状态码等）获取接口的信息，进而生成 Swagger 文档。
+EAPI 是一个通过分析 AST 生成 **接口文档** 及 **前端接口请求代码** 的命令行工具。作为 swaggo 等工具的替代品，EAPI 无需编写复杂的注解即可使用。
 
-由于本工具只分析 AST 中的关键部分（类似于静态分析）而不执行代码，因此并不能覆盖到任一种使用场景。如果你要在项目中使用本工具，必须要按照一定的约定编写代码，否则将不能生成完整的文档。虽然这给你的代码编写带来了一定的约束，但从另一个角度看，这也使得代码风格更加统一。
+eapi 通过分析 AST 解析出代码中的路由（方法/路径）和 Handler 函数（请求响应参数/响应状态码等）获取接口的信息，进而生成 OpenAPI(Swagger) 文档。eapi 目前支持了 gin 框架的文档生成，echo 等其他主流框架在计划中。如果你需要将 eapi 应用在其他未被支持的框架，可以通过编写自定义插件的方式进行实现，或者给我们提交 PR。
 
-本工具目前支持了 `gin` 框架的文档生成。如果你需要将本项目进行扩展或应用于未支持的框架，可以通过编写自定义插件的方式进行实现。
+由于本工具只分析 AST 中的关键部分（类似于静态分析）而不执行代码，因此如果你要在项目中使用本工具，必须要按照一定的约定编写代码，否则将不能生成完整的文档。虽然这给你的代码编写带来了一定的约束，但从另一个角度看，这也使得代码风格更加统一。
 
 ## 安装 Install
 
 > goproxy 可能会存在缓存，可以优先尝试指定版本号进行安装。
 > 
 ```shell
-go install github.com/gotomicro/ego-gen-api/cmd/egogen@latest
+go install github.com/gotomicro/eapi/cmd/eapi@latest
 ```
 
-## 如何使用 How to Use
+## 如何使用
 ### 通过配置文件
-**egogen.yaml**:
+**eapi.yaml**:
 ```yaml
 output: docs
 plugin: gin
@@ -26,14 +26,14 @@ dir: 'api' # 需要解析的代码根目录
 
 在代码根目录下执行:
 ```shell
-egogen --config egogen.yaml
+eapi --config eapi.yaml
 ```
 
 ### 通过命令行参数
 
 在代码根目录下执行:
 ```shell
-egogen --output docs --plugin gin --dir api
+eapi --output docs --plugin gin --dir api
 ```
 
 执行以上命令后，会在 `/docs` 目录下生成 `swagger.json` 文件。
@@ -114,3 +114,6 @@ generators:
      - name: ts
        output: ./src/types # 输出文件的目录
    ```
+
+# TODO
+- [ ] support for `echo` framework

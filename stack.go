@@ -1,4 +1,4 @@
-package analyzer
+package eapi
 
 type Stack[T any] []T
 

@@ -1,4 +1,4 @@
-package analyzer
+package eapi
 
 import (
 	"encoding/json"
@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "github.com/gotomicro/ego-gen-api/generators/ts"
-	_ "github.com/gotomicro/ego-gen-api/generators/umi"
+	_ "github.com/gotomicro/eapi/generators/ts"
+	_ "github.com/gotomicro/eapi/generators/umi"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
@@ -47,14 +47,14 @@ func NewEntrypoint(plugins ...Plugin) *Entrypoint {
 }
 
 const usageText = `Generate Doc:
-	egogen --config config.yaml
+	eapi --config config.yaml
 or
-	egogen --plugin gin --dir src/ --output docs/
+	eapi --plugin gin --dir src/ --output docs/
 
 Generate Frontend Code:
-	egogen --config config.yaml gencode
+	eapi --config config.yaml gencode
 or
-	egogen --plugin gin --dir src/ --output docs/ gencode`
+	eapi --plugin gin --dir src/ --output docs/ gencode`
 
 func (e *Entrypoint) Run(args []string) {
 	app := cli.NewApp()

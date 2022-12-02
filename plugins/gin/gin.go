@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	analyzer "github.com/gotomicro/ego-gen-api"
+	analyzer "github.com/gotomicro/eapi"
 	"github.com/knadh/koanf"
 )
 

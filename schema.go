@@ -1,4 +1,4 @@
-package analyzer
+package eapi
 
 import (
 	"fmt"
@@ -6,8 +6,8 @@ import (
 	"go/types"
 	"strings"
 
-	"github.com/gotomicro/ego-gen-api/spec"
-	"github.com/gotomicro/ego-gen-api/tag"
+	"github.com/gotomicro/eapi/spec"
+	"github.com/gotomicro/eapi/tag"
 	"github.com/samber/lo"
 )
 

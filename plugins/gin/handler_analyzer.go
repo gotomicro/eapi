@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	analyzer "github.com/gotomicro/ego-gen-api"
-	"github.com/gotomicro/ego-gen-api/spec"
+	analyzer "github.com/gotomicro/eapi"
+	"github.com/gotomicro/eapi/spec"
 	"github.com/iancoleman/strcase"
 	"github.com/robertkrimen/otto"
 	"github.com/samber/lo"

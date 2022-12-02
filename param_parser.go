@@ -1,11 +1,11 @@
-package analyzer
+package eapi
 
 import (
 	"go/ast"
 	"go/types"
 
-	"github.com/gotomicro/ego-gen-api/spec"
-	"github.com/gotomicro/ego-gen-api/tag"
+	"github.com/gotomicro/eapi/spec"
+	"github.com/gotomicro/eapi/tag"
 )
 
 type ParamParser struct {
