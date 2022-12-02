@@ -147,6 +147,8 @@ func (p *Printer) printExtendedType(info *spec.ExtendedTypeInfo) f.Doc {
 	switch info.Type {
 	case spec.ExtendedTypeAny:
 		return f.Content("any")
+	case spec.ExtendedTypeMap:
+		return f.Content("Record<", p.PrintType(info.Key), ", ", p.PrintType(info.Value), ">")
 	}
 	return f.Content("unknown")
 }

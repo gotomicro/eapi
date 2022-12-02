@@ -30,7 +30,16 @@ func Group(docs ...Doc) *DocGroup {
 	return &DocGroup{Docs: docs}
 }
 
-func Content(code string) *DocContent {
-	res := DocContent(code)
-	return &res
+func Content(contents ...interface{}) *DocGroup {
+	var res = Group()
+	for _, content := range contents {
+		switch content := content.(type) {
+		case string:
+			item := DocContent(content)
+			res.Docs = append(res.Docs, &item)
+		case Doc:
+			res.Docs = append(res.Docs, content)
+		}
+	}
+	return res
 }

@@ -54,10 +54,16 @@ type GoodsCreateRes struct {
 }
 
 type GoodsInfoRes struct {
-	Title    string `json:"title"`
-	SubTitle string `json:"subTitle"`
-	Cover    string `json:"cover"`
-	Price    int64  `json:"price"`
+	Title      string               `json:"title"`
+	SubTitle   string               `json:"subTitle"`
+	Cover      string               `json:"cover"`
+	Price      int64                `json:"price"`
+	Properties map[string]*Property `json:"properties"`
+	MapInt     map[int]*Property    `json:"mapInt"`
+}
+
+type Property struct {
+	Title string `json:"title"`
 }
 
 type GoodsDownRes struct {

@@ -11,8 +11,10 @@ const (
 type ExtendedTypeInfo struct {
 	Type ExtendedType `json:"type"`
 
+	// When Type = 'map'. Key means type of key of map.
+	Key *SchemaRef
 	// When Type = 'map'. Value means type of value of map.
-	Value *Schema `json:"valueType"`
+	Value *SchemaRef `json:"valueType"`
 
 	// Enum Items
 	EnumItems []*ExtendedEnumItem `json:"enumItems"`
@@ -34,4 +36,12 @@ func NewExtendedEnumType(items ...*ExtendedEnumItem) *ExtendedTypeInfo {
 
 func NewAnyExtendedType() *ExtendedTypeInfo {
 	return &ExtendedTypeInfo{Type: ExtendedTypeAny}
+}
+
+func NewMapExtendedType(key, value *SchemaRef) *ExtendedTypeInfo {
+	return &ExtendedTypeInfo{
+		Type:  ExtendedTypeMap,
+		Key:   key,
+		Value: value,
+	}
 }

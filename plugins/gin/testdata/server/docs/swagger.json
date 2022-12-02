@@ -102,9 +102,11 @@
                     "cover": {
                         "type": "string"
                     },
+                    "mapInt": {},
                     "price": {
                         "type": "integer"
                     },
+                    "properties": {},
                     "subTitle": {
                         "type": "string"
                     },
@@ -126,6 +128,15 @@
                     "url"
                 ],
                 "title": "Image",
+                "type": "object"
+            },
+            "server_pkg_view.Property": {
+                "properties": {
+                    "title": {
+                        "type": "string"
+                    }
+                },
+                "title": "Property",
                 "type": "object"
             },
             "server_pkg_view.SelfRefType": {
@@ -335,9 +346,9 @@
                                         }
                                     },
                                     "required": [
+                                        "data",
                                         "code",
-                                        "msg",
-                                        "data"
+                                        "msg"
                                     ],
                                     "type": "object"
                                 }
