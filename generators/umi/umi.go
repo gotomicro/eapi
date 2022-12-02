@@ -211,12 +211,8 @@ func (p *Printer) requestFunctionBody(pathName string, method string, queryParam
 	if mediaType != nil {
 		if reqContentType == contentTypeFormData {
 			res.Docs = append(res.Docs, f.Group(
-				f.Content("let formData = new FormData();"), f.LineBreak(),
-				f.Content("for (const key in data) {"), f.LineBreak(),
-				f.Indent(f.Group(
-					f.Content("formData.append(key, data[key as keyof typeof data] as string | Blob);"), f.LineBreak(),
-				)),
-				f.Content("}"),
+				f.Content("const formData = new FormData();"), f.LineBreak(),
+				f.Content("Object.keys(data).forEach((key) => "), f.Content("formData.append(key, data[key])"), f.Content(");"),
 				f.LineBreak(),
 			))
 		}
