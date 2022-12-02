@@ -335,9 +335,9 @@
                                         }
                                     },
                                     "required": [
+                                        "code",
                                         "msg",
-                                        "data",
-                                        "code"
+                                        "data"
                                     ],
                                     "type": "object"
                                 }

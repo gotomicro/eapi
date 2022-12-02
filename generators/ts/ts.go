@@ -68,7 +68,12 @@ func (p *Printer) PrintType(definition *spec.SchemaRef) f.Doc {
 		return f.Content(typeName)
 	}
 
-	var t = definition.Value.Type
+	schema := definition.Value
+	if schema.ExtendedTypeInfo != nil {
+		return p.printExtendedType(schema.ExtendedTypeInfo)
+	}
+
+	var t = schema.Type
 	switch t {
 	case "object":
 		return p.printInterface(definition)
@@ -136,4 +141,12 @@ func (p *Printer) printBasicType(t string) f.Doc {
 		return f.Content("File")
 	}
 	return f.Content("any")
+}
+
+func (p *Printer) printExtendedType(info *spec.ExtendedTypeInfo) f.Doc {
+	switch info.Type {
+	case spec.ExtendedTypeAny:
+		return f.Content("any")
+	}
+	return f.Content("unknown")
 }

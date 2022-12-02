@@ -152,9 +152,15 @@ func (s *SchemaBuilder) parseIdent(expr *ast.Ident) *spec.SchemaRef {
 }
 
 var commonTypes = map[string]*spec.Schema{
-	"time.Time":                spec.NewSchema().WithType("string").WithFormat("datetime"),
-	"encoding/json.RawMessage": spec.NewSchema().WithType("object").WithDescription("Any Json Type"),
-	"json.RawMessage":          spec.NewSchema().WithType("object").WithDescription("Any Json Type"),
+	"time.Time": spec.NewSchema().WithType("string").WithFormat("datetime"),
+	"encoding/json.RawMessage": spec.NewSchema().
+		WithType("object").
+		WithDescription("Any Json Type").
+		WithExtendedType(spec.NewAnyExtendedType()),
+	"json.RawMessage": spec.NewSchema().
+		WithType("object").
+		WithDescription("Any Json Type").
+		WithExtendedType(spec.NewAnyExtendedType()),
 }
 
 func (s *SchemaBuilder) commonUsedType(t types.Type) *spec.SchemaRef {
