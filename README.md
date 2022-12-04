@@ -29,18 +29,16 @@ eapi --plugin gin
 
 执行以上命令后，会在 `docs` 目录下生成 `openapi.json` 文件。
 
-### 通过配置文件
+或者，创建配置文件：
 
 **eapi.yaml**:
 ```yaml
 plugin: gin
 ```
 
+然后执行 `eapi` 即可
+
 [完整的配置说明](#配置)
-
-在代码根目录下执行 `eapi` 即可
-
-### 通过命令行参数
 
 ## 配置
 
