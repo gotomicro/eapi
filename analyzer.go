@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"go/ast"
 	"go/build"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -289,7 +288,7 @@ func (a *Analyzer) parseGoModule(pkgPath string) *packages.Module {
 		panic("go.mod not found in " + pkgPath)
 	}
 
-	content, err := ioutil.ReadFile(fileName)
+	content, err := os.ReadFile(fileName)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -188,7 +187,7 @@ func (e *Entrypoint) run(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		err = ioutil.WriteFile(filepath.Join(e.cfg.Output, "openapi.json"), docContent, fs.ModePerm)
+		err = os.WriteFile(filepath.Join(e.cfg.Output, "openapi.json"), docContent, fs.ModePerm)
 		if err != nil {
 			return err
 		}

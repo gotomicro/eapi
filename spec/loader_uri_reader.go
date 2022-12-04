@@ -3,9 +3,10 @@ package spec
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 )
 
@@ -60,7 +61,7 @@ func ReadFromHTTP(cl *http.Client) ReadFromURIFunc {
 		if resp.StatusCode > 399 {
 			return nil, fmt.Errorf("error loading %q: request returned status code %d", location.String(), resp.StatusCode)
 		}
-		return ioutil.ReadAll(resp.Body)
+		return io.ReadAll(resp.Body)
 	}
 }
 
@@ -72,7 +73,7 @@ func ReadFromFile(loader *Loader, location *url.URL) ([]byte, error) {
 	if location.Scheme != "" && location.Scheme != "file" {
 		return nil, ErrURINotSupported
 	}
-	return ioutil.ReadFile(location.Path)
+	return os.ReadFile(location.Path)
 }
 
 // URIMapCache returns a ReadFromURIFunc that caches the contents read from URI
