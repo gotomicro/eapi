@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"go/ast"
 	"go/build"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,7 +12,6 @@ import (
 	"github.com/knadh/koanf"
 	"github.com/samber/lo"
 	"golang.org/x/mod/modfile"
-	"golang.org/x/tools/go/ast/inspector"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -284,62 +282,13 @@ func (a *Analyzer) blockStmt(ctx *Context, node *ast.BlockStmt, file *ast.File, 
 	}
 }
 
-func (a *Analyzer) findFuncDeclInPackages(list []*packages.Package, pkgName, fnName string) (pkg *packages.Package, inFile *ast.File, decl *ast.FuncDecl) {
-	for _, p := range list {
-		pkg, inFile, decl = a.findFuncDeclInPackage(p, pkgName, fnName)
-		if pkg != nil {
-			return
-		}
-	}
-	return
-}
-
-func (a *Analyzer) findFuncDeclInPackage(pkg *packages.Package, pkgName string, fnName string) (inPkg *packages.Package, inFile *ast.File, decl *ast.FuncDecl) {
-	visited := make(map[string]bool)
-
-	var visit func(p *packages.Package) bool
-	visit = func(p *packages.Package) bool {
-		if visited[p.PkgPath] {
-			return true
-		}
-		visited[p.PkgPath] = true
-
-		if p.PkgPath == pkgName {
-			inPkg = p
-			inspector.New(p.Syntax).WithStack([]ast.Node{&ast.FuncDecl{}}, func(n ast.Node, push bool, stack []ast.Node) bool {
-				if !push {
-					return false
-				}
-				fn := n.(*ast.FuncDecl)
-				if fn.Name.Name == fnName {
-					decl = fn
-					inFile = stack[0].(*ast.File)
-					return false
-				}
-				return true
-			})
-			return false
-		}
-
-		for _, p := range lo.Values(p.Imports) {
-			if !visit(p) {
-				return false
-			}
-		}
-		return true
-	}
-
-	visit(pkg)
-	return
-}
-
 func (a *Analyzer) parseGoModule(pkgPath string) *packages.Module {
 	dir, fileName := a.lookupGoModFile(pkgPath)
 	if fileName == "" {
 		panic("go.mod not found in " + pkgPath)
 	}
 
-	content, err := ioutil.ReadFile(fileName)
+	content, err := os.ReadFile(fileName)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil

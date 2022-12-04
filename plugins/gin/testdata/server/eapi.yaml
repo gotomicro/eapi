@@ -1,6 +1,6 @@
 plugin: gin
 dir: '.'
-output: docs # output directory of swagger.json
+output: docs # output directory of openapi.json
 
 depends:
   - github.com/gin-gonic/gin

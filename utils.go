@@ -1,7 +1,7 @@
 package eapi
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -27,7 +27,7 @@ func NormalizeComment(text, trimStart string) string {
 
 func ReadGoMod(pkgPath string) (mod *modfile.File, err error) {
 	fileName := filepath.Join(pkgPath, "go.mod")
-	content, err := ioutil.ReadFile(fileName)
+	content, err := os.ReadFile(fileName)
 	if err != nil {
 		return
 	}
