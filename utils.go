@@ -55,6 +55,8 @@ func ConvertStrToBasicType(str string, t *types.Basic) interface{} {
 		return val
 	case types.Float32, types.Float64:
 		return cast.ToFloat64(str)
+	case types.String:
+		return strings.Trim(str, "\"")
 	default:
 		return str
 	}

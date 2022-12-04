@@ -1,26 +1,25 @@
-export type Property = {
-  title?: string;
-}
-
 export type GoodsInfoRes = {
-  title?: string;
-  subTitle?: string;
   cover?: string;
   price?: number;
   properties?: Record<string, Property>;
   mapInt?: Record<number, Property>;
-}
-
-export type Image = {
-  url: string;
+  title?: string;
+  subTitle?: string;
 }
 
 export type GoodsCreateReq = {
-  cover?: string;
-  price: number;
   images?: Image[];
   title: string;
   subTitle?: string;
+  cover?: string;
+  price: number;
+}
+
+export enum ErrCode {
+  CodeNotFound = 10000,
+  CodeCancled = 10001,
+  CodeUnknown = 10002,
+  CodeInvalidArgument = 10003,
 }
 
 export type Params = Param[]
@@ -29,7 +28,13 @@ export type GoodsDownRes = {
   Status?: string;
 }
 
-export type ErrCode = unknown
+export type Property = {
+  title?: string;
+}
+
+export type Image = {
+  url: string;
+}
 
 export type Error = {
   code?: ErrCode;
@@ -37,8 +42,8 @@ export type Error = {
 }
 
 export type SelfRefType = {
-  parent?: SelfRefType;
   data?: string;
+  parent?: SelfRefType;
 }
 
 export type Param = {

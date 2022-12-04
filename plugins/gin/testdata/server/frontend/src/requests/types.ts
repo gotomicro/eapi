@@ -1,4 +1,10 @@
-export type ErrCode = unknown
+export type Property = {
+  title?: string;
+}
+
+export type Image = {
+  url: string;
+}
 
 export type Error = {
   code?: ErrCode;
@@ -16,36 +22,35 @@ export type Param = {
 }
 
 export type GoodsCreateRes = {
+  raw?: any;
+  guid?: string;
   selfRef?: SelfRefType;
   Status?: Params;
   stringAlias?: string;
-  raw?: any;
-  guid?: string;
-}
-
-export type Property = {
-  title?: string;
 }
 
 export type GoodsInfoRes = {
+  title?: string;
   subTitle?: string;
   cover?: string;
   price?: number;
   properties?: Record<string, Property>;
   mapInt?: Record<number, Property>;
-  title?: string;
-}
-
-export type Image = {
-  url: string;
 }
 
 export type GoodsCreateReq = {
-  images?: Image[];
   title: string;
   subTitle?: string;
   cover?: string;
   price: number;
+  images?: Image[];
+}
+
+export enum ErrCode {
+  CodeNotFound = 10000,
+  CodeCancled = 10001,
+  CodeUnknown = 10002,
+  CodeInvalidArgument = 10003,
 }
 
 export type Params = Param[]
