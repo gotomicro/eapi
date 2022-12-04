@@ -360,9 +360,9 @@
                                         }
                                     },
                                     "required": [
-                                        "data",
                                         "code",
-                                        "msg"
+                                        "msg",
+                                        "data"
                                     ],
                                     "type": "object"
                                 }
