@@ -9,7 +9,7 @@ require (
 	github.com/invopop/yaml v0.1.0
 	github.com/knadh/koanf v1.4.4
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
-	github.com/robertkrimen/otto v0.0.0-20221025135307-511d75fba9f8
+	github.com/robertkrimen/otto v0.2.0
 	github.com/samber/lo v1.28.2
 	github.com/stretchr/testify v1.8.1
 	github.com/urfave/cli/v2 v2.23.4
@@ -35,6 +35,7 @@ require (
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 	golang.org/x/sys v0.2.0 // indirect
+	golang.org/x/text v0.4.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/sourcemap.v1 v1.0.5 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
