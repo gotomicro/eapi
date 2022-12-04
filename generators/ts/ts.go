@@ -7,6 +7,7 @@ import (
 	"github.com/gotomicro/eapi/generators"
 	"github.com/gotomicro/eapi/spec"
 	"github.com/samber/lo"
+	"github.com/spf13/cast"
 )
 
 var (
@@ -51,9 +52,27 @@ func (p *Printer) Print() f.Doc {
 }
 
 func (p *Printer) definition(definition *spec.SchemaRef) f.Doc {
+	ext := definition.Value.ExtendedTypeInfo
+	if ext != nil && ext.Type == spec.ExtendedTypeEnum { // enum
+		return f.Group(
+			f.Content("export enum ", definition.Value.Title, " "),
+			p.PrintEnumBody(ext.EnumItems),
+		)
+	}
+
 	return f.Group(
 		f.Content("export type "+definition.Value.Title+" = "),
 		p.PrintType(definition),
+	)
+}
+
+func (p *Printer) PrintEnumBody(enum []*spec.ExtendedEnumItem) f.Doc {
+	return f.Group(
+		f.Content("{"), f.LineBreak(),
+		f.Indent(f.Group(lo.Map(enum, func(item *spec.ExtendedEnumItem, _ int) f.Doc {
+			return f.Group(f.Content(item.Key, " = ", cast.ToString(item.Value), ","), f.LineBreak())
+		})...)),
+		f.Content("}"),
 	)
 }
 

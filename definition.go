@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"strings"
 
+	"github.com/gotomicro/eapi/spec"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -70,6 +71,9 @@ var _ Definition = &TypeDefinition{}
 
 type TypeDefinition struct {
 	Spec *ast.TypeSpec
+
+	// Enum items
+	Enums []*spec.ExtendedEnumItem
 
 	pkg  *packages.Package
 	file *ast.File

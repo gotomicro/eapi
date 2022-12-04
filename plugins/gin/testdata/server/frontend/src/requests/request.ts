@@ -1,8 +1,8 @@
 import { request } from "umi";
 import { 
   GoodsCreateReq,
-  SelfRefType,
   Params,
+  SelfRefType,
   Property,
   GoodsInfoRes
  } from "./types";
@@ -11,7 +11,7 @@ import {
  * @description 创建商品接口
  */
 export function shopGoodsCreate(data: GoodsCreateReq) {
-  return request<{ raw?: any; guid?: string; selfRef?: SelfRefType; Status?: Params; stringAlias?: string; }>(`/api/goods`, {
+  return request<{ Status?: Params; stringAlias?: string; raw?: any; guid?: string; selfRef?: SelfRefType; }>(`/api/goods`, {
     method: "post",
     data,
   });
@@ -46,13 +46,13 @@ export function shopGoodsDown(guid: string, data: {
  * @description 商品详情
  */
 export function shopGoodsInfo(guid: string) {
-  return request<{ title?: string; subTitle?: string; cover?: string; price?: number; properties?: Record<string, Property>; mapInt?: Record<number, Property>; }>(`/api/v2/goods/${guid}`, {
+  return request<{ cover?: string; price?: number; properties?: Record<string, Property>; mapInt?: Record<number, Property>; title?: string; subTitle?: string; }>(`/api/v2/goods/${guid}`, {
     method: "get",
   });
 }
 
 export function shopWrappedHandler(query: { hello?: string; world?: string }) {
-  return request<{ code: number; msg: string; data: GoodsInfoRes; }>(`/wrapped-handler`, {
+  return request<{ data: GoodsInfoRes; code: number; msg: string; }>(`/wrapped-handler`, {
     method: "get",
     params: query,
   });

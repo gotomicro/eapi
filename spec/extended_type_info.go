@@ -20,12 +20,6 @@ type ExtendedTypeInfo struct {
 	EnumItems []*ExtendedEnumItem `json:"enumItems"`
 }
 
-type ExtendedEnumItem struct {
-	Key         string `json:"key"`
-	Value       string `json:"value"`
-	Description string `json:"description"`
-}
-
 func NewExtendedEnumType(items ...*ExtendedEnumItem) *ExtendedTypeInfo {
 	return &ExtendedTypeInfo{
 		Type:      ExtendedTypeEnum,
@@ -43,5 +37,19 @@ func NewMapExtendedType(key, value *SchemaRef) *ExtendedTypeInfo {
 		Type:  ExtendedTypeMap,
 		Key:   key,
 		Value: value,
+	}
+}
+
+type ExtendedEnumItem struct {
+	Key         string      `json:"key"`
+	Value       interface{} `json:"value"`
+	Description string      `json:"description"`
+}
+
+func NewExtendEnumItem(key string, value interface{}, description string) *ExtendedEnumItem {
+	return &ExtendedEnumItem{
+		Key:         key,
+		Value:       value,
+		Description: description,
 	}
 }
