@@ -1,27 +1,26 @@
-export type Image = {
-  url: string;
-}
-
-export type GoodsCreateReq = {
-  subTitle?: string;
-  cover?: string;
-  price: number;
-  images?: Image[];
-  title: string;
-}
+export type ErrCode = unknown
 
 export type Error = {
-  code?: string;
+  code?: ErrCode;
+  msg?: string;
 }
 
-export type Params = Param[]
+export type SelfRefType = {
+  data?: string;
+  parent?: SelfRefType;
+}
+
+export type Param = {
+  Key?: string;
+  Value?: string;
+}
 
 export type GoodsCreateRes = {
+  selfRef?: SelfRefType;
+  Status?: Params;
   stringAlias?: string;
   raw?: any;
   guid?: string;
-  selfRef?: SelfRefType;
-  Status?: Params;
 }
 
 export type Property = {
@@ -37,16 +36,20 @@ export type GoodsInfoRes = {
   title?: string;
 }
 
+export type Image = {
+  url: string;
+}
+
+export type GoodsCreateReq = {
+  images?: Image[];
+  title: string;
+  subTitle?: string;
+  cover?: string;
+  price: number;
+}
+
+export type Params = Param[]
+
 export type GoodsDownRes = {
   Status?: string;
-}
-
-export type SelfRefType = {
-  data?: string;
-  parent?: SelfRefType;
-}
-
-export type Param = {
-  Key?: string;
-  Value?: string;
 }

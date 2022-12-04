@@ -33,6 +33,24 @@ func newSchemaBuilderWithStack(ctx *Context, contentType string, stack Stack[str
 	return &SchemaBuilder{ctx: ctx, contentType: contentType, stack: stack}
 }
 
+func (s *SchemaBuilder) FromTypeDef(def *TypeDefinition) *spec.SchemaRef {
+	schemaRef := s.FromTypeSpec(def.Spec)
+	if schemaRef == nil {
+		return nil
+	}
+
+	if len(def.Enums) > 0 {
+		schema := spec.Unref(s.ctx.Doc(), schemaRef)
+		ext := spec.NewExtendedEnumType(def.Enums...)
+		schema.Value.ExtendedTypeInfo = ext
+		for _, item := range def.Enums {
+			schema.Value.Enum = append(schema.Value.Enum, item.Value)
+		}
+	}
+
+	return schemaRef
+}
+
 func (s *SchemaBuilder) FromTypeSpec(t *ast.TypeSpec) *spec.SchemaRef {
 	schema := s.ParseExpr(t.Type)
 	if schema == nil {
@@ -258,7 +276,7 @@ func (s *SchemaBuilder) parseType(t types.Type) *spec.SchemaRef {
 	defer s.stack.Pop()
 
 	payloadSchema := newSchemaBuilderWithStack(s.ctx.WithPackage(typeDef.pkg).WithFile(typeDef.file), s.contentType, append(s.stack, typeDef.Key())).
-		FromTypeSpec(typeDef.Spec)
+		FromTypeDef(typeDef)
 	if payloadSchema == nil {
 		return nil
 	}

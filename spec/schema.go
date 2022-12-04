@@ -16,6 +16,7 @@ import (
 
 	"github.com/go-openapi/jsonpointer"
 	"github.com/mohae/deepcopy"
+	"github.com/spf13/cast"
 
 	"github.com/getkin/kin-openapi/jsoninfo"
 )
@@ -183,6 +184,20 @@ func (schema *Schema) WithExtendedType(t *ExtendedTypeInfo) *Schema {
 
 // MarshalJSON returns the JSON encoding of Schema.
 func (schema *Schema) MarshalJSON() ([]byte, error) {
+	schema = schema.Clone()
+	ext := schema.ExtendedTypeInfo
+	if ext != nil && len(ext.EnumItems) > 0 {
+		desc := schema.Description
+		if desc != "" {
+			desc += "\n\n"
+		}
+		desc += "<table><tr><th>Value</th><th>Key</th><th>Description</th></tr>"
+		for _, item := range ext.EnumItems {
+			desc += fmt.Sprintf("<tr><td>%s</td><td>%s</td><td>%s</td></tr>", cast.ToString(item.Value), item.Key, item.Description)
+		}
+		desc += "</table>"
+		schema.Description = desc
+	}
 	return jsoninfo.MarshalStrictStruct(schema)
 }
 

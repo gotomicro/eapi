@@ -11,7 +11,7 @@ import {
  * @description 创建商品接口
  */
 export function shopGoodsCreate(data: GoodsCreateReq) {
-  return request<{ raw?: any; guid?: string; selfRef?: SelfRefType; Status?: Params; stringAlias?: string; }>(`/api/goods`, {
+  return request<{ guid?: string; selfRef?: SelfRefType; Status?: Params; stringAlias?: string; raw?: any; }>(`/api/goods`, {
     method: "post",
     data,
   });
@@ -46,13 +46,13 @@ export function shopGoodsDown(guid: string, data: {
  * @description 商品详情
  */
 export function shopGoodsInfo(guid: string) {
-  return request<{ title?: string; subTitle?: string; cover?: string; price?: number; properties?: Record<string, Property>; mapInt?: Record<number, Property>; }>(`/api/v2/goods/${guid}`, {
+  return request<{ price?: number; properties?: Record<string, Property>; mapInt?: Record<number, Property>; title?: string; subTitle?: string; cover?: string; }>(`/api/v2/goods/${guid}`, {
     method: "get",
   });
 }
 
 export function shopWrappedHandler(query: { hello?: string; world?: string }) {
-  return request<{ code: number; msg: string; data: GoodsInfoRes; }>(`/wrapped-handler`, {
+  return request<{ data: GoodsInfoRes; code: number; msg: string; }>(`/wrapped-handler`, {
     method: "get",
     params: query,
   });

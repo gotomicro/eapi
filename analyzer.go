@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"go/ast"
 	"go/build"
+	"go/token"
+	"go/types"
 	"os"
 	"path/filepath"
 	"strings"
@@ -252,12 +254,58 @@ func (a *Analyzer) loadDefinitionsFromPkg(pkg *packages.Package, moduleDir strin
 				case *ast.TypeSpec:
 					a.definitions.Set(NewTypeDefinition(pkg, file, node))
 					return false
+				case *ast.GenDecl:
+					if node.Tok == token.CONST {
+						a.loadEnumDefinition(pkg, file, node)
+						return false
+					}
+					return true
 				}
 				return true
 			})
 		}
 		return true
 	})
+}
+
+type A int
+
+const (
+	A1 A = iota + 1
+	A2
+	A3
+)
+
+func (a *Analyzer) loadEnumDefinition(pkg *packages.Package, file *ast.File, node *ast.GenDecl) {
+	for _, item := range node.Specs {
+		valueSpec, ok := item.(*ast.ValueSpec)
+		if !ok {
+			continue
+		}
+		for _, name := range valueSpec.Names {
+			c := pkg.TypesInfo.ObjectOf(name).(*types.Const)
+			t, ok := c.Type().(*types.Named)
+			if !ok {
+				continue
+			}
+			basicType, ok := t.Underlying().(*types.Basic)
+			if !ok {
+				continue
+			}
+			pkgPath := t.Obj().Pkg().Path()
+			if pkgPath != pkg.PkgPath {
+				continue
+			}
+			def := a.definitions.Get(t.Obj().Pkg().Path() + "." + t.Obj().Name())
+			if def == nil {
+				continue
+			}
+			typeDef := def.(*TypeDefinition)
+			value := ConvertStrToBasicType(c.Val().ExactString(), basicType)
+			enumItem := spec.NewExtendEnumItem(name.Name, value, strings.TrimSpace(valueSpec.Doc.Text()))
+			typeDef.Enums = append(typeDef.Enums, enumItem)
+		}
+	}
 }
 
 func (a *Analyzer) blockStmt(ctx *Context, node *ast.BlockStmt, file *ast.File, pkg *packages.Package) {
