@@ -43,7 +43,15 @@ type Entrypoint struct {
 }
 
 func NewEntrypoint(plugins ...Plugin) *Entrypoint {
-	return &Entrypoint{plugins: plugins, k: koanf.New(".")}
+	return &Entrypoint{
+		k:       koanf.New("."),
+		plugins: plugins,
+		cfg: Config{
+			Plugin: "gin",
+			Dir:    ".",
+			Output: "docs",
+		},
+	}
 }
 
 const usageText = `Generate Doc:
@@ -77,7 +85,7 @@ func (e *Entrypoint) Run(args []string) {
 	app.Flags = append(app.Flags, &cli.StringFlag{
 		Name:        "output",
 		Aliases:     []string{"o"},
-		Usage:       "output directory of swagger.json",
+		Usage:       "output directory of openapi.json",
 		Destination: &e.cfg.Output,
 	})
 	app.Flags = append(app.Flags, &cli.StringSliceFlag{
@@ -108,12 +116,17 @@ func (e *Entrypoint) Run(args []string) {
 
 func (e *Entrypoint) before(c *cli.Context) error {
 	cfg := c.String("config")
+	if cfg == "" {
+		fileInfo, err := os.Stat("eapi.yaml")
+		if err == nil && !fileInfo.IsDir() {
+			cfg = "eapi.yaml"
+		}
+	}
 	if cfg != "" {
 		err := e.loadConfig(cfg)
 		if err != nil {
 			return err
 		}
-
 		err = e.k.Unmarshal("", &e.cfg)
 		if err != nil {
 			return err
@@ -124,10 +137,10 @@ func (e *Entrypoint) before(c *cli.Context) error {
 		return fmt.Errorf("'plugin' is not set")
 	}
 	if e.cfg.Dir == "" {
-		return fmt.Errorf("'dir' is not set")
+		e.cfg.Dir = "."
 	}
 	if e.cfg.Output == "" {
-		return fmt.Errorf("'output' is not set")
+		e.cfg.Output = "docs"
 	}
 
 	return nil
@@ -175,7 +188,7 @@ func (e *Entrypoint) run(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		err = ioutil.WriteFile(filepath.Join(e.cfg.Output, "swagger.json"), docContent, fs.ModePerm)
+		err = ioutil.WriteFile(filepath.Join(e.cfg.Output, "openapi.json"), docContent, fs.ModePerm)
 		if err != nil {
 			return err
 		}

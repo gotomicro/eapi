@@ -142,7 +142,7 @@ func (p *ParamParser) typeOfIdent(ident *ast.Ident) (string, string) {
 	return p.parseTypeOfType(t)
 }
 
-// Swagger Parameter types:
+// OpenAPI Parameter types:
 // Name		|	type	| 	format		|	Comments
 // integer	|	integer |	int32		|	signed 32 bits
 // long		|	integer |	int64		|	signed 64 bits

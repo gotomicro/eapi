@@ -22,30 +22,25 @@ go install github.com/gotomicro/eapi/cmd/eapi@latest
 
 ## 如何使用
 
+在代码根目录下执行:
+```shell
+eapi --plugin gin
+```
+
+执行以上命令后，会在 `docs` 目录下生成 `openapi.json` 文件。
+
 ### 通过配置文件
 
 **eapi.yaml**:
 ```yaml
-output: docs
 plugin: gin
-dir: . # 需要解析的代码根目录
 ```
 
 [完整的配置说明](#配置)
 
-在代码根目录下执行:
-```shell
-eapi -c eapi.yaml
-```
+在代码根目录下执行 `eapi` 即可
 
 ### 通过命令行参数
-
-在代码根目录下执行:
-```shell
-eapi --output docs --plugin gin --dir .
-```
-
-执行以上命令后，会在 `/docs` 目录下生成 `swagger.json` 文件。
 
 ## 配置
 

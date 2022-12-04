@@ -5,7 +5,6 @@ import (
 	"go/ast"
 	"strings"
 
-	"github.com/gotomicro/eapi/spec"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -92,10 +91,6 @@ func (t *TypeDefinition) File() *ast.File {
 
 func (t *TypeDefinition) Key() string {
 	return t.pkg.PkgPath + "." + t.Spec.Name.Name
-}
-
-func (t *TypeDefinition) ToSwaggerSchema(ctx *Context, contentType string) *spec.SchemaRef {
-	return NewSchemaBuilder(ctx.WithPackage(t.pkg).WithFile(t.file), contentType).FromTypeSpec(t.Spec)
 }
 
 func (t *TypeDefinition) ModelKey() string {
