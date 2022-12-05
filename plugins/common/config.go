@@ -1,4 +1,4 @@
-package gin
+package common
 
 type Config struct {
 	RouterNames []string       `yaml:"routerNames"`

@@ -256,6 +256,7 @@
                             "schema": {
                                 "properties": {
                                     "dateRange": {
+                                        "description": "日期范围",
                                         "items": {
                                             "type": "string"
                                         },
@@ -263,6 +264,7 @@
                                         "type": "array"
                                     },
                                     "operatorUid": {
+                                        "description": "操作人 UID",
                                         "title": "operatorUid",
                                         "type": "string"
                                     }

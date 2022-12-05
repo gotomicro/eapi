@@ -1,4 +1,4 @@
-package gin
+package echo
 
 import (
 	"fmt"
@@ -15,10 +15,10 @@ import (
 	"github.com/samber/lo"
 )
 
-const ginContextIdentName = "*github.com/gin-gonic/gin.Context"
+const echoContextIdentName = "github.com/labstack/echo/v4.Context"
 
 var (
-	interestedGinContextMethods = []string{"Bind", "JSON", "Query", "Param", "GetPostForm", "PostFormArray", "XML", "Redirect", "FormFile"}
+	interestedEchoContextMethods = []string{"Bind", "JSON", "QueryParam", "Param", "FormValue", "XML", "XMLPretty", "Redirect", "FormFile"}
 )
 
 type handlerAnalyzer struct {
@@ -30,7 +30,7 @@ type handlerAnalyzer struct {
 	c *common.Config
 }
 
-func newHandlerParser(ctx *analyzer.Context, api *analyzer.API, decl *ast.FuncDecl) *handlerAnalyzer {
+func newHandlerAnalyzer(ctx *analyzer.Context, api *analyzer.API, decl *ast.FuncDecl) *handlerAnalyzer {
 	return &handlerAnalyzer{ctx: ctx, api: api, spec: api.Spec, decl: decl}
 }
 
@@ -51,27 +51,23 @@ func (p *handlerAnalyzer) Parse() {
 		}
 
 		p.ctx.MatchCall(node,
-			analyzer.NewCallRule().WithRule(ginContextIdentName, interestedGinContextMethods...),
+			analyzer.NewCallRule().WithRule(echoContextIdentName, interestedEchoContextMethods...),
 			func(call *ast.CallExpr, typeName, fnName string) {
 				switch fnName {
 				case "Bind":
 					p.parseBinding(call)
 				case "JSON":
 					p.parseResBody(call, "application/json")
-				case "XML":
+				case "XML", "XMLPretty":
 					p.parseResBody(call, "application/xml")
-				case "Query": // query parameter
+				case "QueryParam": // query parameter
 					p.parsePrimitiveParam(call, "query")
 				case "Param": // path parameter
 					p.parsePrimitiveParam(call, "path")
-				case "GetPostForm":
+				case "FormValue":
 					p.parseFormData(call, "string")
 				case "FormFile":
 					p.parseFormData(call, "file")
-				case "PostFormArray":
-					p.parseFormData(call, spec.TypeArray, func(s *spec.Schema) {
-						s.Items = spec.NewSchemaRef("", spec.NewStringSchema())
-					})
 				case "Redirect":
 					p.parseRedirectRes(call)
 					// TODO: supporting more methods (FileForm(), HTML(), Data(), etc...)
@@ -82,12 +78,13 @@ func (p *handlerAnalyzer) Parse() {
 	})
 }
 
-func (p *handlerAnalyzer) paramNameParser(fieldName string, tags map[string]string) (name, in string) {
-	name, ok := tags["form"]
+func (p *handlerAnalyzer) paramNameParser(field string, tags map[string]string) (name string, in string) {
+	name, ok := tags["query"]
 	if ok {
 		return name, "query"
 	}
-	return fieldName, "query"
+	// fallback
+	return field, "query"
 }
 
 func (p *handlerAnalyzer) parseBinding(call *ast.CallExpr) {
@@ -121,7 +118,7 @@ func (p *handlerAnalyzer) parseBinding(call *ast.CallExpr) {
 }
 
 func (p *handlerAnalyzer) parseResBody(call *ast.CallExpr, contentType string) {
-	if len(call.Args) != 2 {
+	if len(call.Args) < 2 {
 		return
 	}
 
@@ -233,12 +230,9 @@ func (p *handlerAnalyzer) primitiveParam(call *ast.CallExpr, in string) *spec.Pa
 		res = spec.NewQueryParameter(name).WithSchema(paramSchema)
 	}
 
-	commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
-	if commentGroup != nil {
-		comment := analyzer.ParseComment(commentGroup)
-		if comment != nil {
-			res.Description = comment.Text
-		}
+	comment := analyzer.ParseComment(p.ctx.GetHeadingCommentOf(call.Pos()))
+	if comment != nil {
+		res.Description = comment.Text
 	}
 
 	return res
@@ -323,17 +317,6 @@ func (p *handlerAnalyzer) matchCustomRequestRule(node ast.Node) (matched bool) {
 	}
 
 	return
-}
-
-func (p *handlerAnalyzer) getFormDataIn() string {
-	var in string
-	switch p.api.Method {
-	case http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodDelete:
-		in = "query"
-	default:
-		in = "form"
-	}
-	return in
 }
 
 func (p *handlerAnalyzer) parseStatusCodeInCall(call *ast.CallExpr, statusCode string) (code int) {

@@ -1,0 +1,299 @@
+{
+    "components": {
+        "schemas": {
+            "sample_model.CreateGoodsRequest": {
+                "properties": {
+                    "cover": {
+                        "description": "Url of cover image",
+                        "type": "string"
+                    },
+                    "images": {
+                        "description": "Detail images",
+                        "items": {
+                            "$ref": "#/components/schemas/sample_model.Image"
+                        },
+                        "type": "array"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/sample_model.GoodsStatus"
+                    },
+                    "stock": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    }
+                },
+                "title": "CreateGoodsRequest",
+                "type": "object"
+            },
+            "sample_model.GoodsInfo": {
+                "properties": {
+                    "cover": {
+                        "description": "Url of cover image",
+                        "type": "string"
+                    },
+                    "id": {
+                        "description": "Unique key",
+                        "type": "integer"
+                    },
+                    "images": {
+                        "description": "Detail images",
+                        "items": {
+                            "$ref": "#/components/schemas/sample_model.Image"
+                        },
+                        "type": "array"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/sample_model.GoodsStatus"
+                    },
+                    "stock": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    }
+                },
+                "title": "GoodsInfo",
+                "type": "object"
+            },
+            "sample_model.GoodsStatus": {
+                "description": "\u003ctable\u003e\u003ctr\u003e\u003cth\u003eValue\u003c/th\u003e\u003cth\u003eKey\u003c/th\u003e\u003cth\u003eDescription\u003c/th\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e1\u003c/td\u003e\u003ctd\u003eGoodsOnSale\u003c/td\u003e\u003ctd\u003e\u003c/td\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e2\u003c/td\u003e\u003ctd\u003eGoodsOffSale\u003c/td\u003e\u003ctd\u003e\u003c/td\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e3\u003c/td\u003e\u003ctd\u003eGoodsOutOfStock\u003c/td\u003e\u003ctd\u003e\u003c/td\u003e\u003c/tr\u003e\u003c/table\u003e",
+                "enum": [
+                    1,
+                    2,
+                    3
+                ],
+                "title": "GoodsStatus",
+                "type": "integer"
+            },
+            "sample_model.Image": {
+                "properties": {
+                    "src": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    }
+                },
+                "title": "Image",
+                "type": "object"
+            },
+            "sample_model.ListGoodsResponse": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/sample_model.GoodsInfo"
+                        },
+                        "type": "array"
+                    },
+                    "nextPage": {
+                        "description": "Url of next page. If there is no more items, nextPage field not exists.",
+                        "type": "string"
+                    }
+                },
+                "title": "ListGoodsResponse",
+                "type": "object"
+            },
+            "sample_model.UpdateGoodsRequest": {
+                "properties": {
+                    "cover": {
+                        "description": "Url of cover image",
+                        "type": "string"
+                    },
+                    "images": {
+                        "description": "Detail images",
+                        "items": {
+                            "$ref": "#/components/schemas/sample_model.Image"
+                        },
+                        "type": "array"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/sample_model.GoodsStatus"
+                    },
+                    "stock": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    }
+                },
+                "title": "UpdateGoodsRequest",
+                "type": "object"
+            },
+            "sample_model.UploadFileRes": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "url": {
+                        "type": "string"
+                    }
+                },
+                "title": "UploadFileRes",
+                "type": "object"
+            }
+        }
+    },
+    "info": {
+        "title": "",
+        "version": ""
+    },
+    "openapi": "3.0.3",
+    "paths": {
+        "/v1/goods": {
+            "get": {
+                "operationId": "goods.List",
+                "parameters": [
+                    {
+                        "description": "Obtained in `nextPage` field of previous page response.",
+                        "in": "query",
+                        "name": "since",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "limit",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/sample_model.ListGoodsResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "List Goods",
+                "tags": [
+                    "Goods"
+                ]
+            },
+            "patch": {
+                "operationId": "goods.Update",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/sample_model.UpdateGoodsRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/sample_model.GoodsInfo"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Update Goods",
+                "tags": [
+                    "Goods"
+                ]
+            },
+            "post": {
+                "operationId": "goods.Create",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/sample_model.CreateGoodsRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/sample_model.GoodsInfo"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Create Goods",
+                "tags": [
+                    "Goods"
+                ]
+            }
+        },
+        "/v1/goods/{id}": {
+            "delete": {
+                "operationId": "goods.Delete",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "title": "id",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {},
+                "summary": "Delete Goods",
+                "tags": [
+                    "Goods"
+                ]
+            }
+        },
+        "/v1/upload": {
+            "post": {
+                "operationId": "uploader.UploadFile",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "file": {
+                                        "title": "file",
+                                        "type": "file"
+                                    },
+                                    "saveToLib": {
+                                        "description": "If set true, this file would be saved to lib",
+                                        "title": "saveToLib",
+                                        "type": "string"
+                                    }
+                                },
+                                "title": "UploaderUploadFileRequest",
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/sample_model.UploadFileRes"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Upload File",
+                "tags": [
+                    "Uploader"
+                ]
+            }
+        }
+    }
+}

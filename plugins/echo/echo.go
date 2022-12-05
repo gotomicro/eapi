@@ -1,4 +1,4 @@
-package gin
+package echo
 
 import (
 	"go/ast"
@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	analyzer "github.com/gotomicro/eapi"
+	"github.com/gotomicro/eapi"
 	"github.com/gotomicro/eapi/plugins/common"
 	"github.com/knadh/koanf"
 )
@@ -18,13 +18,10 @@ var (
 )
 
 const (
-	ginRouterGroupTypeName = "*github.com/gin-gonic/gin.RouterGroup"
-	ginIRouterTypeName     = "github.com/gin-gonic/gin.IRouter"
-	ginIRoutesTypeName     = "github.com/gin-gonic/gin.IRoutes"
-	routerGroupMethodName  = "Group"
+	echoInstanceTypeName = "*github.com/labstack/echo/v4.Echo"
+	echoGroupTypeName    = "*github.com/labstack/echo/v4.Group"
+	echoGroupMethodName  = "Group"
 )
-
-var _ analyzer.Plugin = &Plugin{}
 
 type Plugin struct {
 	config common.Config
@@ -34,40 +31,34 @@ func NewPlugin() *Plugin {
 	return &Plugin{}
 }
 
-func (e *Plugin) Mount(k *koanf.Koanf) error {
-	err := k.Unmarshal("properties", &e.config)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (p *Plugin) Name() string {
+	return "echo"
 }
 
-func (e *Plugin) Analyze(ctx *analyzer.Context, node ast.Node) {
-	switch n := node.(type) {
+func (p *Plugin) Mount(k *koanf.Koanf) error {
+	return k.Unmarshal("properties", &p.config)
+}
+
+func (p *Plugin) Analyze(ctx *eapi.Context, node ast.Node) {
+	switch node := node.(type) {
 	case *ast.AssignStmt:
-		e.assignStmt(ctx, n)
+		p.assignStmt(ctx, node)
+
 	case *ast.CallExpr:
-		e.callExpr(ctx, n)
+		p.callExpr(ctx, node)
 	}
 }
 
-func (e *Plugin) Name() string {
-	return "gin"
-}
-
-func (e *Plugin) assignStmt(ctx *analyzer.Context, node ast.Node) {
-	assign := node.(*ast.AssignStmt)
+func (p *Plugin) assignStmt(ctx *eapi.Context, assign *ast.AssignStmt) {
 	if len(assign.Rhs) != 1 || len(assign.Lhs) != 1 {
 		return
 	}
 
-	callRule := analyzer.NewCallRule().
-		WithRule(ginRouterGroupTypeName, routerGroupMethodName).
-		WithRule(ginIRouterTypeName, routerGroupMethodName).
-		WithRule(ginIRoutesTypeName, routerGroupMethodName)
-	for _, router := range e.config.RouterNames {
-		callRule = callRule.WithRule(router, routerGroupMethodName)
+	callRule := eapi.NewCallRule().
+		WithRule(echoInstanceTypeName, echoGroupMethodName).
+		WithRule(echoGroupTypeName, echoGroupMethodName)
+	for _, router := range p.config.RouterNames {
+		callRule = callRule.WithRule(router, echoGroupMethodName)
 	}
 
 	rh := assign.Rhs[0]
@@ -89,17 +80,15 @@ func (e *Plugin) assignStmt(ctx *analyzer.Context, node ast.Node) {
 			}
 			var prefix = ""
 			v := ctx.Env.Lookup(xIdent.Name)
-			if rg, ok := v.(*analyzer.RouteGroup); ok {
+			if rg, ok := v.(*eapi.RouteGroup); ok {
 				prefix = rg.Prefix
 			}
-
-			rg := &analyzer.RouteGroup{Prefix: path.Join(prefix, e.normalizePath(strings.Trim(arg0.Value, "\"")))}
+			rg := &eapi.RouteGroup{Prefix: path.Join(prefix, p.normalizePath(strings.Trim(arg0.Value, "\"")))}
 			lh := assign.Lhs[0]
 			lhIdent, ok := lh.(*ast.Ident)
 			if !ok {
 				return
 			}
-
 			switch assign.Tok {
 			case token.ASSIGN:
 				env := ctx.Env.Resolve(lhIdent.Name)
@@ -115,14 +104,12 @@ func (e *Plugin) assignStmt(ctx *analyzer.Context, node ast.Node) {
 		},
 	)
 
-	return
 }
 
-func (e *Plugin) callExpr(ctx *analyzer.Context, callExpr *ast.CallExpr) {
-	callRule := analyzer.NewCallRule().WithRule(ginRouterGroupTypeName, routeMethods...).
-		WithRule(ginIRouterTypeName, routeMethods...).
-		WithRule(ginIRoutesTypeName, routeMethods...)
-	for _, router := range e.config.RouterNames {
+func (p *Plugin) callExpr(ctx *eapi.Context, callExpr *ast.CallExpr) {
+	callRule := eapi.NewCallRule().WithRule(echoInstanceTypeName, routeMethods...).
+		WithRule(echoGroupTypeName, routeMethods...)
+	for _, router := range p.config.RouterNames {
 		callRule = callRule.WithRule(router, routeMethods...)
 	}
 
@@ -130,11 +117,11 @@ func (e *Plugin) callExpr(ctx *analyzer.Context, callExpr *ast.CallExpr) {
 		callExpr,
 		callRule,
 		func(call *ast.CallExpr, typeName, fnName string) {
-			comment := analyzer.ParseComment(ctx.GetHeadingCommentOf(call.Lparen))
+			comment := eapi.ParseComment(ctx.GetHeadingCommentOf(call.Lparen))
 			if comment.Ignore() {
 				return
 			}
-			api := e.parseAPI(ctx, callExpr)
+			api := p.parseAPI(ctx, callExpr)
 			if api == nil {
 				return
 			}
@@ -143,7 +130,7 @@ func (e *Plugin) callExpr(ctx *analyzer.Context, callExpr *ast.CallExpr) {
 	)
 }
 
-func (e *Plugin) parseAPI(ctx *analyzer.Context, callExpr *ast.CallExpr) (api *analyzer.API) {
+func (e *Plugin) parseAPI(ctx *eapi.Context, callExpr *ast.CallExpr) (api *eapi.API) {
 	if len(callExpr.Args) < 2 {
 		return
 	}
@@ -156,7 +143,7 @@ func (e *Plugin) parseAPI(ctx *analyzer.Context, callExpr *ast.CallExpr) (api *a
 	var prefix string
 	if xIdent, ok := selExpr.X.(*ast.Ident); ok {
 		v := ctx.Env.Lookup(xIdent.Name)
-		if rg, ok := v.(*analyzer.RouteGroup); ok {
+		if rg, ok := v.(*eapi.RouteGroup); ok {
 			prefix = rg.Prefix
 		}
 	}
@@ -167,43 +154,29 @@ func (e *Plugin) parseAPI(ctx *analyzer.Context, callExpr *ast.CallExpr) (api *a
 	}
 
 	handlerDef := ctx.GetDefinition(handlerFn.Pkg().Path(), handlerFn.Name())
-	handlerFnDef, ok := handlerDef.(*analyzer.FuncDefinition)
+	handlerFnDef, ok := handlerDef.(*eapi.FuncDefinition)
 	if !ok {
 		return
 	}
 
 	fullPath := path.Join(prefix, e.normalizePath(strings.Trim(arg0.Value, "\"")))
 	method := selExpr.Sel.Name
-	api = analyzer.NewAPI(method, fullPath)
+	api = eapi.NewAPI(method, fullPath)
 	api.Spec.LoadFromFuncDecl(handlerFnDef.Decl)
 	if api.Spec.OperationID == "" {
 		api.Spec.OperationID = handlerFnDef.Pkg().Name + "." + handlerFnDef.Decl.Name.Name
 	}
-	newHandlerParser(
+
+	newHandlerAnalyzer(
 		ctx.NewEnv().WithPackage(handlerFnDef.Pkg()).WithFile(handlerFnDef.File()),
 		api,
 		handlerFnDef.Decl,
 	).WithConfig(&e.config).Parse()
+
 	return
 }
 
-// unwrap and returns the first nested call
-// e.g. unwrapCall(`a(b(c(d)), b1(c1))`) return `c(d)`
-func (e *Plugin) unwrapCall(callExpr *ast.CallExpr) *ast.CallExpr {
-	if len(callExpr.Args) == 0 {
-		return callExpr
-	}
-
-	arg0 := callExpr.Args[0]
-	arg0Call, ok := arg0.(*ast.CallExpr)
-	if ok {
-		return e.unwrapCall(arg0Call)
-	}
-
-	return callExpr
-}
-
-func (e *Plugin) getHandlerFn(ctx *analyzer.Context, callExpr *ast.CallExpr) (handlerFn *types.Func) {
+func (e *Plugin) getHandlerFn(ctx *eapi.Context, callExpr *ast.CallExpr) (handlerFn *types.Func) {
 	handlerArg := callExpr.Args[len(callExpr.Args)-1]
 
 	if call, ok := handlerArg.(*ast.CallExpr); ok {
@@ -226,14 +199,29 @@ func (e *Plugin) getHandlerFn(ctx *analyzer.Context, callExpr *ast.CallExpr) (ha
 
 	handlerFn, ok := handler.(*types.Func)
 	if !ok {
-		return
+		return nil
 	}
-
 	return
 }
 
+// unwrap and returns the first nested call
+// e.g. unwrapCall(`a(b(c(d)), b1(c1))`) return `c(d)`
+func (e *Plugin) unwrapCall(callExpr *ast.CallExpr) *ast.CallExpr {
+	if len(callExpr.Args) == 0 {
+		return callExpr
+	}
+
+	arg0 := callExpr.Args[0]
+	arg0Call, ok := arg0.(*ast.CallExpr)
+	if ok {
+		return e.unwrapCall(arg0Call)
+	}
+
+	return callExpr
+}
+
 var (
-	pathParamPattern = regexp.MustCompile(":([^\\/]+)")
+	pathParamPattern = regexp.MustCompile(`:([^\/]+)`)
 )
 
 func (e *Plugin) normalizePath(path string) string {
