@@ -129,9 +129,9 @@ generators:
   * 文档描述文件: [https://github.com/clickvisual/clickvisual/blob/master/api/docs/swagger.json](https://github.com/clickvisual/clickvisual/blob/master/api/docs/swagger.json)
 
 2. gin 示例
-  * [配置文件](blob/main/plugins/gin/testdata/server/eapi.yaml)
-  * [生成文档](blob/main/plugins/gin/testdata/server/docs/openapi.json)
+  * [配置文件](https://github.com/link-duan/eapi/blob/main/plugins/gin/testdata/server/eapi.yaml)
+  * [生成文档](https://github.com/link-duan/eapi/blob/main/plugins/gin/testdata/server/docs/openapi.json)
 
 3. echo 示例
-  * [配置文件](blob/main/plugins/echo/testdata/sample/eapi.yaml)
-  * [生成文档](blob/main/plugins/echo/testdata/sample/docs/openapi.json)
+  * [配置文件](https://github.com/link-duan/eapi/blob/main/plugins/echo/testdata/sample/eapi.yaml)
+  * [生成文档](https://github.com/link-duan/eapi/blob/main/plugins/echo/testdata/sample/docs/openapi.json)
