@@ -1,0 +1,3 @@
+plugin: echo
+dir: .
+output: docs

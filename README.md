@@ -12,7 +12,7 @@ eAPI 通过分析 AST 生成 **接口文档** 及 **前端代码**。与 swaggo/
 
 eAPI 首先解析出代码中的路由（方法/路径）声明，得到接口的 Path、Method 及对应的 Handler 函数。然后再对 Handler 函数进行解析，得到 请求参数（Query/FormData/JSON-Payload等）、响应数据等信息。最终生成一份符合 OpenAPI 3 标准的 JSON 文档。
 
-eAPI 目前支持了 gin 框架的文档生成，echo 等其他主流框架在计划中。如果你需要将 eAPI 应用在其他未被支持的框架，可以通过编写自定义插件的方式进行实现，或者给我们提交 PR。
+eAPI 目前支持了 gin, echo 框架的文档生成，其他主流框架在计划中。如果你需要将 eAPI 应用在其他未被支持的框架，可以通过编写自定义插件的方式进行实现，或者给我们提交 PR。
 
 ## 安装
 
@@ -21,22 +21,23 @@ go install github.com/gotomicro/eapi/cmd/eapi@latest
 ```
 
 ## 如何使用
+1. 创建配置文件
 
-在代码根目录下执行:
-```shell
-eapi --plugin gin
-```
-
-执行以上命令后，会在 `docs` 目录下生成 `openapi.json` 文件。
-
-或者，创建配置文件：
-
-**eapi.yaml**:
+在代码根目录创建配置文件 `eapi.yaml`: 
 ```yaml
-plugin: gin
+plugin: gin # 目前支持 gin 和 echo
+output: docs
+dir: .
 ```
 
-然后执行 `eapi` 即可
+2. 生成文档
+
+在代码根目录执行命令: 
+```shell
+$ eapi
+```
+
+执行完成后会在 `docs` 目录下生成 `openapi.json` 文件。
 
 [完整的配置说明](#配置)
 
@@ -46,7 +47,7 @@ plugin: gin
 
 ```yaml
 output: docs # 输出文档的目录
-plugin: gin # 暂时只支持 gin
+plugin: gin # gin | echo . 取决于你使用的框架，目前支持了 gin 和 echo
 dir: '.' # 需要解析的代码目录
 
 # 可选. 请求/响应数据中依赖的类型对应的包
@@ -116,6 +117,3 @@ generators:
      - name: ts
        output: ./src/types # 输出文件的目录
    ```
-
-# TODO
-- [ ] support for "echo" framework

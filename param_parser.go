@@ -8,13 +8,16 @@ import (
 	"github.com/gotomicro/eapi/tag"
 )
 
+type ParamNameParser func(field string, tags map[string]string) (name, in string)
+
 type ParamParser struct {
-	ctx         *Context
-	contentType string
+	ctx *Context
+	// 解析字段名字和字段所处位置(in. header/path/query/...)
+	nameParser ParamNameParser
 }
 
-func NewParamParser(ctx *Context, contentType string) *ParamParser {
-	return &ParamParser{ctx: ctx, contentType: contentType}
+func NewParamParser(ctx *Context, nameParser ParamNameParser) *ParamParser {
+	return &ParamParser{ctx: ctx, nameParser: nameParser}
 }
 
 // Parse 根据 ast.Expr 解析出 []*spec.Parameter
@@ -52,10 +55,7 @@ func (p *ParamParser) parseType(t types.Type) (params []*spec.Parameter) {
 		return
 	}
 
-	params = NewParamParser(
-		p.ctx.WithPackage(typeDef.Pkg()).WithFile(typeDef.File()),
-		p.contentType,
-	).parseStructType(structType)
+	params = NewParamParser(p.ctx.WithPackage(typeDef.Pkg()).WithFile(typeDef.File()), p.nameParser).parseStructType(structType)
 	return
 }
 
@@ -77,11 +77,11 @@ func (p *ParamParser) parseField(name *ast.Ident, field *ast.Field) (param *spec
 	param = p.typeOf(field.Type)
 
 	tagValues := tag.Parse(field.Tag.Value)
-	formName, ok := tagValues["form"]
-	if !ok {
-		formName = name.Name
+	param.Name = name.Name
+	param.In = "query"
+	if p.nameParser != nil {
+		param.Name, param.In = p.nameParser(name.Name, tagValues)
 	}
-	param.Name = formName
 
 	// parse comments
 	comments := ParseComment(field.Doc)
