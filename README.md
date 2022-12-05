@@ -128,13 +128,13 @@ response:
 ```
 
 其中，data type 可选值为：
-- "string"
-- "number"
-- "integer"
-- "boolean"
-- "array"
-- "file"
-- "object"
+- string
+- number
+- integer
+- boolean
+- array
+- file
+- object
 
 此外，还可以将函数入参作为参数类型，eAPI 会自动解析对应的参数类型。比如 `args[0]` 代表函数第一个参数。
 
