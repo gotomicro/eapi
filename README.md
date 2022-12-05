@@ -125,12 +125,13 @@ generators:
    ```
 ## 预览
 1. Clickvisual 项目
-  * 文档站: https://clickvisual.gocn.vip/api
-  * 文档描述文件: https://github.com/clickvisual/clickvisual/blob/master/api/docs/swagger.json
+  * 文档站: [https://clickvisual.gocn.vip/api](https://clickvisual.gocn.vip/api)
+  * 文档描述文件: [https://github.com/clickvisual/clickvisual/blob/master/api/docs/swagger.json](https://github.com/clickvisual/clickvisual/blob/master/api/docs/swagger.json)
 
-2. Example
+2. gin 示例
+  * [配置文件](blob/main/plugins/gin/testdata/server/eapi.yaml)
+  * [生成文档](blob/main/plugins/gin/testdata/server/docs/openapi.json)
 
-  | 框架 | 链接 |
-  | :- | :- |
-  | gin 示例 | [配置文件](blob/main/plugins/gin/testdata/server/eapi.yaml) <br/>[生成文档](blob/main/plugins/gin/testdata/server/docs/openapi.json)  |
-  | echo 示例 |[配置文件](blob/main/plugins/echo/testdata/sample/eapi.yaml) <br/>[生成文档](blob/main/plugins/echo/testdata/sample/docs/openapi.json) |
+3. echo 示例
+  * [配置文件](blob/main/plugins/echo/testdata/sample/eapi.yaml)
+  * [生成文档](blob/main/plugins/echo/testdata/sample/docs/openapi.json)
