@@ -1,3 +1,9 @@
+<style>
+    table {
+        width: 100%;
+    }
+</style>
+
 <p align="center">
   <img width="144px" src="docs/logo.png" />
 </p>
@@ -88,6 +94,58 @@ generators:
     output: ./src/types # 输出文件的目录. 执行完成之后会在该目录下生成TS类型文件
 ```
 
+### Properties
+`properties` 用于配置自定义请求参数绑定函数和响应输出函数。
+
+#### 自定义请求参数绑定函数
+
+配置示例：
+```yaml
+properties:
+  # 自定义请求参数绑定
+  request:
+    - type: '*server/pkg/handler.CustomContext'
+      method: 'Bind'
+      return:
+        data:
+          type: 'args[0]' # 指定第一个函数参数为请求参数
+```
+
+#### 自定义响应输出函数
+
+配置示例：
+```yaml
+response:
+    - type: '*server/pkg/handler.CustomContext' # 方法所在的 package/receiver
+      method: 'JSONOK'
+      return:
+        contentType: 'application/json'  # 指定响应的 content-type
+        data: # 这是一个嵌套的数据格式示例 '{"code":0,"msg":"hello",data:{...}}'
+          type: 'object'
+          properties:
+            code:
+              type: 'number'
+            msg:
+              type: 'string'
+            data:
+              optional: true # 是否可选. 默认 false
+              type: 'args[0]' # 指定为第一个函数参数
+        status: 200 # 指定为 200 状态码
+```
+
+其中，data type 可选值为：
+- "string"
+- "number"
+- "integer"
+- "boolean"
+- "array"
+- "file"
+- "object"
+
+此外，还可以将函数入参作为参数类型，eAPI 会自动解析对应的参数类型。比如 `args[0]` 代表函数第一个参数。
+
+完整的配置参考 https://github.com/link-duan/eapi/blob/main/plugins/common/config.go 下面的 `DataSchema` 类型声明。
+
 ### 代码生成器配置
 
 如果需要使用代码生成功能，需要在配置文件内添加如下配置:
@@ -117,3 +175,15 @@ generators:
      - name: ts
        output: ./src/types # 输出文件的目录
    ```
+## 预览
+1. Clickvisual 项目
+  * 文档站: [https://clickvisual.gocn.vip/api](https://clickvisual.gocn.vip/api)
+  * 文档描述文件: [https://github.com/clickvisual/clickvisual/blob/master/api/docs/swagger.json](https://github.com/clickvisual/clickvisual/blob/master/api/docs/swagger.json)
+
+2. gin 示例
+  * [配置文件](https://github.com/link-duan/eapi/blob/main/plugins/gin/testdata/server/eapi.yaml)
+  * [生成文档](https://github.com/link-duan/eapi/blob/main/plugins/gin/testdata/server/docs/openapi.json)
+
+3. echo 示例
+  * [配置文件](https://github.com/link-duan/eapi/blob/main/plugins/echo/testdata/sample/eapi.yaml)
+  * [生成文档](https://github.com/link-duan/eapi/blob/main/plugins/echo/testdata/sample/docs/openapi.json)
