@@ -1,9 +1,3 @@
-<style>
-    table {
-        width: 100%;
-    }
-</style>
-
 <p align="center">
   <img width="144px" src="docs/logo.png" />
 </p>
