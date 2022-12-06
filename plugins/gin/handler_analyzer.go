@@ -10,6 +10,7 @@ import (
 	analyzer "github.com/gotomicro/eapi"
 	"github.com/gotomicro/eapi/plugins/common"
 	"github.com/gotomicro/eapi/spec"
+	"github.com/gotomicro/eapi/utils"
 	"github.com/iancoleman/strcase"
 	"github.com/robertkrimen/otto"
 	"github.com/samber/lo"
@@ -373,15 +374,19 @@ func (p *handlerAnalyzer) parseDataType(call *ast.CallExpr, dataType *common.Dat
 	case common.DataTypeObject:
 		schema := spec.NewObjectSchema()
 		properties := make(spec.Schemas)
-		for name, dataSchema := range dataType.Properties {
-			if !dataSchema.Optional {
-				schema.Required = append(schema.Required, name)
-			}
-			s := p.parseDataType(call, dataSchema, contentType)
-			if s != nil {
-				properties[name] = s
-			}
-		}
+		utils.RangeMapInOrder(
+			dataType.Properties,
+			func(a, b string) bool { return a < b },
+			func(name string, dataSchema *common.DataSchema) {
+				if !dataSchema.Optional {
+					schema.Required = append(schema.Required, name)
+				}
+				s := p.parseDataType(call, dataSchema, contentType)
+				if s != nil {
+					properties[name] = s
+				}
+			},
+		)
 		schema.Properties = properties
 		return spec.NewSchemaRef("", schema)
 	default: // fallback to js expression
