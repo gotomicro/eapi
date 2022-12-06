@@ -169,6 +169,174 @@ generators:
      - name: ts
        output: ./src/types # 输出文件的目录
    ```
+
+## 注解
+
+如果你需要对文档的内容进行更精细化的调整（比如接口标题、字段是否必选等），那么你需要使用到注解。
+
+### 默认情况
+
+如果没有写注解，eAPI 也会帮你生成关于接口的必要信息。对应关系如下：
+
+| 接口信息   | 默认值  |
+|  :-   |   :-   |
+| 接口的 summary (标题)  |  `pkg.HandlerName` handler 函数所在的包名和函数名共同组成接口标题。如果有注释，会默认使用注释作为标题 |
+| 接口描述 | handler 函数的注释（非注解部分） |
+| Path/Query/Form参数 | 根据代码生成。比如 gin 里面的 `ctx.Query("q")` 会被解析为 query 参数 q 。如果在这行代码上面加上注释，则会被作为这个参数的描述 |
+| 请求 Body | 根据代码生成。比如 gin 里面的 `ctx.Bind(&request)` 参数绑定 |
+| Model 字段描述 | 字段注释 |
+| 接口地址 | 根据代码里面的路由声明自动解析 |
+
+### `@summary`
+
+允许写在 handler 函数的上方。用于设置接口的 `summary`（或者叫标题）。
+
+示例
+```go
+// @summary 创建 XXX 资源
+func Create(c *gin.Context) {
+  // your code
+}
+```
+
+### `@required`
+
+用于设置字段是否必填。允许写在 struct 字段注释里 或者 获取请求参数注释里。
+
+> 注意：最新的 OpenAPI 标准中，没有对 **可选字段** 提供支持，只能设置必选字段。
+
+#### 示例1
+
+struct字段注释
+```go
+type XxRequest struct {
+  // 我是字段描述
+  // @required
+  Title string `json:"title"`
+}
+```
+
+在这个示例里面，"我是字段描述” 会被显示为文档中的字段描述，并且会被显示为必填字段。
+
+#### 示例2
+
+请求参数获取
+```go
+// Create 创建 XXX 资源接口
+func Create(c *gin.Context) {
+  // 分类 ID
+  // @required
+  categoryId := c.Param("categoryId")
+  // @required
+  arg0 := c.Query("arg0")
+  arg1 := c.Query("arg1")
+}
+```
+
+在这个示例里面有三个参数：
+- categoryId Path参数 字段描述:"分类 ID" 字段必选
+- arg0 Query参数 无字段描述 必选
+- arg0 Query参数 无字段描述 非必选
+
+### `@consume`
+
+用于设置接口请求 body 的 content-type 。默认为 `application/json`。允许写在 handler 函数注释里面。
+
+示例
+```go
+// @consume application/xml
+func Create(c *gin.Context) {
+  var request view.CreateXxRequest
+  err = c.Bind(&request)
+  // ...
+}
+```
+
+在上面这个示例里面，请求参数 request 会被认为是 XML 格式。
+
+### `@produce`
+
+用于设置接口响应 body 的 content-type 。默认为 `application/json`。允许写在 handler 函数注释里面。
+
+示例
+```go
+// @produce application/xml
+func Create(c *gin.Context) {
+  var res view.CreateXxResponse
+  // ...
+  c.JSON(http.StatusOK, res)
+}
+```
+
+在上面这个示例里面，响应 Body 数据 res 会被认为是 XML 格式。
+
+### `@ignore`
+
+用于忽略不需要展示在文档中的接口。允许写在以下位置：
+
+1. 代码文件头部：会忽略整个文件的接口
+2. 代码块上方：忽略代码块内的接口
+
+```go
+func registerRoutes(g *gin.RouteGroup) {
+  // @ignore
+  {
+    // 代码块内的路由都会被忽略
+    g.GET("/v1/resources", handler.ResourceList)
+    g.POST("/v1/resources", handler.ResourceCreate)
+  }
+
+  // 代码块外面的不会被忽略
+  g.GET("/v1/pods", handler.PodList)
+}
+```
+
+上面这个示例中，代码块内的两个接口都会被忽略，不会展示在文档中。而代码块外面的 `GET /api/pods` 接口则不会被忽略。
+
+3. 函数注释：忽略函数内的接口
+
+```go
+// @ignore
+func registerRoutes() {
+  g.GET("/v1/resources", handler.ResourceList)
+  g.POST("/v1/resources", handler.ResourceCreate)
+  g.GET("/v1/pods", handler.PodList)
+}
+```
+
+上面这个示例中，`registerRoutes` 函数内的接口都会被忽略，不会展示在文档中。
+
+### `@tags`
+
+用于设置接口的 Tag 。允许写在 handler 函数的注释内。设置了相同的 Tag 会在文档内展示在同一个分类下面。
+
+<p align="center"><img src="docs/operation-tag.jpg" width="120" /></p>
+
+示例
+```go
+// @tags User
+func Create(c *gin.Context) {
+  // ..
+}
+```
+
+### `@id`
+
+用于设置接口的 `operationId` 。 允许写在 handler 函数注释内。默认值为 handler 所在包名 + 函数名
+
+operationId 除了会被应用在文档内，还会被作为生成的前端代码的函数名。
+
+```go
+package user
+
+// @id CreateUser
+func Create(c *gin.Context) {
+   // ...
+}
+```
+
+在上面这个示例中，`Create` 接口的 operationId 默认为 `user.Create`，但由于设置了 `@id` 注解，所以 operationId 为 "CreateUser" 。
+
 ## 预览
 1. Clickvisual 项目
   * 文档站: [https://clickvisual.gocn.vip/api](https://clickvisual.gocn.vip/api)
