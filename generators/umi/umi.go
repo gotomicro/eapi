@@ -4,13 +4,13 @@ package umi
 
 import (
 	"regexp"
-	"sort"
 	"strings"
 
 	f "github.com/gotomicro/eapi/formatter"
 	"github.com/gotomicro/eapi/generators"
 	"github.com/gotomicro/eapi/generators/ts"
 	"github.com/gotomicro/eapi/spec"
+	"github.com/gotomicro/eapi/utils"
 	"github.com/iancoleman/strcase"
 	"github.com/samber/lo"
 )
@@ -70,38 +70,34 @@ type pathItem struct {
 
 func (p *Printer) requests() f.Doc {
 	var docs []f.Doc
-	var paths []pathItem
-	for path, item := range p.schema.Paths {
-		paths = append(paths, pathItem{path: path, PathItem: item})
-	}
-	sort.Slice(paths, func(i, j int) bool {
-		return paths[i].path < paths[j].path
-	})
 
-	for _, item := range paths {
-		path := item.path
-		if item.Get != nil {
-			docs = append(docs, p.request(path, "get", item.Get))
-		}
-		if item.Put != nil {
-			docs = append(docs, p.request(path, "put", item.Put))
-		}
-		if item.Post != nil {
-			docs = append(docs, p.request(path, "post", item.Post))
-		}
-		if item.Delete != nil {
-			docs = append(docs, p.request(path, "delete", item.Delete))
-		}
-		if item.Options != nil {
-			docs = append(docs, p.request(path, "options", item.Options))
-		}
-		if item.Head != nil {
-			docs = append(docs, p.request(path, "head", item.Head))
-		}
-		if item.Patch != nil {
-			docs = append(docs, p.request(path, "patch", item.Patch))
-		}
-	}
+	utils.RangeMapInOrder(
+		p.schema.Paths,
+		func(a, b string) bool { return a < b },
+		func(path string, item *spec.PathItem) {
+			if item.Get != nil {
+				docs = append(docs, p.request(path, "get", item.Get))
+			}
+			if item.Put != nil {
+				docs = append(docs, p.request(path, "put", item.Put))
+			}
+			if item.Post != nil {
+				docs = append(docs, p.request(path, "post", item.Post))
+			}
+			if item.Delete != nil {
+				docs = append(docs, p.request(path, "delete", item.Delete))
+			}
+			if item.Options != nil {
+				docs = append(docs, p.request(path, "options", item.Options))
+			}
+			if item.Head != nil {
+				docs = append(docs, p.request(path, "head", item.Head))
+			}
+			if item.Patch != nil {
+				docs = append(docs, p.request(path, "patch", item.Patch))
+			}
+		},
+	)
 
 	return f.Join(f.Group(f.LineBreak(), f.LineBreak()), docs...)
 }
