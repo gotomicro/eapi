@@ -2,11 +2,11 @@ package ts
 
 import (
 	_ "embed"
-	"sort"
 
 	f "github.com/gotomicro/eapi/formatter"
 	"github.com/gotomicro/eapi/generators"
 	"github.com/gotomicro/eapi/spec"
+	"github.com/gotomicro/eapi/utils"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
 )
@@ -45,23 +45,14 @@ func NewPrinter(schema *spec.T) *Printer {
 }
 
 func (p *Printer) Print() f.Doc {
-	type Schama struct {
-		Key   string
-		Value *spec.SchemaRef
-	}
-	var schemas []Schama
-	for key, schema := range p.schema.Components.Schemas {
-		schemas = append(schemas, Schama{
-			Key:   key,
-			Value: schema,
-		})
-	}
-	sort.Slice(schemas, func(i, j int) bool { return schemas[i].Key < schemas[j].Key })
-
 	var docs []f.Doc
-	for _, schema := range schemas {
-		docs = append(docs, p.definition(schema.Value))
-	}
+	utils.RangeMapInOrder(
+		p.schema.Components.Schemas,
+		func(a, b string) bool { return a < b },
+		func(key string, schema *spec.SchemaRef) {
+			docs = append(docs, p.definition(schema))
+		},
+	)
 	return f.Join(f.Group(f.LineBreak(), f.LineBreak()), docs...)
 }
 
@@ -125,24 +116,15 @@ func (p *Printer) PrintType(definition *spec.SchemaRef) f.Doc {
 }
 
 func (p *Printer) printInterface(definition *spec.SchemaRef) f.Doc {
-	type Property struct {
-		Name     string
-		Property *spec.SchemaRef
-	}
-	var properties []Property
-	for name, schema := range definition.Value.Properties {
-		properties = append(properties, Property{
-			Name:     name,
-			Property: schema,
-		})
-	}
-	sort.Slice(properties, func(i, j int) bool { return properties[i].Name < properties[j].Name })
-
 	var fields []f.Doc
-	for _, property := range properties {
-		required := lo.Contains(definition.Value.Required, property.Name)
-		fields = append(fields, p.property(property.Name, property.Property, required))
-	}
+	utils.RangeMapInOrder(
+		definition.Value.Properties,
+		func(a, b string) bool { return a < b },
+		func(name string, property *spec.SchemaRef) {
+			required := lo.Contains(definition.Value.Required, name)
+			fields = append(fields, p.property(name, property, required))
+		},
+	)
 
 	if p.TypeFieldsInLine {
 		return f.Group(
