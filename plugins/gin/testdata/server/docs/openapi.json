@@ -87,6 +87,7 @@
                         "type": "string"
                     },
                     "raw": {
+                        "deprecated": true,
                         "description": "测试引用内置包类型",
                         "type": "object"
                     },
@@ -326,6 +327,7 @@
         },
         "/wrapped-handler": {
             "get": {
+                "deprecated": true,
                 "operationId": "shop.WrappedHandler",
                 "parameters": [
                     {
@@ -363,14 +365,24 @@
                                     },
                                     "required": [
                                         "code",
-                                        "msg",
-                                        "data"
+                                        "data",
+                                        "msg"
                                     ],
                                     "type": "object"
                                 }
                             }
                         },
                         "description": "自定义响应函数"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "description": "Any Json Type",
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }

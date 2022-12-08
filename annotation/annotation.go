@@ -4,7 +4,6 @@ type Type int
 
 const (
 	Required Type = iota + 1
-	Nullable
 	Consume
 	Produce
 	Unresolved
@@ -13,22 +12,23 @@ const (
 	Description
 	Summary
 	ID
+	Deprecated
 )
 
 type Annotation interface {
 	Type() Type
 }
 
-type RequiredAnnotation struct{}
-
-func (a *RequiredAnnotation) Type() Type {
-	return Required
+type SimpleAnnotation struct {
+	t Type
 }
 
-type NullableAnnotation struct{}
+func (a *SimpleAnnotation) Type() Type {
+	return a.t
+}
 
-func (a *NullableAnnotation) Type() Type {
-	return Nullable
+func newSimpleAnnotation(t Type) *SimpleAnnotation {
+	return &SimpleAnnotation{t: t}
 }
 
 type ConsumeAnnotation struct {
@@ -54,12 +54,6 @@ type UnresolvedAnnotation struct {
 
 func (a *UnresolvedAnnotation) Type() Type {
 	return Unresolved
-}
-
-type IgnoreAnnotation struct{}
-
-func (a *IgnoreAnnotation) Type() Type {
-	return Ignore
 }
 
 type TagAnnotation struct {

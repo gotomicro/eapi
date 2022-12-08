@@ -1,6 +1,7 @@
 package shop
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"server/pkg/handler"
@@ -63,9 +64,14 @@ func GoodsDelete(c *handler.CustomContext) {
 	_ = c.Bind(&request)
 }
 
+// WrappedHandler
+// @deprecated
 func WrappedHandler(c *handler.CustomContext) {
 	_ = c.Query("hello")
 	_ = c.Query("world")
+	if false {
+		c.JSON(http.StatusBadRequest, json.RawMessage("{\"hello\": \"world\"}"))
+	}
 
 	// 自定义响应函数
 	c.JSONOK(view.GoodsInfoRes{})

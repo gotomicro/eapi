@@ -37,15 +37,13 @@ func (p *Parser) parse() Annotation {
 
 	switch strings.ToLower(tag.Image) {
 	case "@required":
-		return p.required()
-	case "@nullable":
-		return p.nullable()
+		return newSimpleAnnotation(Required)
 	case "@consume":
 		return p.consumeAnnotation()
 	case "@produce":
 		return p.produceAnnotation()
 	case "@ignore":
-		return &IgnoreAnnotation{}
+		return newSimpleAnnotation(Ignore)
 	case "@tag", "@tags":
 		return p.tags()
 	case "@description":
@@ -54,6 +52,8 @@ func (p *Parser) parse() Annotation {
 		return p.summary()
 	case "@id":
 		return p.id()
+	case "@deprecated":
+		return newSimpleAnnotation(Deprecated)
 	default: // unresolved plugin
 		return p.unresolved(tag)
 	}
@@ -97,14 +97,6 @@ func (p *Parser) lookahead() *Token {
 
 func (p *Parser) hasMore() bool {
 	return len(p.tokens) > p.position
-}
-
-func (p *Parser) required() *RequiredAnnotation {
-	return &RequiredAnnotation{}
-}
-
-func (p *Parser) nullable() *NullableAnnotation {
-	return &NullableAnnotation{}
 }
 
 func (p *Parser) consumeAnnotation() *ConsumeAnnotation {

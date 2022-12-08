@@ -87,7 +87,8 @@ func (p *ParamParser) parseField(name *ast.Ident, field *ast.Field) (param *spec
 	comments := ParseComment(field.Doc)
 	if comments != nil {
 		param.Required = comments.Required()
-		param.Description = comments.Text
+		param.Description = comments.Text()
+		param.Deprecated = comments.Deprecated()
 	}
 
 	return
