@@ -50,6 +50,7 @@ type GoodsCreateRes struct {
 	// 测试类型别名
 	StringAlias StringAlias `json:"stringAlias"`
 	// 测试引用内置包类型
+	// @deprecated
 	Raw json.RawMessage `json:"raw"`
 }
 

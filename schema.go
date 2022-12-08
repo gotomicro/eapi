@@ -56,8 +56,10 @@ func (s *SchemaBuilder) FromTypeSpec(t *ast.TypeSpec) *spec.SchemaRef {
 	if schema == nil {
 		return nil
 	}
+	comment := ParseComment(t.Comment)
 	schema.Value.Title = t.Name.Name
-	schema.Value.Description = NormalizeComment(t.Comment.Text(), t.Name.Name)
+	schema.Value.Description = comment.TrimPrefix(t.Name.Name)
+	schema.Value.Deprecated = comment.Deprecated()
 	return schema
 }
 
@@ -119,7 +121,7 @@ func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *spec.SchemaRef {
 
 	for _, field := range expr.Fields.List {
 		comment := s.parseCommentOfField(field)
-		if comment != nil && comment.Ignore() {
+		if comment.Ignore() {
 			continue // ignored field
 		}
 

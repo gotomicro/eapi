@@ -10,13 +10,30 @@ import (
 )
 
 type Comment struct {
-	Text        string
+	text        string
 	Annotations []annotation.Annotation
+}
+
+func (c *Comment) Text() string {
+	if c == nil {
+		return ""
+	}
+	return c.text
+}
+
+func (c *Comment) TextPointer() *string {
+	if c == nil || c.Text() == "" {
+		return nil
+	}
+	return &c.text
 }
 
 // TrimPrefix trim comment prefix and return trimmed string
 func (c *Comment) TrimPrefix(prefix string) string {
-	return strings.TrimPrefix(c.Text, prefix)
+	if c == nil {
+		return ""
+	}
+	return strings.TrimPrefix(c.text, prefix)
 }
 
 func (c *Comment) Required() bool {
@@ -32,9 +49,12 @@ func (c *Comment) Required() bool {
 	return false
 }
 
-func (c *Comment) Nullable() bool {
+func (c *Comment) Deprecated() bool {
+	if c == nil {
+		return false
+	}
 	for _, a := range c.Annotations {
-		if a.Type() == annotation.Nullable {
+		if a.Type() == annotation.Deprecated {
 			return true
 		}
 	}
@@ -46,7 +66,7 @@ func (c *Comment) ApplyToSchema(schema *spec.SchemaRef) {
 		return
 	}
 	if schema.Ref != "" {
-		schema.Description = c.Text
+		schema.Description = c.text
 		return
 	}
 
@@ -54,7 +74,8 @@ func (c *Comment) ApplyToSchema(schema *spec.SchemaRef) {
 	if value == nil {
 		return
 	}
-	value.Description = c.Text
+	value.Description = c.text
+	value.Deprecated = c.Deprecated()
 }
 
 func (c *Comment) Consumes() []string {
@@ -95,8 +116,7 @@ func (c *Comment) Ignore() bool {
 		return false
 	}
 	for _, annot := range c.Annotations {
-		_, ok := annot.(*annotation.IgnoreAnnotation)
-		if ok {
+		if annot.Type() == annotation.Ignore {
 			return true
 		}
 	}
@@ -142,6 +162,6 @@ func ParseComment(commentGroup *ast.CommentGroup) *Comment {
 			lines = append(lines, strings.TrimSpace(line))
 		}
 	}
-	c.Text = strings.Join(lines, "\n\n")
+	c.text = strings.Join(lines, "\n\n")
 	return c
 }

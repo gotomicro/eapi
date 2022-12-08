@@ -6,11 +6,6 @@ import (
 )
 
 func TestParser_Parse(t *testing.T) {
-	type fields struct {
-		text     string
-		tokens   []*Token
-		position int
-	}
 	tests := []struct {
 		name string
 		code string
@@ -19,12 +14,12 @@ func TestParser_Parse(t *testing.T) {
 		{
 			name: "required",
 			code: " @required",
-			want: &RequiredAnnotation{},
+			want: newSimpleAnnotation(Required),
 		},
 		{
 			name: "REQUIRED",
 			code: " @REQUIRED  ",
-			want: &RequiredAnnotation{},
+			want: newSimpleAnnotation(Required),
 		},
 	}
 	for _, tt := range tests {

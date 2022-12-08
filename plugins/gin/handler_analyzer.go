@@ -112,9 +112,7 @@ func (p *handlerAnalyzer) parseBinding(call *ast.CallExpr) {
 		commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
 		if commentGroup != nil {
 			comment := analyzer.ParseComment(commentGroup)
-			if comment != nil {
-				schema.Description = comment.Text
-			}
+			schema.Description = comment.Text()
 		}
 		reqBody := spec.NewRequestBody().WithSchemaRef(schema, []string{contentType})
 		p.spec.RequestBody = &spec.RequestBodyRef{Value: reqBody}
@@ -130,9 +128,7 @@ func (p *handlerAnalyzer) parseResBody(call *ast.CallExpr, contentType string) {
 	commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
 	if commentGroup != nil {
 		comment := analyzer.ParseComment(commentGroup)
-		if comment != nil {
-			res.Description = &comment.Text
-		}
+		res.Description = comment.TextPointer()
 	}
 
 	schema := p.ctx.GetSchemaByExpr(call.Args[1], contentType)
@@ -151,7 +147,8 @@ func (p *handlerAnalyzer) parseRedirectRes(call *ast.CallExpr) {
 	if commentGroup != nil {
 		comment := analyzer.ParseComment(commentGroup)
 		if comment != nil {
-			res.Description = &comment.Text
+			desc := comment.Text()
+			res.Description = &desc
 		}
 	}
 	statusCode := p.ctx.ParseStatusCode(call.Args[0])
@@ -204,11 +201,9 @@ func (p *handlerAnalyzer) parseFormData(call *ast.CallExpr, fieldType string, op
 	}
 
 	comment := analyzer.ParseComment(p.ctx.GetHeadingCommentOf(call.Lparen))
+	paramSchema.Description = comment.Text()
 	if comment.Required() {
 		schema.Value.Required = append(schema.Value.Required, name)
-	}
-	if comment != nil {
-		paramSchema.Description = comment.Text
 	}
 }
 
@@ -237,9 +232,7 @@ func (p *handlerAnalyzer) primitiveParam(call *ast.CallExpr, in string) *spec.Pa
 	commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
 	if commentGroup != nil {
 		comment := analyzer.ParseComment(commentGroup)
-		if comment != nil {
-			res.Description = comment.Text
-		}
+		res.Description = comment.Text()
 	}
 
 	return res
@@ -263,13 +256,8 @@ func (p *handlerAnalyzer) matchCustomResponseRule(node ast.Node) (matched bool) 
 				//}
 
 				res := spec.NewResponse()
-				commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
-				if commentGroup != nil {
-					comment := analyzer.ParseComment(commentGroup)
-					if comment != nil {
-						res.Description = &comment.Text
-					}
-				}
+				comment := analyzer.ParseComment(p.ctx.GetHeadingCommentOf(call.Pos()))
+				res.Description = comment.TextPointer()
 				schema := p.parseDataType(call, rule.Return.Data, contentType)
 				res.WithContent(spec.NewContentWithSchemaRef(schema, []string{contentType}))
 				statusCode := p.parseStatusCodeInCall(call, rule.Return.Status)
@@ -311,9 +299,7 @@ func (p *handlerAnalyzer) matchCustomRequestRule(node ast.Node) (matched bool) {
 					commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
 					if commentGroup != nil {
 						comment := analyzer.ParseComment(commentGroup)
-						if comment != nil {
-							reqBody.Description = comment.Text
-						}
+						reqBody.Description = comment.Text()
 					}
 					reqBody.WithSchemaRef(schema, []string{contentType})
 					p.spec.RequestBody = &spec.RequestBodyRef{Value: reqBody}
@@ -438,7 +424,7 @@ func (p *handlerAnalyzer) parseParamsInCall(call *ast.CallExpr, dataType *common
 
 func (p *handlerAnalyzer) evaluate(call *ast.CallExpr, code string) interface{} {
 	env := otto.New()
-	env.Set("args", call.Args)
+	_ = env.Set("args", call.Args)
 	output, err := env.Run(code)
 	if err != nil {
 		log.Fatalln("evaluate failed", err)

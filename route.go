@@ -85,5 +85,6 @@ func (s *APISpec) LoadFromFuncDecl(funcDecl *ast.FuncDecl) {
 		s.Tags = comment.Tags()
 		s.OperationID = comment.ID()
 		s.Consumes = append(s.Consumes, comment.Consumes()...)
+		s.Deprecated = comment.Deprecated()
 	}
 }
