@@ -337,6 +337,26 @@ func Create(c *gin.Context) {
 
 在上面这个示例中，`Create` 接口的 operationId 默认为 `user.Create`，但由于设置了 `@id` 注解，所以 operationId 为 "CreateUser" 。
 
+### `@deprecated`
+
+用于标记字段或者接口为弃用。允许用于字段注释和 handler 函数注释内。
+
+示例
+```go
+type User struct {
+  // Use NewField instead
+  // @deprecated
+  OldField string `json:"xx"`
+}
+
+// @deprecated
+func Create(c *gin.Context) {
+  // ...
+}
+```
+
+在上面示例中，`User.OldField` 字段会被标记为弃用，`Create` 函数对应的接口会被标记为弃用。
+
 ## 预览
 1. Clickvisual 项目
   * 文档站: [https://clickvisual.gocn.vip/api](https://clickvisual.gocn.vip/api)
