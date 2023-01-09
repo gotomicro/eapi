@@ -2,6 +2,10 @@ plugin: gin
 dir: '.'
 output: docs # output directory of openapi.json
 
+openapi:
+  title: This is an Example
+  description: Example description for Example
+
 depends:
   - github.com/gin-gonic/gin
   - encoding/json

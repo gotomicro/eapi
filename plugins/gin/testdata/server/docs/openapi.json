@@ -169,7 +169,8 @@
         }
     },
     "info": {
-        "title": "",
+        "description": "Example description for Example",
+        "title": "This is an Example",
         "version": ""
     },
     "openapi": "3.0.3",
