@@ -9,6 +9,7 @@ import (
 
 	_ "github.com/gotomicro/eapi/generators/ts"
 	_ "github.com/gotomicro/eapi/generators/umi"
+	"github.com/gotomicro/eapi/spec"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
@@ -26,7 +27,25 @@ type Config struct {
 }
 
 type OpenAPIConfig struct {
-	Version string // OpenAPI version 3.0.0|3.0.3|3.1.0
+	Version        string // OpenAPI version 3.0.0|3.0.3|3.1.0
+	Title          string
+	Description    string
+	TermsOfService string
+}
+
+func (c OpenAPIConfig) applyToDoc(doc *spec.T) {
+	if c.Version != "" {
+		doc.Info.Version = c.Version
+	}
+	if c.Title != "" {
+		doc.Info.Title = c.Title
+	}
+	if c.Description != "" {
+		doc.Info.Description = c.Description
+	}
+	if c.TermsOfService != "" {
+		doc.Info.TermsOfService = c.TermsOfService
+	}
 }
 
 type GeneratorConfig struct {
@@ -177,9 +196,7 @@ func (e *Entrypoint) run(c *cli.Context) error {
 
 	a := NewAnalyzer(e.k).Plugin(plugin).Depends(e.cfg.Depends...)
 	doc := a.Process(e.cfg.Dir).Doc()
-	if e.cfg.OpenAPI.Version != "" {
-		doc.OpenAPI = e.cfg.OpenAPI.Version
-	}
+	e.cfg.OpenAPI.applyToDoc(doc)
 
 	// write documentation
 	{
