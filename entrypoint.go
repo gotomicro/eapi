@@ -27,24 +27,27 @@ type Config struct {
 }
 
 type OpenAPIConfig struct {
-	Version        string // OpenAPI version 3.0.0|3.0.3|3.1.0
-	Title          string
-	Description    string
-	TermsOfService string
+	OpenAPI string     `yaml:"openapi"` // OpenAPI version 3.0.0|3.0.3|3.1.0
+	Info    *spec.Info `yaml:"info"`    // Required
 }
 
 func (c OpenAPIConfig) applyToDoc(doc *spec.T) {
-	if c.Version != "" {
-		doc.Info.Version = c.Version
+	if c.OpenAPI != "" {
+		doc.OpenAPI = c.OpenAPI
 	}
-	if c.Title != "" {
-		doc.Info.Title = c.Title
-	}
-	if c.Description != "" {
-		doc.Info.Description = c.Description
-	}
-	if c.TermsOfService != "" {
-		doc.Info.TermsOfService = c.TermsOfService
+	if c.Info != nil {
+		if c.Info.Version != "" {
+			doc.Info.Version = c.Info.Version
+		}
+		if c.Info.Title != "" {
+			doc.Info.Title = c.Info.Title
+		}
+		if c.Info.Description != "" {
+			doc.Info.Description = c.Info.Description
+		}
+		if c.Info.TermsOfService != "" {
+			doc.Info.TermsOfService = c.Info.TermsOfService
+		}
 	}
 }
 
