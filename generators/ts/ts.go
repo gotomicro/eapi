@@ -44,6 +44,11 @@ func NewPrinter(schema *spec.T) *Printer {
 	return &Printer{schema: schema}
 }
 
+func (p *Printer) SetTypeFieldsInline(inline bool) *Printer {
+	p.TypeFieldsInLine = true
+	return p
+}
+
 func (p *Printer) Print() f.Doc {
 	var docs []f.Doc
 	utils.RangeMapInOrder(
