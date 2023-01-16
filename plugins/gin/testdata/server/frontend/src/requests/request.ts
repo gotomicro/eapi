@@ -1,17 +1,17 @@
 import { request } from "umi";
 import { 
-  GoodsCreateReq,
-  Params,
-  SelfRefType,
-  Property,
-  GoodsInfoRes
+  ViewGoodsCreateReq,
+  GinParams,
+  ViewSelfRefType,
+  ViewProperty,
+  ViewGoodsInfoRes
  } from "./types";
 
 /*
  * @description 创建商品接口
  */
-export function shopGoodsCreate(data: GoodsCreateReq) {
-  return request<{ Status?: Params; guid?: string; raw?: any; selfRef?: SelfRefType; stringAlias?: string; }>(`/api/goods`, {
+export function shopGoodsCreate(data: ViewGoodsCreateReq) {
+  return request<{ Status?: GinParams; guid?: string; raw?: any; selfRef?: ViewSelfRefType; stringAlias?: string; }>(`/api/goods`, {
     method: "post",
     data,
   });
@@ -43,13 +43,13 @@ export function shopGoodsDown(guid: string, data: { dateRange?: string[]; operat
  * @description 商品详情
  */
 export function shopGoodsInfo(guid: string) {
-  return request<{ cover?: string; mapInt?: Record<number, Property>; price?: number; properties?: Record<string, Property>; subTitle?: string; title?: string; }>(`/api/v2/goods/${guid}`, {
+  return request<{ cover?: string; mapInt?: Record<number, ViewProperty>; price?: number; properties?: Record<string, ViewProperty>; subTitle?: string; title?: string; }>(`/api/v2/goods/${guid}`, {
     method: "get",
   });
 }
 
 export function shopWrappedHandler(query: { hello?: string; world?: string }) {
-  return request<{ code: number; data: GoodsInfoRes; msg: string; }>(`/wrapped-handler`, {
+  return request<{ code: number; data: ViewGoodsInfoRes; msg: string; }>(`/wrapped-handler`, {
     method: "get",
     params: query,
   });

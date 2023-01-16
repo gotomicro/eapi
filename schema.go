@@ -8,6 +8,7 @@ import (
 
 	"github.com/gotomicro/eapi/spec"
 	"github.com/gotomicro/eapi/tag"
+	"github.com/iancoleman/strcase"
 	"github.com/samber/lo"
 )
 
@@ -57,7 +58,7 @@ func (s *SchemaBuilder) FromTypeSpec(t *ast.TypeSpec) *spec.SchemaRef {
 		return nil
 	}
 	comment := ParseComment(s.ctx.GetHeadingCommentOf(t.Pos()))
-	schema.Value.Title = t.Name.Name
+	schema.Value.Title = strcase.ToCamel(s.ctx.Package().Name + t.Name.Name)
 	schema.Value.Description = strings.TrimSpace(comment.TrimPrefix(t.Name.Name))
 	schema.Value.Deprecated = comment.Deprecated()
 	return schema
@@ -139,6 +140,9 @@ func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *spec.SchemaRef {
 		}
 
 		for _, name := range field.Names {
+			if !name.IsExported() {
+				continue
+			}
 			fieldSchema := s.ParseExpr(field.Type)
 			if fieldSchema == nil {
 				fmt.Printf("unknown field type %s at %s\n", name.Name, s.ctx.LineColumn(field.Type.Pos()))

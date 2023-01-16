@@ -1,7 +1,7 @@
 /*
  * @description is a single URL parameter, consisting of a key and a value.
  */
-export type Param = {
+export type GinParam = {
   Key?: string;
   Value?: string;
 }
@@ -11,21 +11,21 @@ export type Param = {
  *	The slice is ordered, the first URL parameter is also the first slice value.
  *	It is therefore safe to read values by the index.
  */
-export type Params = Param[]
+export type GinParams = GinParam[]
 
-export enum ErrCode {
+export enum ViewErrCode {
   CodeNotFound = 10000,
   CodeCancled = 10001,
   CodeUnknown = 10002,
   CodeInvalidArgument = 10003,
 }
 
-export type Error = {
-  code?: ErrCode;
+export type ViewError = {
+  code?: ViewErrCode;
   msg?: string;
 }
 
-export type GoodsCreateReq = {
+export type ViewGoodsCreateReq = {
   /*
    * @description 封面图
    */
@@ -33,7 +33,7 @@ export type GoodsCreateReq = {
   /*
    * @description 详情图
    */
-  images?: Image[];
+  images?: ViewImage[];
   /*
    * @description 价格(分)
    */
@@ -48,11 +48,11 @@ export type GoodsCreateReq = {
   title: string;
 }
 
-export type GoodsCreateRes = {
+export type ViewGoodsCreateRes = {
   /*
    * @description 测试引用第三方包
    */
-  Status?: Params;
+  Status?: GinParams;
   /*
    * @description 商品 GUID
    */
@@ -64,22 +64,22 @@ export type GoodsCreateRes = {
   /*
    * @description 测试循环引用
    */
-  selfRef?: SelfRefType;
+  selfRef?: ViewSelfRefType;
   /*
    * @description 测试类型别名
    */
   stringAlias?: string;
 }
 
-export type GoodsDownRes = {
+export type ViewGoodsDownRes = {
   Status?: string;
 }
 
-export type GoodsInfoRes = {
+export type ViewGoodsInfoRes = {
   cover?: string;
-  mapInt?: Record<number, Property>;
+  mapInt?: Record<number, ViewProperty>;
   price?: number;
-  properties?: Record<string, Property>;
+  properties?: Record<string, ViewProperty>;
   subTitle?: string;
   title?: string;
 }
@@ -87,18 +87,18 @@ export type GoodsInfoRes = {
 /*
  * @description 商品图片
  */
-export type Image = {
+export type ViewImage = {
   /*
    * @description 图片链接
    */
   url: string;
 }
 
-export type Property = {
+export type ViewProperty = {
   title?: string;
 }
 
-export type SelfRefType = {
+export type ViewSelfRefType = {
   data?: string;
-  parent?: SelfRefType;
+  parent?: ViewSelfRefType;
 }
