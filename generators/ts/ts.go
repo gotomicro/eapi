@@ -2,6 +2,7 @@ package ts
 
 import (
 	_ "embed"
+	"strings"
 
 	f "github.com/gotomicro/eapi/formatter"
 	"github.com/gotomicro/eapi/generators"
@@ -44,6 +45,11 @@ func NewPrinter(schema *spec.T) *Printer {
 	return &Printer{schema: schema}
 }
 
+func (p *Printer) SetTypeFieldsInline(inline bool) *Printer {
+	p.TypeFieldsInLine = true
+	return p
+}
+
 func (p *Printer) Print() f.Doc {
 	var docs []f.Doc
 	utils.RangeMapInOrder(
@@ -64,8 +70,27 @@ func (p *Printer) definition(definition *spec.SchemaRef) f.Doc {
 			p.PrintEnumBody(ext.EnumItems),
 		)
 	}
+	var description string
+	if definition.Value != nil {
+		description = definition.Value.Description
+	}
+	if definition.Description != "" {
+		description = definition.Description
+	}
+	description = strings.TrimSpace(description)
 
 	return f.Group(
+		f.If(
+			description != "",
+			p.multilineComment(&multilineCommentOptions{
+				tags: []*multilineCommentTag{
+					{
+						tag:  "@description",
+						text: strings.Split(description, "\n\n"),
+					},
+				},
+			}),
+		),
 		f.Content("export type "+definition.Value.Title+" = "),
 		p.PrintType(definition),
 	)
@@ -144,16 +169,58 @@ func (p *Printer) printInterface(definition *spec.SchemaRef) f.Doc {
 }
 
 func (p *Printer) property(name string, schema *spec.SchemaRef, required bool) f.Doc {
-	var content = name
-	if !required {
-		content += "?"
+	var description string
+	if schema.Value != nil {
+		description = schema.Value.Description
 	}
-	content += ": "
+	if schema.Description != "" {
+		description = schema.Description
+	}
+	description = strings.TrimSpace(description)
 
 	return f.Group(
-		f.Content(content),
+		f.If(
+			!p.TypeFieldsInLine && description != "",
+			p.multilineComment(&multilineCommentOptions{
+				tags: []*multilineCommentTag{
+					{
+						tag:  "@description",
+						text: strings.Split(description, "\n"),
+					},
+				},
+			}),
+		),
+		f.Content(name), f.If(!required, f.Content("?")), f.Content(": "),
 		p.PrintType(schema),
 		f.Content(";"),
+	)
+}
+
+type multilineCommentOptions struct {
+	// optional
+	text string
+	// optional
+	tags []*multilineCommentTag
+}
+
+type multilineCommentTag struct {
+	tag  string
+	text []string
+}
+
+func (p *Printer) multilineComment(options *multilineCommentOptions) f.Doc {
+	return f.Group(
+		f.Content("/*"), f.LineBreak(),
+		f.If(options.text != "", f.Content(" * "+options.text)),
+		f.If(len(options.tags) > 0, f.Group(lo.Map(options.tags, func(t *multilineCommentTag, _ int) f.Doc {
+			return f.Group(
+				f.Content(" * "+t.tag+" "),
+				f.Join(f.Group(f.LineBreak(), f.Content(" *\t")), lo.Map(t.text, func(line string, _ int) f.Doc {
+					return f.Content(strings.TrimSpace(line))
+				})...),
+			)
+		})...)), f.LineBreak(),
+		f.Content(" */"), f.LineBreak(),
 	)
 }
 

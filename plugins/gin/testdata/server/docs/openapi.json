@@ -2,6 +2,7 @@
     "components": {
         "schemas": {
             "github.com_gin-gonic_gin.Param": {
+                "description": " is a single URL parameter, consisting of a key and a value.",
                 "properties": {
                     "Key": {
                         "type": "string"
@@ -14,6 +15,7 @@
                 "type": "object"
             },
             "github.com_gin-gonic_gin.Params": {
+                "description": " is a Param-slice, as returned by the router.\n\nThe slice is ordered, the first URL parameter is also the first slice value.\n\nIt is therefore safe to read values by the index.",
                 "items": {
                     "$ref": "#/components/schemas/github.com_gin-gonic_gin.Param"
                 },
@@ -133,6 +135,7 @@
                 "type": "object"
             },
             "server_pkg_view.Image": {
+                "description": " 商品图片",
                 "properties": {
                     "url": {
                         "description": "图片链接",

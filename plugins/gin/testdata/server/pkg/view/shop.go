@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Image 商品图片
 type Image struct {
 	// 图片链接
 	// @required

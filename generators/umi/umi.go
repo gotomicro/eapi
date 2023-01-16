@@ -152,7 +152,7 @@ func (p *Printer) request(path string, method string, item *spec.Operation) f.Do
 			} else {
 				params = append(params, f.Group(
 					f.Content("data: "),
-					ts.NewPrinter(p.schema).PrintType(mediaType.Schema),
+					ts.NewPrinter(p.schema).SetTypeFieldsInline(true).PrintType(mediaType.Schema),
 				))
 			}
 		}
@@ -250,7 +250,7 @@ func (p *Printer) paramsType(params []*spec.ParameterRef) f.Doc {
 	for _, param := range params {
 		fields = append(fields, f.Group(
 			f.Content(param.Value.Name+"?: "),
-			ts.NewPrinter(p.schema).PrintType(param.Value.Schema),
+			ts.NewPrinter(p.schema).SetTypeFieldsInline(true).PrintType(param.Value.Schema),
 		))
 	}
 
@@ -302,7 +302,7 @@ func (p *Printer) jsDoc(item *spec.Operation) f.Doc {
 		return f.Group()
 	}
 
-	lines := strings.Split(desc, "\n")
+	lines := strings.Split(desc, "\n\n")
 	var res = f.Group()
 	res.Docs = append(res.Docs,
 		f.Content("/*"), f.LineBreak(),
@@ -319,8 +319,7 @@ func (p *Printer) responseType(res *spec.Response) f.Doc {
 	for _, mediaType := range res.Content {
 		schema := mediaType.Schema
 		schema = spec.Unref(p.schema, schema)
-		tsPrinter := ts.NewPrinter(p.schema)
-		tsPrinter.TypeFieldsInLine = true
+		tsPrinter := ts.NewPrinter(p.schema).SetTypeFieldsInline(true)
 		ret := tsPrinter.PrintType(schema)
 		p.importType(tsPrinter.ReferencedTypes...)
 		return ret
