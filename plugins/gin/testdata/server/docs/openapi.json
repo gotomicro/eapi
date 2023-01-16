@@ -11,7 +11,7 @@
                         "type": "string"
                     }
                 },
-                "title": "Param",
+                "title": "GinParam",
                 "type": "object"
             },
             "github.com_gin-gonic_gin.Params": {
@@ -19,7 +19,7 @@
                 "items": {
                     "$ref": "#/components/schemas/github.com_gin-gonic_gin.Param"
                 },
-                "title": "Params",
+                "title": "GinParams",
                 "type": "array"
             },
             "server_pkg_view.ErrCode": {
@@ -30,7 +30,7 @@
                     10002,
                     10003
                 ],
-                "title": "ErrCode",
+                "title": "ViewErrCode",
                 "type": "integer"
             },
             "server_pkg_view.Error": {
@@ -42,7 +42,7 @@
                         "type": "string"
                     }
                 },
-                "title": "Error",
+                "title": "ViewError",
                 "type": "object"
             },
             "server_pkg_view.GoodsCreateReq": {
@@ -75,7 +75,7 @@
                     "title",
                     "price"
                 ],
-                "title": "GoodsCreateReq",
+                "title": "ViewGoodsCreateReq",
                 "type": "object"
             },
             "server_pkg_view.GoodsCreateRes": {
@@ -102,7 +102,7 @@
                         "type": "string"
                     }
                 },
-                "title": "GoodsCreateRes",
+                "title": "ViewGoodsCreateRes",
                 "type": "object"
             },
             "server_pkg_view.GoodsDownRes": {
@@ -111,7 +111,7 @@
                         "type": "string"
                     }
                 },
-                "title": "GoodsDownRes",
+                "title": "ViewGoodsDownRes",
                 "type": "object"
             },
             "server_pkg_view.GoodsInfoRes": {
@@ -131,7 +131,7 @@
                         "type": "string"
                     }
                 },
-                "title": "GoodsInfoRes",
+                "title": "ViewGoodsInfoRes",
                 "type": "object"
             },
             "server_pkg_view.Image": {
@@ -145,7 +145,7 @@
                 "required": [
                     "url"
                 ],
-                "title": "Image",
+                "title": "ViewImage",
                 "type": "object"
             },
             "server_pkg_view.Property": {
@@ -154,7 +154,7 @@
                         "type": "string"
                     }
                 },
-                "title": "Property",
+                "title": "ViewProperty",
                 "type": "object"
             },
             "server_pkg_view.SelfRefType": {
@@ -166,7 +166,7 @@
                         "$ref": "#/components/schemas/server_pkg_view.SelfRefType"
                     }
                 },
-                "title": "SelfRefType",
+                "title": "ViewSelfRefType",
                 "type": "object"
             }
         }
