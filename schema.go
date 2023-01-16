@@ -58,7 +58,7 @@ func (s *SchemaBuilder) FromTypeSpec(t *ast.TypeSpec) *spec.SchemaRef {
 	}
 	comment := ParseComment(s.ctx.GetHeadingCommentOf(t.Pos()))
 	schema.Value.Title = t.Name.Name
-	schema.Value.Description = comment.TrimPrefix(t.Name.Name)
+	schema.Value.Description = strings.TrimSpace(comment.TrimPrefix(t.Name.Name))
 	schema.Value.Deprecated = comment.Deprecated()
 	return schema
 }

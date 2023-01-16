@@ -30,10 +30,7 @@ export function shopGoodsDelete(guid: string, query: { formDataField?: string })
 /*
  * @description 下架商品
  */
-export function shopGoodsDown(guid: string, data: {
-  dateRange?: string[];
-  operatorUid?: string;
-}) {
+export function shopGoodsDown(guid: string, data: { dateRange?: string[]; operatorUid?: string; }) {
   const formData = new FormData();
   Object.keys(data).forEach((key) => formData.append(key, data[key]));
   return request<{ Status?: string; }>(`/api/goods/${guid}/down`, {
