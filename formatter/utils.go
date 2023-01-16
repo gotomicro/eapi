@@ -43,3 +43,10 @@ func Content(contents ...interface{}) *DocGroup {
 	}
 	return res
 }
+
+func If(condition bool, doc Doc) Doc {
+	if condition {
+		return doc
+	}
+	return Content("")
+}

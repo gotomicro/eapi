@@ -302,7 +302,7 @@ func (p *Printer) jsDoc(item *spec.Operation) f.Doc {
 		return f.Group()
 	}
 
-	lines := strings.Split(desc, "\n")
+	lines := strings.Split(desc, "\n\n")
 	var res = f.Group()
 	res.Docs = append(res.Docs,
 		f.Content("/*"), f.LineBreak(),
