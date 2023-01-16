@@ -2,6 +2,7 @@ package ts
 
 import (
 	_ "embed"
+	"fmt"
 	"strings"
 
 	f "github.com/gotomicro/eapi/formatter"
@@ -100,7 +101,7 @@ func (p *Printer) PrintEnumBody(enum []*spec.ExtendedEnumItem) f.Doc {
 	return f.Group(
 		f.Content("{"), f.LineBreak(),
 		f.Indent(f.Group(lo.Map(enum, func(item *spec.ExtendedEnumItem, _ int) f.Doc {
-			return f.Group(f.Content(item.Key, " = ", cast.ToString(item.Value), ","), f.LineBreak())
+			return f.Group(f.Content(item.Key, " = ", p.printValue(item.Value), ","), f.LineBreak())
 		})...)),
 		f.Content("}"),
 	)
@@ -246,4 +247,21 @@ func (p *Printer) printExtendedType(info *spec.ExtendedTypeInfo) f.Doc {
 		return f.Content("Record<", p.PrintType(info.Key), ", ", p.PrintType(info.Value), ">")
 	}
 	return f.Content("unknown")
+}
+
+func (p *Printer) printValue(value interface{}) interface{} {
+	switch value := value.(type) {
+	case string:
+		return "\"" + value + "\""
+	case int64, uint64:
+		return fmt.Sprintf("%d", value)
+	case float64:
+		return fmt.Sprintf("%f", value)
+	case bool:
+		if value {
+			return "true"
+		}
+		return "false"
+	}
+	return cast.ToString(value)
 }
