@@ -74,5 +74,5 @@ func WrappedHandler(c *handler.CustomContext) {
 	}
 
 	// 自定义响应函数
-	c.JSONOK(view.GoodsInfoRes{})
+	c.JSONOK(map[string]interface{}{})
 }
