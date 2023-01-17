@@ -79,13 +79,15 @@ func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *spec.SchemaRef) {
 		return s.ParseExpr(expr.Sel)
 
 	case *ast.MapType:
+		value := s.ParseExpr(expr.Value)
 		return spec.NewSchemaRef(
 			"",
-			spec.NewSchema().
+			spec.NewObjectSchema().
 				WithExtendedType(spec.NewMapExtendedType(
 					s.ParseExpr(expr.Key),
-					s.ParseExpr(expr.Value),
-				)),
+					value,
+				)).
+				WithAdditionalProperties(value),
 		)
 
 	case *ast.ArrayType:
@@ -101,7 +103,7 @@ func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *spec.SchemaRef) {
 		return s.ParseExpr(expr.Type)
 
 	case *ast.InterfaceType:
-		return spec.NewSchemaRef("", spec.NewSchema())
+		return spec.NewSchemaRef("", spec.NewObjectSchema().WithDescription("Any Type").WithExtendedType(spec.NewAnyExtendedType()))
 
 	case *ast.CallExpr:
 		return s.parseCallExpr(expr)
@@ -171,6 +173,11 @@ func (s *SchemaBuilder) parseIdent(expr *ast.Ident) *spec.SchemaRef {
 	switch t := t.(type) {
 	case *types.Basic:
 		return s.basicType(t.Name())
+	case *types.Interface:
+		return spec.NewSchemaRef("", spec.NewSchema().
+			WithType("object").
+			WithDescription("Any Type").
+			WithExtendedType(spec.NewAnyExtendedType()))
 	}
 
 	// 检查是否是常用类型

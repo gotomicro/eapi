@@ -14,10 +14,6 @@ func ArrayProperty(item *SchemaRef) *SchemaRef {
 	return NewSchemaRef("", val)
 }
 
-func MapProperty(value *SchemaRef) *SchemaRef {
-	return NewSchemaRef("", NewObjectSchema().WithAdditionalProperties(value.Value))
-}
-
 func Unref(t *T, schema *SchemaRef) *SchemaRef {
 	if schema.Ref == "" {
 		return schema

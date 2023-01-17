@@ -567,14 +567,8 @@ func (schema *Schema) WithAnyAdditionalProperties() *Schema {
 	return schema
 }
 
-func (schema *Schema) WithAdditionalProperties(v *Schema) *Schema {
-	if v == nil {
-		schema.AdditionalProperties = nil
-	} else {
-		schema.AdditionalProperties = &SchemaRef{
-			Value: v,
-		}
-	}
+func (schema *Schema) WithAdditionalProperties(v *SchemaRef) *Schema {
+	schema.AdditionalProperties = v
 	return schema
 }
 
