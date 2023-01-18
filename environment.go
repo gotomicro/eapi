@@ -54,9 +54,11 @@ func (e *Environment) Assign(k, v interface{}) *Environment {
 }
 
 func (e *Environment) ResolveByAnnotation(annotType annotation.Type) *Environment {
-	for _, a := range e.comment.Annotations {
-		if a.Type() == annotType {
-			return e
+	if e.comment != nil {
+		for _, a := range e.comment.Annotations {
+			if a.Type() == annotType {
+				return e
+			}
 		}
 	}
 	if e.parent != nil {
