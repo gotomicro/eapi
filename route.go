@@ -82,7 +82,10 @@ func (s *APISpec) LoadFromFuncDecl(funcDecl *ast.FuncDecl) {
 		if s.Summary == "" {
 			s.Summary = s.Description
 		}
-		s.Tags = comment.Tags()
+		tags := comment.Tags()
+		if len(tags) > 0 {
+			s.Tags = comment.Tags()
+		}
 		s.OperationID = comment.ID()
 		s.Consumes = append(s.Consumes, comment.Consumes()...)
 		s.Deprecated = comment.Deprecated()

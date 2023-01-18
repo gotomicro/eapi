@@ -308,17 +308,35 @@ func registerRoutes() {
 
 ### `@tags`
 
-用于设置接口的 Tag 。允许写在 handler 函数的注释内。设置了相同的 Tag 会在文档内展示在同一个分类下面。
+用于设置接口的 Tag 。允许写在 handler 函数的注释、路由定义处的代码块注释、路由定义所在函数注释。设置了相同的 Tag 会在文档内展示在同一个分类下面。
 
 <p align="center"><img src="docs/operation-tag.jpg" width="120" /></p>
 
 示例
 ```go
+package router
+
 // @tags User
 func Create(c *gin.Context) {
-  // ..
+	// ...
+}
+
+func registerRoute2(r *gin.RouterGroup) {
+   // @tags Shop 
+   {
+      r.GET("/goods", GoodsList)
+   }
+}
+
+// @tags Hello
+func registerRoute(r *gin.RouterGroup) {
+	r.GET("/hello", Hello)
 }
 ```
+
+如上代码所示，三种注释均有效。
+
+如果同时使用了上面三种中的多种注解，优先级为 第一种 > 第二种 > 第三种。
 
 ### `@id`
 

@@ -14,7 +14,6 @@ import (
 // @summary 创建商品
 // @consume application/json
 // @produce application/json
-// @tags Shop
 func GoodsCreate(c *gin.Context) {
 	var req view.GoodsCreateReq
 	if err := c.Bind(&req); err != nil {
@@ -31,7 +30,6 @@ func GoodsCreate(c *gin.Context) {
 }
 
 // GoodsDown 下架商品
-// @tags Shop
 func GoodsDown(c *gin.Context) {
 	// 商品 GUID
 	_ = c.Param("guid")
@@ -46,7 +44,6 @@ func GoodsDown(c *gin.Context) {
 // GoodsInfo 商品详情
 // @consume application/json
 // @produce application/json
-// @tags Shop
 func GoodsInfo(c *gin.Context) {
 	guid := c.Param("guid")
 
@@ -57,8 +54,8 @@ func GoodsInfo(c *gin.Context) {
 }
 
 // GoodsDelete 删除商品
-// @tags Shop
 // @consume multipart/form-data
+// @tags High Priority Tag
 func GoodsDelete(c *handler.CustomContext) {
 	var request view.GoodsDeleteRequest
 	_ = c.Bind(&request)

@@ -11,6 +11,8 @@ type CustomGroup struct {
 	*gin.RouterGroup
 }
 
+// ServeHttp
+// @tags Shop
 func ServeHttp() *gin.Engine {
 	r := gin.Default()
 
@@ -22,11 +24,14 @@ func ServeHttp() *gin.Engine {
 	cg.GET("/wrapped-handler", handler.Handler(shop.WrappedHandler))
 
 	g := r.Group("/api")
-	g.POST("/goods", shop.GoodsCreate)
-	g.POST("/goods/:guid/down", shop.GoodsDown)
 
-	g = g.Group("/v2")
-	g.GET("/goods/:guid", shop.GoodsInfo)
+	// @tags Goods
+	{
+		g.POST("/goods", shop.GoodsCreate)
+		g.POST("/goods/:guid/down", shop.GoodsDown)
+		g = g.Group("/v2")
+		g.GET("/goods/:guid", shop.GoodsInfo)
+	}
 
 	return r
 }
