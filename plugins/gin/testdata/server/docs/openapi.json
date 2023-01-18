@@ -186,7 +186,7 @@
         "title": "This is an Example",
         "version": ""
     },
-    "openapi": "3.0.1",
+    "openapi": "3.1.0",
     "paths": {
         "/api/goods": {
             "post": {
@@ -225,7 +225,7 @@
                 },
                 "summary": "创建商品",
                 "tags": [
-                    "Shop"
+                    "Goods"
                 ]
             }
         },
@@ -245,7 +245,7 @@
                 "responses": {},
                 "summary": "删除商品",
                 "tags": [
-                    "Shop"
+                    "High Priority Tag"
                 ]
             }
         },
@@ -303,7 +303,7 @@
                 },
                 "summary": "下架商品",
                 "tags": [
-                    "Shop"
+                    "Goods"
                 ]
             }
         },
@@ -335,7 +335,7 @@
                 },
                 "summary": "商品详情",
                 "tags": [
-                    "Shop"
+                    "Goods"
                 ]
             }
         },
@@ -402,7 +402,10 @@
                             }
                         }
                     }
-                }
+                },
+                "tags": [
+                    "Shop"
+                ]
             }
         }
     }

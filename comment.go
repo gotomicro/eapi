@@ -101,6 +101,10 @@ func (c *Comment) Produces() []string {
 }
 
 func (c *Comment) Tags() []string {
+	if c == nil {
+		return nil
+	}
+
 	var res []string
 	for _, annot := range c.Annotations {
 		tags, ok := annot.(*annotation.TagAnnotation)
