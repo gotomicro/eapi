@@ -20,25 +20,60 @@ const (
 	MimeTypeFormUrlencoded = "application/x-www-form-urlencoded"
 )
 
-type SchemaBuilder struct {
+type delayParsingJob struct {
 	ctx         *Context
 	contentType string
 	stack       Stack[string]
+	params      []*spec.SchemaRef
+	typeParams  []*spec.TypeParam
+	expr        ast.Expr
+}
+
+type delayParsingList struct {
+	list []*delayParsingJob
+}
+
+func newDelayParsingList() *delayParsingList {
+	return &delayParsingList{}
+}
+
+type SchemaBuilder struct {
+	ctx              *Context
+	contentType      string
+	stack            Stack[string]
+	typeArgs         []*spec.SchemaRef
+	typeParams       []*spec.TypeParam
+	delayParsingList *delayParsingList
 }
 
 func NewSchemaBuilder(ctx *Context, contentType string) *SchemaBuilder {
-	return &SchemaBuilder{ctx: ctx, contentType: contentType}
+	return &SchemaBuilder{
+		ctx:              ctx,
+		contentType:      contentType,
+		delayParsingList: newDelayParsingList(),
+	}
 }
 
 func newSchemaBuilderWithStack(ctx *Context, contentType string, stack Stack[string]) *SchemaBuilder {
 	return &SchemaBuilder{ctx: ctx, contentType: contentType, stack: stack}
 }
 
-func (s *SchemaBuilder) FromTypeDef(def *TypeDefinition) *spec.SchemaRef {
-	schemaRef := s.FromTypeSpec(def.Spec)
+func (s *SchemaBuilder) clone() *SchemaBuilder {
+	ret := *s
+	return &ret
+}
+
+func (s *SchemaBuilder) withDelayParsingList(list *delayParsingList) *SchemaBuilder {
+	s.delayParsingList = list
+	return s
+}
+
+func (s *SchemaBuilder) parseTypeDef(def *TypeDefinition) *spec.SchemaRef {
+	schemaRef := s.parseTypeSpec(def.Spec)
 	if schemaRef == nil {
 		return nil
 	}
+	schemaRef.Value.Key = def.ModelKey(s.typeArgs...)
 
 	if len(def.Enums) > 0 {
 		schema := spec.Unref(s.ctx.Doc(), schemaRef)
@@ -52,11 +87,28 @@ func (s *SchemaBuilder) FromTypeDef(def *TypeDefinition) *spec.SchemaRef {
 	return schemaRef
 }
 
-func (s *SchemaBuilder) FromTypeSpec(t *ast.TypeSpec) *spec.SchemaRef {
-	schema := s.ParseExpr(t.Type)
+func (s *SchemaBuilder) parseTypeSpec(t *ast.TypeSpec) *spec.SchemaRef {
+	var typeParams []*spec.TypeParam
+	if t.TypeParams != nil {
+		for i, field := range t.TypeParams.List {
+			for j, name := range field.Names {
+				typeParams = append(typeParams, &spec.TypeParam{
+					Index:      i + j,
+					Name:       name.Name,
+					Constraint: field.Type.(*ast.Ident).Name,
+				})
+			}
+		}
+	}
+
+	schema := s.setTypeParams(typeParams).ParseExpr(t.Type)
 	if schema == nil {
 		return nil
 	}
+	if t.TypeParams != nil {
+		schema.Value.ExtendedTypeInfo.TypeParams = typeParams
+	}
+
 	comment := s.ctx.ParseComment(s.ctx.GetHeadingCommentOf(t.Pos()))
 	if schema.Ref != "" {
 		comment.ApplyToSchema(schema)
@@ -67,6 +119,17 @@ func (s *SchemaBuilder) FromTypeSpec(t *ast.TypeSpec) *spec.SchemaRef {
 	schema.Value.Description = strings.TrimSpace(comment.TrimPrefix(t.Name.Name))
 	schema.Value.Deprecated = comment.Deprecated()
 	return schema
+}
+
+func (s *SchemaBuilder) setTypeParams(params []*spec.TypeParam) *SchemaBuilder {
+	s.typeParams = params
+	return s
+}
+
+func (s *SchemaBuilder) setTypeArgs(args ...*spec.SchemaRef) *SchemaBuilder {
+	res := *s
+	res.typeArgs = args
+	return &res
 }
 
 func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *spec.SchemaRef) {
@@ -96,10 +159,10 @@ func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *spec.SchemaRef) {
 		)
 
 	case *ast.ArrayType:
-		return spec.ArrayProperty(s.ParseExpr(expr.Elt))
+		return spec.NewArraySchema(s.ParseExpr(expr.Elt)).NewRef()
 
 	case *ast.SliceExpr:
-		return spec.ArrayProperty(s.ParseExpr(expr.X))
+		return spec.NewArraySchema(s.ParseExpr(expr.X)).NewRef()
 
 	case *ast.UnaryExpr:
 		return s.ParseExpr(expr.X)
@@ -112,6 +175,12 @@ func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *spec.SchemaRef) {
 
 	case *ast.CallExpr:
 		return s.parseCallExpr(expr)
+
+	case *ast.IndexExpr:
+		return s.parseIndexExpr(expr)
+
+	case *ast.IndexListExpr:
+		return s.parseIndexListExpr(expr)
 	}
 
 	// TODO
@@ -175,22 +244,6 @@ func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *spec.SchemaRef {
 
 func (s *SchemaBuilder) parseIdent(expr *ast.Ident) *spec.SchemaRef {
 	t := s.ctx.Package().TypesInfo.TypeOf(expr)
-	switch t := t.(type) {
-	case *types.Basic:
-		return s.basicType(t.Name())
-	case *types.Interface:
-		return spec.NewSchemaRef("", spec.NewSchema().
-			WithType("object").
-			WithDescription("Any Type").
-			WithExtendedType(spec.NewAnyExtendedType()))
-	}
-
-	// 检查是否是常用类型
-	schema := s.commonUsedType(t)
-	if schema != nil {
-		return schema
-	}
-
 	return s.parseType(t)
 }
 
@@ -277,12 +330,44 @@ func (s *SchemaBuilder) basicType(name string) *spec.SchemaRef {
 	return nil
 }
 
+func (s *SchemaBuilder) inParsingStack(key string) bool {
+	return lo.Contains(s.stack, key)
+}
+
 func (s *SchemaBuilder) parseType(t types.Type) *spec.SchemaRef {
+	var typeArgs = s.typeArgs
+
 	switch t := t.(type) {
+	case *types.Basic:
+		return s.basicType(t.Name())
+	case *types.Interface:
+		return spec.NewObjectSchema().
+			WithDescription("Any Type").
+			WithExtendedType(spec.NewAnyExtendedType()).NewRef()
+	case *types.TypeParam:
+		return spec.NewTypeParamSchema(s.typeParams[t.Index()]).NewRef()
 	case *types.Slice:
-		return spec.ArrayProperty(s.parseType(t.Elem()))
+		return spec.NewArraySchema(s.parseType(t.Elem())).NewRef()
 	case *types.Array:
-		return spec.ArrayProperty(s.parseType(t.Elem()))
+		return spec.NewArraySchema(s.parseType(t.Elem())).NewRef()
+	case *types.Pointer:
+		return s.parseType(t.Elem())
+	case *types.Named:
+		// parse type arguments
+		args := t.TypeArgs()
+		if args.Len() > 0 {
+			typeArgs = make([]*spec.SchemaRef, 0)
+			for i := 0; i < args.Len(); i++ {
+				typeArgs = append(typeArgs, s.parseType(args.At(i)))
+			}
+		}
+	default:
+	}
+
+	// 检查是否是常用类型
+	schema := s.commonUsedType(t)
+	if schema != nil {
+		return schema
 	}
 
 	def := s.ctx.ParseType(t)
@@ -290,26 +375,29 @@ func (s *SchemaBuilder) parseType(t types.Type) *spec.SchemaRef {
 	if !ok {
 		return nil
 	}
-	if lo.Contains(s.stack, typeDef.Key()) {
-		return spec.RefSchema(typeDef.RefKey())
+
+	modelKey := typeDef.ModelKey()
+	refKey := typeDef.RefKey()
+	if s.inParsingStack(modelKey) {
+		return spec.RefSchema(refKey)
 	}
 
-	_, ok = s.ctx.Doc().Components.Schemas[typeDef.ModelKey()]
-	if ok {
-		return spec.RefSchema(typeDef.RefKey())
+	schema, schemaExists := s.ctx.Doc().Components.Schemas[modelKey]
+	if !schemaExists {
+		s.stack.Push(modelKey)
+		defer s.stack.Pop()
+
+		schema = newSchemaBuilderWithStack(s.ctx.WithPackage(typeDef.pkg).WithFile(typeDef.file), s.contentType, s.stack).
+			setTypeArgs().
+			parseTypeDef(typeDef)
+		s.ctx.Doc().Components.Schemas[typeDef.ModelKey()] = schema
 	}
 
-	s.stack.Push(typeDef.Key())
-	defer s.stack.Pop()
-
-	payloadSchema := newSchemaBuilderWithStack(s.ctx.WithPackage(typeDef.pkg).WithFile(typeDef.file), s.contentType, append(s.stack, typeDef.Key())).
-		FromTypeDef(typeDef)
-	if payloadSchema == nil {
-		return nil
+	schemaRef := spec.RefSchema(refKey)
+	if len(typeArgs) > 0 {
+		return spec.NewSchema().WithExtendedType(spec.NewSpecificExtendType(schemaRef, typeArgs...)).NewRef()
 	}
-	s.ctx.Doc().Components.Schemas[typeDef.ModelKey()] = payloadSchema
-
-	return spec.RefSchema(typeDef.RefKey())
+	return schemaRef
 }
 
 func (s *SchemaBuilder) parseCommentOfField(field *ast.Field) *Comment {
@@ -324,36 +412,64 @@ func (s *SchemaBuilder) parseCommentOfField(field *ast.Field) *Comment {
 }
 
 func (s *SchemaBuilder) parseCallExpr(expr *ast.CallExpr) *spec.SchemaRef {
-	typeName, method, err := s.ctx.GetCallInfo(expr)
-	if err != nil {
+	t := s.ctx.Package().TypesInfo.TypeOf(expr)
+	return s.parseType(t)
+}
+
+func (s *SchemaBuilder) parseIndexExpr(expr *ast.IndexExpr) *spec.SchemaRef {
+	var argType *spec.SchemaRef
+	if s.isTypeParam(expr.Index) {
+		t := s.ctx.Package().TypesInfo.TypeOf(expr.Index).(*types.TypeParam)
+		argType = spec.NewTypeParamSchema(s.typeParams[t.Index()]).NewRef()
+	} else {
+		argType = s.ParseExpr(expr.Index)
+	}
+	genericType := s.clone().setTypeArgs().setTypeParams(nil).ParseExpr(expr.X)
+	if genericType == nil {
 		return nil
 	}
 
-	commonType, ok := commonTypes[typeName+"."+method]
-	if ok {
-		return spec.NewSchemaRef("", commonType.Clone())
-	}
+	return spec.NewSchema().WithExtendedType(spec.NewSpecificExtendType(genericType, argType)).NewRef()
+}
 
-	def := s.ctx.GetDefinition(typeName, method)
-	if def == nil {
-		fmt.Printf("unknown type/function %s.%s at %s\n", typeName, method, s.ctx.LineColumn(expr.Pos()))
-		return nil
-	}
-
-	switch def := def.(type) {
-	case *FuncDefinition:
-		if def.Decl.Type.Results.NumFields() == 0 {
-			return nil
+func (s *SchemaBuilder) parseIndexListExpr(expr *ast.IndexListExpr) *spec.SchemaRef {
+	var typeArgs []*spec.SchemaRef
+	for _, param := range expr.Indices {
+		var typeArg *spec.SchemaRef
+		if s.isTypeParam(param) {
+			t := s.ctx.Package().TypesInfo.TypeOf(param).(*types.TypeParam)
+			typeArg = spec.NewTypeParamSchema(s.typeParams[t.Index()]).NewRef()
+		} else {
+			typeArg = s.ParseExpr(param)
 		}
-		ret := def.Decl.Type.Results.List[0]
-		return newSchemaBuilderWithStack(s.ctx.WithPackage(def.pkg).WithFile(def.file), s.contentType, append(s.stack, def.Key())).
-			ParseExpr(ret.Type)
-
-	case *TypeDefinition:
-		return newSchemaBuilderWithStack(s.ctx.WithPackage(def.pkg).WithFile(def.file), s.contentType, append(s.stack, def.Key())).
-			FromTypeSpec(def.Spec)
-
-	default:
+		typeArgs = append(typeArgs, typeArg)
+	}
+	genericType := s.setTypeArgs().setTypeParams(nil).ParseExpr(expr.X)
+	if genericType == nil {
 		return nil
 	}
+
+	return spec.NewSchema().WithExtendedType(spec.NewSpecificExtendType(genericType, typeArgs...)).NewRef()
+}
+
+func (s *SchemaBuilder) getTypeKey(expr ast.Expr) string {
+	t := s.ctx.Package().TypesInfo.TypeOf(expr)
+	switch t := t.(type) {
+	case *types.Basic:
+		return t.Name()
+	default:
+		def := s.ctx.ParseType(t)
+		if def == nil {
+			fmt.Printf("unknown type at %s\n", s.ctx.LineColumn(expr.Pos()))
+			return ""
+		}
+		return def.(*TypeDefinition).ModelKey()
+	}
+}
+
+// 判断表达式是否是泛型类型形参
+func (s *SchemaBuilder) isTypeParam(index ast.Expr) bool {
+	t := s.ctx.Package().TypesInfo.TypeOf(index)
+	_, ok := t.(*types.TypeParam)
+	return ok
 }

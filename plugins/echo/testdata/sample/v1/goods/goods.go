@@ -1,7 +1,9 @@
 package goods
 
 import (
+	"context"
 	"net/http"
+
 	"sample/model"
 
 	"github.com/labstack/echo/v4"
@@ -45,8 +47,12 @@ func Update(c echo.Context) error {
 		return err
 	}
 
-	c.JSON(http.StatusOK, model.GoodsInfo{})
+	c.JSON(http.StatusOK, updateGoods(model.GoodsInfo{}))
 	return nil
+}
+
+func updateGoods[T any](val T) []T {
+	return []T{val}
 }
 
 // Delete
@@ -56,6 +62,14 @@ func Delete(c echo.Context) error {
 	goodsId := c.Param("id")
 	_ = goodsId
 
-	c.NoContent(http.StatusNoContent)
+	res := deleteGoods(c.Request().Context(), goodsId)
+	c.JSON(http.StatusOK, res)
 	return nil
+}
+
+func deleteGoods(context context.Context, id string) model.GenericTypeResponse[string] {
+	return model.GenericTypeResponse[string]{
+		Data:     "deleted",
+		Metadata: map[string]any{},
+	}
 }

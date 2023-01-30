@@ -192,7 +192,7 @@ func (a *Analyzer) processFile(ctx *Context, file *ast.File, pkg *packages.Packa
 	if comment.Ignore() {
 		return
 	}
-	ctx.Env.setComment(comment)
+	ctx.commentStack.comment = comment
 
 	ast.Inspect(file, func(node ast.Node) bool {
 		switch node := node.(type) {
@@ -214,7 +214,7 @@ func (a *Analyzer) funDecl(ctx *Context, node *ast.FuncDecl, file *ast.File, pkg
 	if comment.Ignore() {
 		return
 	}
-	ctx.Env.setComment(comment)
+	ctx.commentStack.comment = comment
 
 	ast.Inspect(node, func(node ast.Node) bool {
 		switch node := node.(type) {
@@ -315,7 +315,7 @@ func (a *Analyzer) blockStmt(ctx *Context, node *ast.BlockStmt, file *ast.File, 
 	if comment.Ignore() {
 		return
 	}
-	ctx.Env.setComment(comment)
+	ctx.commentStack.comment = comment
 
 	a.analyze(ctx, node)
 

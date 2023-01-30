@@ -1205,7 +1205,7 @@ var schemaMultiErrorExamples = []schemaMultiErrorExample{
 	},
 	{
 		Title: "ARRAY: simple",
-		Schema: NewArraySchema().
+		Schema: NewArraySchema(nil).
 			WithMinItems(2).
 			WithMaxItems(2).
 			WithItems(NewStringSchema().
@@ -1229,7 +1229,7 @@ var schemaMultiErrorExamples = []schemaMultiErrorExample{
 	},
 	{
 		Title: "ARRAY: object",
-		Schema: NewArraySchema().
+		Schema: NewArraySchema(nil).
 			WithItems(NewObjectSchema().
 				WithProperties(map[string]*Schema{
 					"key1": NewStringSchema(),
@@ -1257,7 +1257,7 @@ var schemaMultiErrorExamples = []schemaMultiErrorExample{
 			WithProperties(map[string]*Schema{
 				"key1": NewStringSchema(),
 				"key2": NewIntegerSchema(),
-				"key3": NewArraySchema().
+				"key3": NewArraySchema(nil).
 					WithItems(NewStringSchema().
 						WithPattern("^[abc]+$")),
 			}),

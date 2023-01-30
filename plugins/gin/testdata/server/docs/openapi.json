@@ -1,8 +1,28 @@
 {
     "components": {
         "schemas": {
+            "ShopGoodsDownRequest": {
+                "properties": {
+                    "dateRange": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "title": "dateRange",
+                        "type": "array"
+                    },
+                    "defaultPostForm": {
+                        "title": "defaultPostForm",
+                        "type": "string"
+                    },
+                    "operatorUid": {
+                        "title": "operatorUid",
+                        "type": "string"
+                    }
+                },
+                "title": "ShopGoodsDownRequest",
+                "type": "object"
+            },
             "github.com_gin-gonic_gin.Param": {
-                "description": "is a single URL parameter, consisting of a key and a value.",
                 "properties": {
                     "Key": {
                         "type": "string"
@@ -15,7 +35,6 @@
                 "type": "object"
             },
             "github.com_gin-gonic_gin.Params": {
-                "description": "is a Param-slice, as returned by the router.\n\nThe slice is ordered, the first URL parameter is also the first slice value.\n\nIt is therefore safe to read values by the index.",
                 "items": {
                     "$ref": "#/components/schemas/github.com_gin-gonic_gin.Param"
                 },
@@ -153,7 +172,6 @@
                 "type": "object"
             },
             "server_pkg_view.Image": {
-                "description": "商品图片",
                 "properties": {
                     "url": {
                         "description": "图片链接",
@@ -280,9 +298,8 @@
                         ]
                     }
                 ],
-                "summary": "删除商品",
                 "tags": [
-                    "High Priority Tag"
+                    "Shop"
                 ]
             }
         },
@@ -292,7 +309,6 @@
                 "operationId": "shop.GoodsDown",
                 "parameters": [
                     {
-                        "description": "商品 GUID",
                         "in": "path",
                         "name": "guid",
                         "required": true,
@@ -302,7 +318,6 @@
                         }
                     },
                     {
-                        "description": "Default Query",
                         "in": "query",
                         "name": "defaultQuery",
                         "schema": {
@@ -316,28 +331,7 @@
                     "content": {
                         "multipart/form-data": {
                             "schema": {
-                                "properties": {
-                                    "dateRange": {
-                                        "description": "日期范围",
-                                        "items": {
-                                            "type": "string"
-                                        },
-                                        "title": "dateRange",
-                                        "type": "array"
-                                    },
-                                    "defaultPostForm": {
-                                        "description": "Default Post Form",
-                                        "title": "defaultPostForm",
-                                        "type": "string"
-                                    },
-                                    "operatorUid": {
-                                        "description": "操作人 UID",
-                                        "title": "operatorUid",
-                                        "type": "string"
-                                    }
-                                },
-                                "title": "ShopGoodsDownRequest",
-                                "type": "object"
+                                "$ref": "#/components/schemas/ShopGoodsDownRequest"
                             }
                         }
                     }
@@ -345,7 +339,7 @@
                 "responses": {
                     "200": {
                         "content": {
-                            "application/xml": {
+                            "text/xml": {
                                 "schema": {
                                     "$ref": "#/components/schemas/server_pkg_view.GoodsDownRes"
                                 }
@@ -361,7 +355,6 @@
                         ]
                     }
                 ],
-                "summary": "下架商品",
                 "tags": [
                     "Goods"
                 ]
@@ -400,7 +393,6 @@
                         ]
                     }
                 ],
-                "summary": "商品详情",
                 "tags": [
                     "Goods"
                 ]
@@ -408,7 +400,6 @@
         },
         "/wrapped-handler": {
             "get": {
-                "deprecated": true,
                 "operationId": "shop.WrappedHandler",
                 "parameters": [
                     {

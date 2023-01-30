@@ -109,9 +109,9 @@ func (s *APISpec) LoadFromComment(ctx *Context, comment *Comment) {
 		}
 	}
 	if len(s.Tags) == 0 {
-		s.Tags = ctx.Env.LookupTags()
+		s.Tags = ctx.CommentStack().LookupTags()
 	}
 	if s.Security == nil {
-		s.Security = convertSecAnnotationToSecurityRequirements(ctx.Env.LookupAnnotations(annotation.Security))
+		s.Security = convertSecAnnotationToSecurityRequirements(ctx.CommentStack().LookupAnnotations(annotation.Security))
 	}
 }

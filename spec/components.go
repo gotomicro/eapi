@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/getkin/kin-openapi/jsoninfo"
+	"github.com/gotomicro/eapi/utils"
 )
 
 // Components is specified by OpenAPI/Swagger standard version 3.
@@ -31,7 +32,17 @@ func NewComponents() Components {
 
 // MarshalJSON returns the JSON encoding of Components.
 func (components *Components) MarshalJSON() ([]byte, error) {
-	return jsoninfo.MarshalStrictStruct(components)
+	c := *components
+	schemas := make(Schemas)
+	for key, schema := range components.Schemas {
+		ext := schema.Value.ExtendedTypeInfo
+		if ext != nil && len(ext.TypeParams) > 0 && !utils.Debug() { // ignore generic type
+			continue
+		}
+		schemas[key] = schema
+	}
+	c.Schemas = schemas
+	return jsoninfo.MarshalStrictStruct(&c)
 }
 
 // UnmarshalJSON sets Components to a copy of data.

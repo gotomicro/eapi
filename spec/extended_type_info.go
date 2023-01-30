@@ -3,27 +3,38 @@ package spec
 type ExtendedType string
 
 const (
-	ExtendedTypeMap  ExtendedType = "map"
-	ExtendedTypeAny  ExtendedType = "any"
-	ExtendedTypeEnum ExtendedType = "enum"
+	ExtendedTypeMap      ExtendedType = "map"
+	ExtendedTypeAny      ExtendedType = "any"
+	ExtendedTypeEnum     ExtendedType = "enum"
+	ExtendedTypeSpecific ExtendedType = "specific"
+	ExtendedTypeParam    ExtendedType = "param"
+	ExtendedTypeObject   ExtendedType = "object"
+	ExtendedTypeArray    ExtendedType = "array"
 )
 
 type ExtendedTypeInfo struct {
-	Type ExtendedType `json:"type"`
+	Type ExtendedType `json:"type,omitempty"`
 
-	// When Type = 'map'. Key means type of key of map.
-	Key *SchemaRef
-	// When Type = 'map'. Value means type of value of map.
-	Value *SchemaRef `json:"valueType"`
+	// for array
+	Items *SchemaRef `json:"items,omitempty"`
 
-	// Enum Items
-	EnumItems []*ExtendedEnumItem `json:"enumItems"`
+	MapKey   *SchemaRef `json:"mapKey,omitempty"`
+	MapValue *SchemaRef `json:"mapValue,omitempty"`
+
+	EnumItems []*ExtendedEnumItem `json:"enumItems,omitempty"`
+
+	SpecificType *SpecificType `json:"specificType,omitempty"`
+
+	// for generic type params
+	TypeParams []*TypeParam `json:"typeParams,omitempty"`
+
+	TypeParam *TypeParam `json:"typeParam,omitempty"`
 }
 
 func NewExtendedEnumType(items ...*ExtendedEnumItem) *ExtendedTypeInfo {
 	return &ExtendedTypeInfo{
 		Type:      ExtendedTypeEnum,
-		Value:     nil,
+		MapValue:  nil,
 		EnumItems: items,
 	}
 }
@@ -34,9 +45,9 @@ func NewAnyExtendedType() *ExtendedTypeInfo {
 
 func NewMapExtendedType(key, value *SchemaRef) *ExtendedTypeInfo {
 	return &ExtendedTypeInfo{
-		Type:  ExtendedTypeMap,
-		Key:   key,
-		Value: value,
+		Type:     ExtendedTypeMap,
+		MapKey:   key,
+		MapValue: value,
 	}
 }
 
@@ -52,4 +63,34 @@ func NewExtendEnumItem(key string, value interface{}, description string) *Exten
 		Value:       value,
 		Description: description,
 	}
+}
+
+type SpecificType struct {
+	Args []*SchemaRef `json:"args"`
+	Type *SchemaRef   `json:"type"`
+}
+
+func NewSpecificExtendType(genericType *SchemaRef, args ...*SchemaRef) *ExtendedTypeInfo {
+	return &ExtendedTypeInfo{
+		Type:         ExtendedTypeSpecific,
+		SpecificType: &SpecificType{Args: args, Type: genericType},
+	}
+}
+
+type TypeParam struct {
+	Index      int    `json:"index"`
+	Name       string `json:"name"`
+	Constraint string `json:"constraint"`
+}
+
+func NewTypeParamExtendedType(param *TypeParam) *ExtendedTypeInfo {
+	return &ExtendedTypeInfo{Type: ExtendedTypeParam, TypeParam: param}
+}
+
+func NewObjectExtType() *ExtendedTypeInfo {
+	return &ExtendedTypeInfo{Type: ExtendedTypeObject}
+}
+
+func NewArrayExtType(items *SchemaRef) *ExtendedTypeInfo {
+	return &ExtendedTypeInfo{Type: ExtendedTypeArray, Items: items}
 }

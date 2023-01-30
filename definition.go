@@ -97,12 +97,25 @@ func (t *TypeDefinition) Key() string {
 	return t.pkg.PkgPath + "." + t.Spec.Name.Name
 }
 
-func (t *TypeDefinition) ModelKey() string {
-	return strings.ReplaceAll(t.pkg.PkgPath, "/", "_") + "." + t.Spec.Name.Name
+func (t *TypeDefinition) ModelKey(typeArgs ...*spec.SchemaRef) string {
+	sb := strings.Builder{}
+	sb.WriteString(strings.ReplaceAll(t.pkg.PkgPath, "/", "_"))
+	sb.WriteString(".")
+	sb.WriteString(t.Spec.Name.Name)
+	if len(typeArgs) > 0 {
+		sb.WriteString("[")
+		sb.WriteString(typeArgs[0].Key())
+		for _, arg := range typeArgs[1:] {
+			sb.WriteString(",")
+			sb.WriteString(arg.Key())
+		}
+		sb.WriteString("]")
+	}
+	return sb.String()
 }
 
-func (t *TypeDefinition) RefKey() string {
-	return "#/components/schemas/" + t.ModelKey()
+func (t *TypeDefinition) RefKey(typeArgs ...*spec.SchemaRef) string {
+	return "#/components/schemas/" + t.ModelKey(typeArgs...)
 }
 
 type Definitions map[string]Definition

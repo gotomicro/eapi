@@ -8,16 +8,10 @@ import (
 type Environment struct {
 	parent  *Environment
 	records map[interface{}]interface{}
-	comment *Comment
 }
 
 func NewEnvironment(parent *Environment) *Environment {
-	return &Environment{parent: parent, records: make(map[interface{}]interface{}), comment: nil}
-}
-
-func (e *Environment) setComment(comment *Comment) *Environment {
-	e.comment = comment
-	return e
+	return &Environment{parent: parent, records: make(map[interface{}]interface{})}
 }
 
 func (e *Environment) Define(k, v interface{}) *Environment {
@@ -53,7 +47,16 @@ func (e *Environment) Assign(k, v interface{}) *Environment {
 	return e
 }
 
-func (e *Environment) ResolveByAnnotation(annotType annotation.Type) *Environment {
+type CommentStack struct {
+	parent  *CommentStack
+	comment *Comment
+}
+
+func NewCommentStack(parent *CommentStack, comment *Comment) *CommentStack {
+	return &CommentStack{parent: parent, comment: comment}
+}
+
+func (e *CommentStack) ResolveByAnnotation(annotType annotation.Type) *CommentStack {
 	if e.comment != nil {
 		for _, a := range e.comment.Annotations {
 			if a.Type() == annotType {
@@ -67,7 +70,7 @@ func (e *Environment) ResolveByAnnotation(annotType annotation.Type) *Environmen
 	return nil
 }
 
-func (e *Environment) LookupAnnotations(annotType annotation.Type) []annotation.Annotation {
+func (e *CommentStack) LookupAnnotations(annotType annotation.Type) []annotation.Annotation {
 	env := e.ResolveByAnnotation(annotType)
 	if env == nil {
 		return nil
@@ -77,7 +80,7 @@ func (e *Environment) LookupAnnotations(annotType annotation.Type) []annotation.
 	})
 }
 
-func (e *Environment) LookupTags() []string {
+func (e *CommentStack) LookupTags() []string {
 	return lo.Map(e.LookupAnnotations(annotation.Tag), func(t annotation.Annotation, i int) string {
 		return t.(*annotation.TagAnnotation).Tag
 	})
