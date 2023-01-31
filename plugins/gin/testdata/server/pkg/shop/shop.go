@@ -34,9 +34,13 @@ func GoodsDown(c *gin.Context) {
 	// 商品 GUID
 	_ = c.Param("guid")
 	// 操作人 UID
-	_, _ = c.GetPostForm("operatorUid")
+	_ = c.PostForm("operatorUid")
 	// 日期范围
-	_ = c.PostFormArray("dateRange")
+	_, _ = c.GetPostFormArray("dateRange")
+	// Default Query
+	_ = c.DefaultQuery("defaultQuery", "xxxx")
+	// Default Post Form
+	_ = c.DefaultPostForm("defaultPostForm", "yyyy")
 
 	c.XML(http.StatusOK, view.GoodsDownRes{})
 }

@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	analyzer "github.com/gotomicro/eapi"
@@ -19,7 +20,21 @@ import (
 const ginContextIdentName = "*github.com/gin-gonic/gin.Context"
 
 var (
-	interestedGinContextMethods = []string{"Bind", "JSON", "Query", "Param", "GetPostForm", "PostFormArray", "XML", "Redirect", "FormFile"}
+	interestedGinContextMethods = []string{
+		"Bind",
+		"JSON",
+		"Query",
+		"Param",
+		"PostForm",
+		"PostFormArray",
+		"GetPostForm",
+		"GetPostFormArray",
+		"XML",
+		"Redirect",
+		"FormFile",
+		"DefaultQuery",
+		"DefaultPostForm",
+	}
 )
 
 type handlerAnalyzer struct {
@@ -65,16 +80,20 @@ func (p *handlerAnalyzer) Parse() {
 					p.parsePrimitiveParam(call, "query")
 				case "Param": // path parameter
 					p.parsePrimitiveParam(call, "path")
-				case "GetPostForm":
+				case "PostForm", "GetPostForm":
 					p.parseFormData(call, "string")
 				case "FormFile":
 					p.parseFormData(call, "file")
-				case "PostFormArray":
+				case "PostFormArray", "GetPostFormArray":
 					p.parseFormData(call, spec.TypeArray, func(s *spec.Schema) {
 						s.Items = spec.NewSchemaRef("", spec.NewStringSchema())
 					})
 				case "Redirect":
 					p.parseRedirectRes(call)
+				case "DefaultQuery":
+					p.parsePrimitiveParamWithDefault(call, "query")
+				case "DefaultPostForm":
+					p.parseFormData(call, "string")
 					// TODO: supporting more methods (FileForm(), HTML(), Data(), etc...)
 				}
 			},
@@ -160,6 +179,11 @@ func (p *handlerAnalyzer) parsePrimitiveParam(call *ast.CallExpr, in string) {
 	p.spec.AddParameter(param)
 }
 
+func (p *handlerAnalyzer) parsePrimitiveParamWithDefault(call *ast.CallExpr, in string) {
+	param := p.primitiveParamWithDefault(call, in)
+	p.spec.AddParameter(param)
+}
+
 func (p *handlerAnalyzer) parseFormData(call *ast.CallExpr, fieldType string, options ...func(s *spec.Schema)) {
 	if len(call.Args) <= 0 {
 		return
@@ -207,6 +231,24 @@ func (p *handlerAnalyzer) parseFormData(call *ast.CallExpr, fieldType string, op
 	}
 }
 
+func (p *handlerAnalyzer) primitiveParamWithDefault(call *ast.CallExpr, in string) *spec.Parameter {
+	if len(call.Args) < 2 {
+		return nil
+	}
+	param := p.primitiveParam(call, in)
+	if param == nil {
+		return nil
+	}
+
+	arg1Lit, ok := call.Args[1].(*ast.BasicLit)
+	if !ok {
+		return nil
+	}
+	param.Schema.Value.Default, _ = strconv.Unquote(arg1Lit.Value)
+
+	return param
+}
+
 func (p *handlerAnalyzer) primitiveParam(call *ast.CallExpr, in string) *spec.Parameter {
 	if len(call.Args) <= 0 {
 		return nil
@@ -221,20 +263,20 @@ func (p *handlerAnalyzer) primitiveParam(call *ast.CallExpr, in string) *spec.Pa
 	paramSchema.Title = name
 	paramSchema.Type = "string"
 
+	comment := analyzer.ParseComment(p.ctx.GetHeadingCommentOf(call.Pos()))
+
 	var res *spec.Parameter
 	switch in {
 	case "path":
 		res = spec.NewPathParameter(name).WithSchema(paramSchema)
 	case "query":
 		res = spec.NewQueryParameter(name).WithSchema(paramSchema)
+		res.Required = comment.Required()
+	default:
+		return nil
 	}
 
-	commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
-	if commentGroup != nil {
-		comment := analyzer.ParseComment(commentGroup)
-		res.Description = comment.Text()
-	}
-
+	res.Description = comment.Text()
 	return res
 }
 

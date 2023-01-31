@@ -321,7 +321,6 @@ func (p *Printer) responseType(res *spec.Response) f.Doc {
 		if schema == nil {
 			continue
 		}
-		schema = spec.Unref(p.schema, schema)
 		tsPrinter := ts.NewPrinter(p.schema).SetTypeFieldsInline(true)
 		ret := tsPrinter.PrintType(schema)
 		p.importType(tsPrinter.ReferencedTypes...)
