@@ -24,7 +24,7 @@
                         "type": "string"
                     }
                 },
-                "title": "CreateGoodsRequest",
+                "title": "ModelCreateGoodsRequest",
                 "type": "object"
             },
             "sample_model.GoodsInfo": {
@@ -54,7 +54,7 @@
                         "type": "string"
                     }
                 },
-                "title": "GoodsInfo",
+                "title": "ModelGoodsInfo",
                 "type": "object"
             },
             "sample_model.GoodsStatus": {
@@ -64,7 +64,7 @@
                     2,
                     3
                 ],
-                "title": "GoodsStatus",
+                "title": "ModelGoodsStatus",
                 "type": "integer"
             },
             "sample_model.Image": {
@@ -76,7 +76,7 @@
                         "type": "string"
                     }
                 },
-                "title": "Image",
+                "title": "ModelImage",
                 "type": "object"
             },
             "sample_model.ListGoodsResponse": {
@@ -92,7 +92,7 @@
                         "type": "string"
                     }
                 },
-                "title": "ListGoodsResponse",
+                "title": "ModelListGoodsResponse",
                 "type": "object"
             },
             "sample_model.UpdateGoodsRequest": {
@@ -118,7 +118,7 @@
                         "type": "string"
                     }
                 },
-                "title": "UpdateGoodsRequest",
+                "title": "ModelUpdateGoodsRequest",
                 "type": "object"
             },
             "sample_model.UploadFileRes": {
@@ -130,7 +130,7 @@
                         "type": "string"
                     }
                 },
-                "title": "UploadFileRes",
+                "title": "ModelUploadFileRes",
                 "type": "object"
             }
         }

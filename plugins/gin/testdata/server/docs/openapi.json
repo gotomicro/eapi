@@ -263,6 +263,16 @@
                             "title": "guid",
                             "type": "string"
                         }
+                    },
+                    {
+                        "description": "Default Query",
+                        "in": "query",
+                        "name": "defaultQuery",
+                        "schema": {
+                            "default": "xxxx",
+                            "title": "defaultQuery",
+                            "type": "string"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -277,6 +287,11 @@
                                         },
                                         "title": "dateRange",
                                         "type": "array"
+                                    },
+                                    "defaultPostForm": {
+                                        "description": "Default Post Form",
+                                        "title": "defaultPostForm",
+                                        "type": "string"
                                     },
                                     "operatorUid": {
                                         "description": "操作人 UID",
