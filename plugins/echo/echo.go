@@ -117,7 +117,7 @@ func (p *Plugin) callExpr(ctx *eapi.Context, callExpr *ast.CallExpr) {
 		callExpr,
 		callRule,
 		func(call *ast.CallExpr, typeName, fnName string) {
-			comment := eapi.ParseComment(ctx.GetHeadingCommentOf(call.Lparen))
+			comment := ctx.ParseComment(ctx.GetHeadingCommentOf(call.Lparen))
 			if comment.Ignore() {
 				return
 			}
@@ -162,7 +162,7 @@ func (e *Plugin) parseAPI(ctx *eapi.Context, callExpr *ast.CallExpr) (api *eapi.
 	fullPath := path.Join(prefix, e.normalizePath(strings.Trim(arg0.Value, "\"")))
 	method := selExpr.Sel.Name
 	api = eapi.NewAPI(method, fullPath)
-	api.Spec.LoadFromFuncDecl(handlerFnDef.Decl)
+	api.Spec.LoadFromFuncDecl(ctx.Package().Fset, handlerFnDef.Decl)
 	if api.Spec.OperationID == "" {
 		api.Spec.OperationID = handlerFnDef.Pkg().Name + "." + handlerFnDef.Decl.Name.Name
 	}

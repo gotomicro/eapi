@@ -27,9 +27,12 @@ type Config struct {
 }
 
 type OpenAPIConfig struct {
-	OpenAPI string     `yaml:"openapi"` // OpenAPI version 3.0.0|3.0.3|3.1.0
-	Info    *spec.Info `yaml:"info"`    // Required
+	OpenAPI         string           `yaml:"openapi"` // OpenAPI version 3.0.0|3.0.3|3.1.0
+	Info            *spec.Info       `yaml:"info"`    // Required
+	SecuritySchemes *SecuritySchemes `yaml:"securitySchemes"`
 }
+
+type SecuritySchemes map[string]*spec.SecurityScheme
 
 func (c OpenAPIConfig) applyToDoc(doc *spec.T) {
 	if c.OpenAPI != "" {
@@ -47,6 +50,12 @@ func (c OpenAPIConfig) applyToDoc(doc *spec.T) {
 		}
 		if c.Info.TermsOfService != "" {
 			doc.Info.TermsOfService = c.Info.TermsOfService
+		}
+	}
+	if c.SecuritySchemes != nil {
+		doc.Components.SecuritySchemes = make(map[string]*spec.SecuritySchemeRef)
+		for name, scheme := range *c.SecuritySchemes {
+			doc.Components.SecuritySchemes[name] = &spec.SecuritySchemeRef{Value: scheme}
 		}
 	}
 }

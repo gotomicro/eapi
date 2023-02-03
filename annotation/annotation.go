@@ -13,6 +13,7 @@ const (
 	Summary
 	ID
 	Deprecated
+	Security
 )
 
 type Annotation interface {
@@ -86,4 +87,17 @@ type IdAnnotation struct {
 
 func (a *IdAnnotation) Type() Type {
 	return ID
+}
+
+type SecurityAnnotation struct {
+	Name   string
+	Params []string
+}
+
+func newSecurityAnnotation(name string, params []string) *SecurityAnnotation {
+	return &SecurityAnnotation{Name: name, Params: params}
+}
+
+func (a *SecurityAnnotation) Type() Type {
+	return Security
 }

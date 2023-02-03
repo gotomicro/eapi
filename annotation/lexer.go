@@ -25,6 +25,15 @@ var patterns = []*pattern{
 	newPattern(tokenIdentifier, "^[^\\s]+"),
 }
 
+var tokenNameMap = map[TokenType]string{
+	tokenTag:        "tag",
+	tokenString:     "string",
+	tokenNumber:     "number",
+	tokenBool:       "bool",
+	tokenWhiteSpace: "whitespace",
+	tokenIdentifier: "identifier",
+}
+
 type pattern struct {
 	tokenType TokenType
 	pattern   *regexp.Regexp
