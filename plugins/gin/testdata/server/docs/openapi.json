@@ -179,6 +179,20 @@
                 "title": "ViewSelfRefType",
                 "type": "object"
             }
+        },
+        "securitySchemes": {
+            "oauth2": {
+                "flows": {
+                    "implicit": {
+                        "authorizationUrl": "https://example.org/api/oauth/dialog",
+                        "scopes": {
+                            "goods:write": "modify pets in your account",
+                            "read:pets": "read your pets"
+                        }
+                    }
+                },
+                "type": "oauth2"
+            }
         }
     },
     "info": {
@@ -243,6 +257,13 @@
                     }
                 ],
                 "responses": {},
+                "security": [
+                    {
+                        "oauth2": [
+                            "goods:write"
+                        ]
+                    }
+                ],
                 "summary": "删除商品",
                 "tags": [
                     "High Priority Tag"

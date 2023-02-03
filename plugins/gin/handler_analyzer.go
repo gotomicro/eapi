@@ -130,7 +130,7 @@ func (p *handlerAnalyzer) parseBinding(call *ast.CallExpr) {
 		}
 		commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
 		if commentGroup != nil {
-			comment := analyzer.ParseComment(commentGroup)
+			comment := p.ctx.ParseComment(commentGroup)
 			schema.Description = comment.Text()
 		}
 		reqBody := spec.NewRequestBody().WithSchemaRef(schema, []string{contentType})
@@ -146,7 +146,7 @@ func (p *handlerAnalyzer) parseResBody(call *ast.CallExpr, contentType string) {
 	res := spec.NewResponse()
 	commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
 	if commentGroup != nil {
-		comment := analyzer.ParseComment(commentGroup)
+		comment := p.ctx.ParseComment(commentGroup)
 		res.Description = comment.TextPointer()
 	}
 
@@ -164,7 +164,7 @@ func (p *handlerAnalyzer) parseRedirectRes(call *ast.CallExpr) {
 	res := spec.NewResponse()
 	commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
 	if commentGroup != nil {
-		comment := analyzer.ParseComment(commentGroup)
+		comment := p.ctx.ParseComment(commentGroup)
 		if comment != nil {
 			desc := comment.Text()
 			res.Description = &desc
@@ -224,7 +224,7 @@ func (p *handlerAnalyzer) parseFormData(call *ast.CallExpr, fieldType string, op
 		p.spec.RequestBody.Value.Content[analyzer.MimeTypeFormData] = mediaType
 	}
 
-	comment := analyzer.ParseComment(p.ctx.GetHeadingCommentOf(call.Lparen))
+	comment := p.ctx.ParseComment(p.ctx.GetHeadingCommentOf(call.Lparen))
 	paramSchema.Description = comment.Text()
 	if comment.Required() {
 		schema.Value.Required = append(schema.Value.Required, name)
@@ -263,7 +263,7 @@ func (p *handlerAnalyzer) primitiveParam(call *ast.CallExpr, in string) *spec.Pa
 	paramSchema.Title = name
 	paramSchema.Type = "string"
 
-	comment := analyzer.ParseComment(p.ctx.GetHeadingCommentOf(call.Pos()))
+	comment := p.ctx.ParseComment(p.ctx.GetHeadingCommentOf(call.Pos()))
 
 	var res *spec.Parameter
 	switch in {
@@ -298,7 +298,7 @@ func (p *handlerAnalyzer) matchCustomResponseRule(node ast.Node) (matched bool) 
 				//}
 
 				res := spec.NewResponse()
-				comment := analyzer.ParseComment(p.ctx.GetHeadingCommentOf(call.Pos()))
+				comment := p.ctx.ParseComment(p.ctx.GetHeadingCommentOf(call.Pos()))
 				res.Description = comment.TextPointer()
 				schema := p.parseDataType(call, rule.Return.Data, contentType)
 				res.WithContent(spec.NewContentWithSchemaRef(schema, []string{contentType}))
@@ -340,7 +340,7 @@ func (p *handlerAnalyzer) matchCustomRequestRule(node ast.Node) (matched bool) {
 					reqBody.Required = true
 					commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
 					if commentGroup != nil {
-						comment := analyzer.ParseComment(commentGroup)
+						comment := p.ctx.ParseComment(commentGroup)
 						reqBody.Description = comment.Text()
 					}
 					reqBody.WithSchemaRef(schema, []string{contentType})

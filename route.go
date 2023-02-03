@@ -2,6 +2,7 @@ package eapi
 
 import (
 	"go/ast"
+	"go/token"
 	"net/http"
 	"strings"
 
@@ -73,9 +74,9 @@ func NewAPISpec() *APISpec {
 }
 
 // LoadFromFuncDecl load annotations/description from comments of handler function
-func (s *APISpec) LoadFromFuncDecl(funcDecl *ast.FuncDecl) {
+func (s *APISpec) LoadFromFuncDecl(fSet *token.FileSet, funcDecl *ast.FuncDecl) {
 	cg := funcDecl.Doc
-	comment := ParseComment(cg)
+	comment := ParseComment(cg, fSet)
 	if comment != nil {
 		s.Summary = comment.Summary()
 		s.Description = strings.TrimSpace(comment.TrimPrefix(funcDecl.Name.Name))
@@ -89,5 +90,6 @@ func (s *APISpec) LoadFromFuncDecl(funcDecl *ast.FuncDecl) {
 		s.OperationID = comment.ID()
 		s.Consumes = append(s.Consumes, comment.Consumes()...)
 		s.Deprecated = comment.Deprecated()
+		s.Security = comment.Security()
 	}
 }

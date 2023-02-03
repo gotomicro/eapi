@@ -3,10 +3,19 @@ dir: '.'
 output: docs # output directory of openapi.json
 
 openapi:
-  openapi: 3.1.0
+  openapi: '3.1.0'
   info:
     title: This is an Example
     description: Example description for Example
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: "https://example.org/api/oauth/dialog"
+          scopes:
+            "goods:write": "modify pets in your account"
+            "read:pets": "read your pets"
 
 depends:
   - github.com/gin-gonic/gin

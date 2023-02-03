@@ -188,7 +188,7 @@ func (a *Analyzer) processPkg(packagePath string) {
 }
 
 func (a *Analyzer) processFile(ctx *Context, file *ast.File, pkg *packages.Package) {
-	comment := ParseComment(file.Doc)
+	comment := ctx.ParseComment(file.Doc)
 	if comment.Ignore() {
 		return
 	}
@@ -210,7 +210,7 @@ func (a *Analyzer) processFile(ctx *Context, file *ast.File, pkg *packages.Packa
 }
 
 func (a *Analyzer) funDecl(ctx *Context, node *ast.FuncDecl, file *ast.File, pkg *packages.Package) {
-	comment := ParseComment(node.Doc)
+	comment := ctx.ParseComment(node.Doc)
 	if comment.Ignore() {
 		return
 	}
@@ -311,7 +311,7 @@ func (a *Analyzer) loadEnumDefinition(pkg *packages.Package, file *ast.File, nod
 }
 
 func (a *Analyzer) blockStmt(ctx *Context, node *ast.BlockStmt, file *ast.File, pkg *packages.Package) {
-	comment := ParseComment(a.context().WithPackage(pkg).WithFile(file).GetHeadingCommentOf(node.Lbrace))
+	comment := ctx.ParseComment(a.context().WithPackage(pkg).WithFile(file).GetHeadingCommentOf(node.Lbrace))
 	if comment.Ignore() {
 		return
 	}

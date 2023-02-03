@@ -1,7 +1,10 @@
 package eapi
 
 import (
+	"fmt"
 	"go/ast"
+	"go/token"
+	"os"
 	"strings"
 
 	"github.com/gotomicro/eapi/annotation"
@@ -147,15 +150,38 @@ func (c *Comment) ID() string {
 	return ""
 }
 
-func ParseComment(commentGroup *ast.CommentGroup) *Comment {
+func (c *Comment) Security() *spec.SecurityRequirements {
+	if c == nil {
+		return nil
+	}
+
+	ret := spec.NewSecurityRequirements()
+	for _, annot := range c.Annotations {
+		annot, ok := annot.(*annotation.SecurityAnnotation)
+		if ok {
+			ret.With(spec.NewSecurityRequirement().Authenticate(annot.Name, annot.Params...))
+		}
+	}
+	if len(*ret) == 0 {
+		return nil
+	}
+
+	return ret
+}
+
+func ParseComment(commentGroup *ast.CommentGroup, fSet *token.FileSet) *Comment {
 	if commentGroup == nil {
 		return nil
 	}
 	c := &Comment{}
 	var lines []string
 	for _, comment := range commentGroup.List {
-		line := strings.TrimPrefix(comment.Text, "//")
-		annot := annotation.NewParser(line).Parse()
+		annot, err := annotation.NewParser(comment.Text).Parse()
+		if err != nil {
+			err := err.(*annotation.ParseError)
+			fmt.Fprintf(os.Stderr, "[Invalid Annotation]: %s at %s\n", err, fSet.Position(comment.Pos()+token.Pos(err.Column)).String())
+			continue
+		}
 		if annot != nil {
 			c.Annotations = append(c.Annotations, annot)
 			desc, ok := annot.(*annotation.DescriptionAnnotation)
@@ -163,6 +189,7 @@ func ParseComment(commentGroup *ast.CommentGroup) *Comment {
 				lines = append(lines, strings.TrimSpace(desc.Text))
 			}
 		} else {
+			line := strings.TrimPrefix(comment.Text, "//")
 			lines = append(lines, strings.TrimSpace(line))
 		}
 	}

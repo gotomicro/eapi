@@ -57,7 +57,7 @@ func (s *SchemaBuilder) FromTypeSpec(t *ast.TypeSpec) *spec.SchemaRef {
 	if schema == nil {
 		return nil
 	}
-	comment := ParseComment(s.ctx.GetHeadingCommentOf(t.Pos()))
+	comment := s.ctx.ParseComment(s.ctx.GetHeadingCommentOf(t.Pos()))
 	schema.Value.Title = strcase.ToCamel(s.ctx.Package().Name + t.Name.Name)
 	schema.Value.Description = strings.TrimSpace(comment.TrimPrefix(t.Name.Name))
 	schema.Value.Deprecated = comment.Deprecated()
@@ -301,12 +301,12 @@ func (s *SchemaBuilder) parseType(t types.Type) *spec.SchemaRef {
 func (s *SchemaBuilder) parseCommentOfField(field *ast.Field) *Comment {
 	// heading comment
 	if field.Doc != nil && len(field.Doc.List) > 0 {
-		return ParseComment(field.Doc)
+		return s.ctx.ParseComment(field.Doc)
 	}
 
 	// parse trailing comment
 	commentGroup := s.ctx.GetTrailingCommentOf(field.Pos())
-	return ParseComment(commentGroup)
+	return s.ctx.ParseComment(commentGroup)
 }
 
 func (s *SchemaBuilder) parseCallExpr(expr *ast.CallExpr) *spec.SchemaRef {

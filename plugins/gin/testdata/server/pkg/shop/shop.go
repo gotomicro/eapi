@@ -60,6 +60,7 @@ func GoodsInfo(c *gin.Context) {
 // GoodsDelete 删除商品
 // @consume multipart/form-data
 // @tags High Priority Tag
+// @security oauth2 goods:write
 func GoodsDelete(c *handler.CustomContext) {
 	var request view.GoodsDeleteRequest
 	_ = c.Bind(&request)

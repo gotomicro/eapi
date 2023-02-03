@@ -373,6 +373,36 @@ func Create(c *gin.Context) {
 }
 ```
 
+### `@security`
+
+用于设置接口鉴权 (Security Requirement) ，参考 https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md#security-requirement-object
+
+```go
+// @security oauth2 pets:write pets:read
+func XxxHandler() {
+	// ...
+}
+```
+
+对应的 securitySchemes 配置示例:
+```yaml
+openapi:
+  info:
+    title: This is an Example
+    description: Example description for Example
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: "https://example.org/api/oauth/dialog"
+          scopes:
+            "pets:write": "modify pets in your account"
+            "pets:read": "read your pets"
+```
+
+通常需要配合 securitySchemes 使用，参考 https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md#security-scheme-object
+
 在上面示例中，`User.OldField` 字段会被标记为弃用，`Create` 函数对应的接口会被标记为弃用。
 
 ## 预览

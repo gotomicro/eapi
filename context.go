@@ -302,3 +302,7 @@ func (c *Context) parseCallInfoByIdent(ident *ast.Ident) (info *CallInfo) {
 
 	return
 }
+
+func (c *Context) ParseComment(commentGroup *ast.CommentGroup) *Comment {
+	return ParseComment(commentGroup, c.Package().Fset)
+}
