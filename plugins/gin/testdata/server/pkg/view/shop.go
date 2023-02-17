@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // Image 商品图片
@@ -62,6 +63,7 @@ type GoodsInfoRes struct {
 	Price      int64                `json:"price"`
 	Properties map[string]*Property `json:"properties"`
 	MapInt     map[int]*Property    `json:"mapInt"`
+	DeletedAt  gorm.DeletedAt       `json:"deletedAt"`
 }
 
 type Property struct {

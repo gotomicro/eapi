@@ -20,6 +20,8 @@ openapi:
 depends:
   - github.com/gin-gonic/gin
   - encoding/json
+  - database/sql
+  - gorm.io/gorm
 
 properties:
   request:

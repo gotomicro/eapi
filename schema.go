@@ -58,6 +58,11 @@ func (s *SchemaBuilder) FromTypeSpec(t *ast.TypeSpec) *spec.SchemaRef {
 		return nil
 	}
 	comment := s.ctx.ParseComment(s.ctx.GetHeadingCommentOf(t.Pos()))
+	if schema.Ref != "" {
+		comment.ApplyToSchema(schema)
+		schema.Description = strings.TrimSpace(comment.TrimPrefix(t.Name.Name))
+		return schema
+	}
 	schema.Value.Title = strcase.ToCamel(s.ctx.Package().Name + t.Name.Name)
 	schema.Value.Description = strings.TrimSpace(comment.TrimPrefix(t.Name.Name))
 	schema.Value.Deprecated = comment.Deprecated()
@@ -199,6 +204,15 @@ var commonTypes = map[string]*spec.Schema{
 		WithType("object").
 		WithDescription("Any Json Type").
 		WithExtendedType(spec.NewAnyExtendedType()),
+	"database/sql.NullTime":    spec.NewDateTimeSchema(),
+	"database/sql.NullString":  spec.NewStringSchema(),
+	"database/sql.NullInt64":   spec.NewInt64Schema(),
+	"database/sql.NullInt32":   spec.NewInt32Schema(),
+	"database/sql.NullInt":     spec.NewIntegerSchema(),
+	"database/sql.NullInt16":   spec.NewIntegerSchema(),
+	"database/sql.NullFloat64": spec.NewFloat64Schema(),
+	"database/sql.NullBool":    spec.NewBoolSchema(),
+	"database/sql.NullByte":    spec.NewStringSchema(),
 }
 
 func (s *SchemaBuilder) commonUsedType(t types.Type) *spec.SchemaRef {

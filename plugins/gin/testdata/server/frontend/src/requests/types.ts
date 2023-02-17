@@ -13,6 +13,8 @@ export type GinParam = {
  */
 export type GinParams = GinParam[]
 
+export type GormDeletedAt = string
+
 export enum ViewErrCode {
   CodeNotFound = 10000,
   CodeCancled = 10001,
@@ -77,6 +79,7 @@ export type ViewGoodsDownRes = {
 
 export type ViewGoodsInfoRes = {
   cover?: string;
+  deletedAt?: GormDeletedAt;
   mapInt?: Record<number, ViewProperty>;
   price?: number;
   properties?: Record<string, ViewProperty>;

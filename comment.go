@@ -70,6 +70,7 @@ func (c *Comment) ApplyToSchema(schema *spec.SchemaRef) {
 	}
 	if schema.Ref != "" {
 		schema.Description = c.text
+		schema.Summary = c.Summary()
 		return
 	}
 
@@ -131,6 +132,9 @@ func (c *Comment) Ignore() bool {
 }
 
 func (c *Comment) Summary() string {
+	if c == nil {
+		return ""
+	}
 	for _, annot := range c.Annotations {
 		summary, ok := annot.(*annotation.SummaryAnnotation)
 		if ok {

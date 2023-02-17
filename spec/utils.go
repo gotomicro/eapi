@@ -31,3 +31,11 @@ func Unref(t *T, schema *SchemaRef) *SchemaRef {
 
 	return nil
 }
+
+// UnrefRecursively 递归 unref
+func UnrefRecursively(t *T, schema *SchemaRef) *SchemaRef {
+	for schema != nil && schema.Ref != "" {
+		schema = Unref(t, schema)
+	}
+	return schema
+}
