@@ -64,6 +64,11 @@ func (p *Printer) Print() f.Doc {
 }
 
 func (p *Printer) definition(definition *spec.SchemaRef) f.Doc {
+	if definition.Ref != "" {
+		// ignore
+		return f.Group()
+	}
+
 	ext := definition.Value.ExtendedTypeInfo
 	if ext != nil && ext.Type == spec.ExtendedTypeEnum { // enum
 		return f.Group(
@@ -71,6 +76,7 @@ func (p *Printer) definition(definition *spec.SchemaRef) f.Doc {
 			p.PrintEnumBody(ext.EnumItems),
 		)
 	}
+
 	var description string
 	if definition.Value != nil {
 		description = definition.Value.Description
@@ -109,12 +115,12 @@ func (p *Printer) PrintEnumBody(enum []*spec.ExtendedEnumItem) f.Doc {
 
 func (p *Printer) PrintType(definition *spec.SchemaRef) f.Doc {
 	if definition.Ref != "" {
-		referencedType := spec.Unref(p.schema, definition)
+		referencedType := spec.UnrefRecursively(p.schema, definition)
 		if referencedType == nil {
 			return f.Content("unknown")
 		}
 		typeName := referencedType.Value.Title
-		p.ReferencedTypes = append(p.ReferencedTypes, typeName)
+		p.ReferencedTypes = lo.Uniq(append(p.ReferencedTypes, typeName))
 		return f.Content(typeName)
 	}
 
