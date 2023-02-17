@@ -245,6 +245,14 @@
                         "description": "参数无效"
                     }
                 },
+                "security": [
+                    {
+                        "oauth2": [
+                            "goods:read",
+                            "goods:write"
+                        ]
+                    }
+                ],
                 "summary": "创建商品",
                 "tags": [
                     "Goods"
@@ -345,6 +353,14 @@
                         }
                     }
                 },
+                "security": [
+                    {
+                        "oauth2": [
+                            "goods:read",
+                            "goods:write"
+                        ]
+                    }
+                ],
                 "summary": "下架商品",
                 "tags": [
                     "Goods"
@@ -377,6 +393,13 @@
                         }
                     }
                 },
+                "security": [
+                    {
+                        "oauth2": [
+                            "goods:read"
+                        ]
+                    }
+                ],
                 "summary": "商品详情",
                 "tags": [
                     "Goods"

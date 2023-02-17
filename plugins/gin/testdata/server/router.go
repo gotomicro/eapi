@@ -26,9 +26,13 @@ func ServeHttp() *gin.Engine {
 	g := r.Group("/api")
 
 	// @tags Goods
+	// @security oauth2 goods:read
 	{
-		g.POST("/goods", shop.GoodsCreate)
-		g.POST("/goods/:guid/down", shop.GoodsDown)
+		// @security oauth2 goods:read goods:write
+		{
+			g.POST("/goods", shop.GoodsCreate)
+			g.POST("/goods/:guid/down", shop.GoodsDown)
+		}
 		g = g.Group("/v2")
 		g.GET("/goods/:guid", shop.GoodsInfo)
 	}

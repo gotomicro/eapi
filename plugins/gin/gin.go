@@ -175,12 +175,9 @@ func (e *Plugin) parseAPI(ctx *analyzer.Context, callExpr *ast.CallExpr) (api *a
 	fullPath := path.Join(prefix, e.normalizePath(strings.Trim(arg0.Value, "\"")))
 	method := selExpr.Sel.Name
 	api = analyzer.NewAPI(method, fullPath)
-	api.Spec.LoadFromFuncDecl(ctx.Package().Fset, handlerFnDef.Decl)
+	api.Spec.LoadFromFuncDecl(ctx, handlerFnDef.Decl)
 	if api.Spec.OperationID == "" {
 		api.Spec.OperationID = handlerFnDef.Pkg().Name + "." + handlerFnDef.Decl.Name.Name
-	}
-	if len(api.Spec.Tags) == 0 {
-		api.Spec.Tags = ctx.Env.LookupTags()
 	}
 	newHandlerParser(
 		ctx.NewEnv().WithPackage(handlerFnDef.Pkg()).WithFile(handlerFnDef.File()),
