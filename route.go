@@ -2,10 +2,10 @@ package eapi
 
 import (
 	"go/ast"
-	"go/token"
 	"net/http"
 	"strings"
 
+	"github.com/gotomicro/eapi/annotation"
 	"github.com/gotomicro/eapi/spec"
 )
 
@@ -74,9 +74,9 @@ func NewAPISpec() *APISpec {
 }
 
 // LoadFromFuncDecl load annotations/description from comments of handler function
-func (s *APISpec) LoadFromFuncDecl(fSet *token.FileSet, funcDecl *ast.FuncDecl) {
+func (s *APISpec) LoadFromFuncDecl(ctx *Context, funcDecl *ast.FuncDecl) {
 	cg := funcDecl.Doc
-	comment := ParseComment(cg, fSet)
+	comment := ParseComment(cg, ctx.Package().Fset)
 	if comment != nil {
 		s.Summary = comment.Summary()
 		s.Description = strings.TrimSpace(comment.TrimPrefix(funcDecl.Name.Name))
@@ -86,10 +86,15 @@ func (s *APISpec) LoadFromFuncDecl(fSet *token.FileSet, funcDecl *ast.FuncDecl) 
 		tags := comment.Tags()
 		if len(tags) > 0 {
 			s.Tags = comment.Tags()
+		} else {
+			s.Tags = ctx.Env.LookupTags()
 		}
 		s.OperationID = comment.ID()
 		s.Consumes = append(s.Consumes, comment.Consumes()...)
 		s.Deprecated = comment.Deprecated()
 		s.Security = comment.Security()
+		if s.Security == nil {
+			s.Security = convertSecAnnotationToSecurityRequirements(ctx.Env.LookupAnnotations(annotation.Security))
+		}
 	}
 }

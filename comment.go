@@ -159,8 +159,12 @@ func (c *Comment) Security() *spec.SecurityRequirements {
 		return nil
 	}
 
+	return convertSecAnnotationToSecurityRequirements(c.Annotations)
+}
+
+func convertSecAnnotationToSecurityRequirements(annotations []annotation.Annotation) *spec.SecurityRequirements {
 	ret := spec.NewSecurityRequirements()
-	for _, annot := range c.Annotations {
+	for _, annot := range annotations {
 		annot, ok := annot.(*annotation.SecurityAnnotation)
 		if ok {
 			ret.With(spec.NewSecurityRequirement().Authenticate(annot.Name, annot.Params...))
