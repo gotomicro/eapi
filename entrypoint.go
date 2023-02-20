@@ -250,7 +250,7 @@ func showVersion() *cli.Command {
 				os.Exit(1)
 				return nil
 			}
-			fmt.Printf("%v\n", info.Main)
+			fmt.Printf("%s\n", info.Main.Version)
 			return nil
 		},
 	}
