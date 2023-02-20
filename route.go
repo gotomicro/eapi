@@ -77,17 +77,36 @@ func NewAPISpec() *APISpec {
 func (s *APISpec) LoadFromFuncDecl(ctx *Context, funcDecl *ast.FuncDecl) {
 	cg := funcDecl.Doc
 	comment := ParseComment(cg, ctx.Package().Fset)
+	s.LoadFromComment(ctx, comment)
+	if s.Description == "" {
+		// 使用注释里的普通文本作为描述
+		s.Description = strings.TrimSpace(strings.TrimPrefix(comment.Text(), funcDecl.Name.Name))
+	}
+}
+
+func (s *APISpec) LoadFromComment(ctx *Context, comment *Comment) {
 	if comment != nil {
-		s.Summary = comment.Summary()
-		s.Description = strings.TrimSpace(comment.TrimPrefix(funcDecl.Name.Name))
-		if s.Summary == "" {
-			s.Summary = s.Description
+		if s.Description == "" {
+			s.Description = strings.Join(comment.Description(), "\n\n")
 		}
-		s.Tags = comment.Tags()
-		s.OperationID = comment.ID()
-		s.Consumes = append(s.Consumes, comment.Consumes()...)
-		s.Deprecated = comment.Deprecated()
-		s.Security = comment.Security()
+		if s.Summary == "" {
+			s.Summary = comment.Summary()
+		}
+		if len(s.Tags) == 0 {
+			s.Tags = comment.Tags()
+		}
+		if s.OperationID == "" {
+			s.OperationID = comment.ID()
+		}
+		if len(s.Consumes) == 0 {
+			s.Consumes = append(s.Consumes, comment.Consumes()...)
+		}
+		if !s.Deprecated {
+			comment.Deprecated()
+		}
+		if s.Security == nil {
+			s.Security = comment.Security()
+		}
 	}
 	if len(s.Tags) == 0 {
 		s.Tags = ctx.Env.LookupTags()

@@ -117,11 +117,11 @@ func (p *Plugin) callExpr(ctx *eapi.Context, callExpr *ast.CallExpr) {
 		callExpr,
 		callRule,
 		func(call *ast.CallExpr, typeName, fnName string) {
-			comment := ctx.ParseComment(ctx.GetHeadingCommentOf(call.Lparen))
+			comment := ctx.ParseComment(ctx.GetHeadingCommentOf(call.Pos()))
 			if comment.Ignore() {
 				return
 			}
-			api := p.parseAPI(ctx, callExpr)
+			api := p.parseAPI(ctx, callExpr, comment)
 			if api == nil {
 				return
 			}
@@ -130,7 +130,7 @@ func (p *Plugin) callExpr(ctx *eapi.Context, callExpr *ast.CallExpr) {
 	)
 }
 
-func (e *Plugin) parseAPI(ctx *eapi.Context, callExpr *ast.CallExpr) (api *eapi.API) {
+func (e *Plugin) parseAPI(ctx *eapi.Context, callExpr *ast.CallExpr, comment *eapi.Comment) (api *eapi.API) {
 	if len(callExpr.Args) < 2 {
 		return
 	}
@@ -162,9 +162,14 @@ func (e *Plugin) parseAPI(ctx *eapi.Context, callExpr *ast.CallExpr) (api *eapi.
 	fullPath := path.Join(prefix, e.normalizePath(strings.Trim(arg0.Value, "\"")))
 	method := selExpr.Sel.Name
 	api = eapi.NewAPI(method, fullPath)
+	api.Spec.LoadFromComment(ctx, comment)
 	api.Spec.LoadFromFuncDecl(ctx, handlerFnDef.Decl)
 	if api.Spec.OperationID == "" {
-		api.Spec.OperationID = handlerFnDef.Pkg().Name + "." + handlerFnDef.Decl.Name.Name
+		id := comment.ID()
+		if id == "" {
+			id = handlerFnDef.Pkg().Name + "." + handlerFnDef.Decl.Name.Name
+		}
+		api.Spec.OperationID = id
 	}
 	newHandlerAnalyzer(
 		ctx.NewEnv().WithPackage(handlerFnDef.Pkg()).WithFile(handlerFnDef.File()),

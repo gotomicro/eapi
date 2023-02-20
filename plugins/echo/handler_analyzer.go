@@ -200,7 +200,7 @@ func (p *handlerAnalyzer) parseFormData(call *ast.CallExpr, fieldType string, op
 		p.spec.RequestBody.Value.Content[analyzer.MimeTypeFormData] = mediaType
 	}
 
-	comment := p.ctx.ParseComment(p.ctx.GetHeadingCommentOf(call.Lparen))
+	comment := p.ctx.ParseComment(p.ctx.GetHeadingCommentOf(call.Pos()))
 	paramSchema.Description = comment.Text()
 	if comment.Required() {
 		schema.Value.Required = append(schema.Value.Required, name)

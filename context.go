@@ -133,8 +133,9 @@ func (c *Context) GetHeadingCommentOf(pos token.Pos) *ast.CommentGroup {
 
 	position := c.Package().Fset.Position(pos)
 	for _, commentGroup := range c.File().Comments {
-		commentPos := c.Package().Fset.Position(commentGroup.End())
-		if commentPos.Line == position.Line-1 {
+		start := c.Package().Fset.Position(commentGroup.Pos())
+		end := c.Package().Fset.Position(commentGroup.End())
+		if end.Line == position.Line-1 && start.Column == position.Column {
 			return commentGroup
 		}
 	}

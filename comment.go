@@ -119,6 +119,21 @@ func (c *Comment) Tags() []string {
 	return res
 }
 
+func (c *Comment) Description() []string {
+	if c == nil {
+		return nil
+	}
+
+	var res []string
+	for _, annot := range c.Annotations {
+		desc, ok := annot.(*annotation.DescriptionAnnotation)
+		if ok {
+			res = append(res, desc.Text)
+		}
+	}
+	return res
+}
+
 func (c *Comment) Ignore() bool {
 	if c == nil {
 		return false
@@ -145,6 +160,9 @@ func (c *Comment) Summary() string {
 }
 
 func (c *Comment) ID() string {
+	if c == nil {
+		return ""
+	}
 	for _, annot := range c.Annotations {
 		id, ok := annot.(*annotation.IdAnnotation)
 		if ok {
@@ -192,10 +210,6 @@ func ParseComment(commentGroup *ast.CommentGroup, fSet *token.FileSet) *Comment 
 		}
 		if annot != nil {
 			c.Annotations = append(c.Annotations, annot)
-			desc, ok := annot.(*annotation.DescriptionAnnotation)
-			if ok {
-				lines = append(lines, strings.TrimSpace(desc.Text))
-			}
 		} else {
 			line := strings.TrimPrefix(comment.Text, "//")
 			lines = append(lines, strings.TrimSpace(line))
