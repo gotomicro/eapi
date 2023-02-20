@@ -83,18 +83,16 @@ func (s *APISpec) LoadFromFuncDecl(ctx *Context, funcDecl *ast.FuncDecl) {
 		if s.Summary == "" {
 			s.Summary = s.Description
 		}
-		tags := comment.Tags()
-		if len(tags) > 0 {
-			s.Tags = comment.Tags()
-		} else {
-			s.Tags = ctx.Env.LookupTags()
-		}
+		s.Tags = comment.Tags()
 		s.OperationID = comment.ID()
 		s.Consumes = append(s.Consumes, comment.Consumes()...)
 		s.Deprecated = comment.Deprecated()
 		s.Security = comment.Security()
-		if s.Security == nil {
-			s.Security = convertSecAnnotationToSecurityRequirements(ctx.Env.LookupAnnotations(annotation.Security))
-		}
+	}
+	if len(s.Tags) == 0 {
+		s.Tags = ctx.Env.LookupTags()
+	}
+	if s.Security == nil {
+		s.Security = convertSecAnnotationToSecurityRequirements(ctx.Env.LookupAnnotations(annotation.Security))
 	}
 }
