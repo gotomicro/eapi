@@ -22,6 +22,18 @@ const ginContextIdentName = "*github.com/gin-gonic/gin.Context"
 var (
 	interestedGinContextMethods = []string{
 		"Bind",
+		"BindJSON",
+		"BindXML",
+		"BindYAML",
+		"BindTOML",
+		"BindUri",
+		"ShouldBind",
+		"ShouldBindJSON",
+		"ShouldBindXML",
+		"ShouldBindYAML",
+		"ShouldBindTOML",
+		"ShouldBindUri",
+		"ShouldBindHeader",
 		"JSON",
 		"Query",
 		"Param",
@@ -70,12 +82,24 @@ func (p *handlerAnalyzer) Parse() {
 			analyzer.NewCallRule().WithRule(ginContextIdentName, interestedGinContextMethods...),
 			func(call *ast.CallExpr, typeName, fnName string) {
 				switch fnName {
-				case "Bind":
+				case "Bind", "ShouldBind":
 					p.parseBinding(call)
+				case "BindJSON", "ShouldBindJSON":
+					p.parseBindWithContentType(call, analyzer.MimeTypeJson)
+				case "BindXML", "ShouldBindXML":
+					p.parseBindWithContentType(call, analyzer.MimeApplicationXml)
+				case "BindYAML", "ShouldBindYAML":
+					p.parseBindWithContentType(call, "application/yaml")
+				case "BindTOML", "ShouldBindTOML":
+					p.parseBindWithContentType(call, "application/toml")
+				case "BindUri", "ShouldBindUri":
+					// TODO
+				case "BindHeader", "ShouldBindHeader":
+					// TODO
 				case "JSON":
-					p.parseResBody(call, "application/json")
+					p.parseResBody(call, analyzer.MimeTypeJson)
 				case "XML":
-					p.parseResBody(call, "application/xml")
+					p.parseResBody(call, analyzer.MimeTypeXml)
 				case "Query": // query parameter
 					p.parsePrimitiveParam(call, "query")
 				case "Param": // path parameter
@@ -124,18 +148,27 @@ func (p *handlerAnalyzer) parseBinding(call *ast.CallExpr) {
 		}
 	default:
 		contentType := p.getRequestContentType("")
-		schema := p.ctx.GetSchemaByExpr(arg0, contentType)
-		if schema == nil {
-			return
-		}
-		commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
-		if commentGroup != nil {
-			comment := p.ctx.ParseComment(commentGroup)
-			schema.Description = comment.Text()
-		}
-		reqBody := spec.NewRequestBody().WithSchemaRef(schema, []string{contentType})
-		p.spec.RequestBody = &spec.RequestBodyRef{Value: reqBody}
+		p.parseBindWithContentType(call, contentType)
 	}
+}
+
+func (p *handlerAnalyzer) parseBindWithContentType(call *ast.CallExpr, contentType string) {
+	if len(call.Args) != 1 {
+		return
+	}
+	arg0 := call.Args[0]
+
+	schema := p.ctx.GetSchemaByExpr(arg0, contentType)
+	if schema == nil {
+		return
+	}
+	commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
+	if commentGroup != nil {
+		comment := p.ctx.ParseComment(commentGroup)
+		schema.Description = comment.Text()
+	}
+	reqBody := spec.NewRequestBody().WithSchemaRef(schema, []string{contentType})
+	p.spec.RequestBody = &spec.RequestBodyRef{Value: reqBody}
 }
 
 func (p *handlerAnalyzer) parseResBody(call *ast.CallExpr, contentType string) {
