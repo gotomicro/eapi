@@ -24,7 +24,7 @@ var (
 
 	TypeGenerator = &generators.Item{
 		FileName: "types.ts",
-		Print: func(schema *spec.T) string {
+		Print: func(schema *spec.T, options *generators.PrintOptions) string {
 			return f.Format(NewPrinter(schema).Print(), &f.Options{IndentWidth: 2})
 		},
 	}

@@ -7,9 +7,13 @@ type Generator struct {
 	Items []*Item
 }
 
+type PrintOptions struct {
+	ConfigUnmarshaller func(value interface{}) error
+}
+
 type Item struct {
 	FileName string
-	Print    func(schema *spec.T) string
+	Print    func(schema *spec.T, options *PrintOptions) string
 }
 
 var Generators = make(map[string]*Generator)

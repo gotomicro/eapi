@@ -10,12 +10,13 @@ import (
 )
 
 type generatorExecutor struct {
-	cfg *GeneratorConfig
-	doc *spec.T
+	cfg                *GeneratorConfig
+	doc                *spec.T
+	configUnmarshaller func(value interface{}) error
 }
 
-func newGeneratorExecutor(cfg *GeneratorConfig, doc *spec.T) *generatorExecutor {
-	return &generatorExecutor{cfg: cfg, doc: doc}
+func newGeneratorExecutor(cfg *GeneratorConfig, doc *spec.T, configUnmarshaller func(value interface{}) error) *generatorExecutor {
+	return &generatorExecutor{cfg: cfg, doc: doc, configUnmarshaller: configUnmarshaller}
 }
 
 func (r *generatorExecutor) execute() (err error) {
@@ -47,7 +48,7 @@ func (r *generatorExecutor) executeItem(t *generators.Item) error {
 	}
 	defer file.Close()
 
-	content := t.Print(r.doc)
+	content := t.Print(r.doc, &generators.PrintOptions{ConfigUnmarshaller: r.configUnmarshaller})
 	_, err = file.WriteString(content)
 	if err != nil {
 		return err

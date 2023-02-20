@@ -1,6 +1,4 @@
-// Package umi
-// 生成使用 umi-request 进行接口请求的代码及请求、相应参数的 TS 类型生命
-package umi
+package axios
 
 import (
 	"regexp"
@@ -17,7 +15,7 @@ import (
 
 var (
 	Generator = &generators.Generator{
-		Type: "umi",
+		Type: "axios",
 		Items: []*generators.Item{
 			ts.TypeGenerator,
 			RequestGenerator,
@@ -25,9 +23,9 @@ var (
 	}
 
 	RequestGenerator = &generators.Item{
-		FileName: "request.ts",
+		FileName: "api.ts",
 		Print: func(schema *spec.T, options *generators.PrintOptions) string {
-			return f.Format(NewPrinter(schema).Print(), &f.Options{IndentWidth: 2})
+			return f.Format(NewPrinter(schema, options).Print(), &f.Options{IndentWidth: 2})
 		},
 	}
 )
@@ -36,14 +34,26 @@ func init() {
 	generators.RegisterGenerator(Generator)
 }
 
-type Printer struct {
-	schema *spec.T
-
-	importTypes []string
+type config struct {
+	CustomHeader        string
+	RemoveFuncPkgPrefix bool
 }
 
-func NewPrinter(schema *spec.T) *Printer {
-	return &Printer{schema: schema}
+type Printer struct {
+	schema      *spec.T
+	importTypes []string
+	options     *generators.PrintOptions
+	config
+}
+
+func NewPrinter(schema *spec.T, options *generators.PrintOptions) *Printer {
+	cfg := config{}
+	err := options.ConfigUnmarshaller(&cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	return &Printer{schema: schema, options: options, config: cfg}
 }
 
 func (p *Printer) Print() f.Doc {
@@ -57,8 +67,12 @@ func (p *Printer) Print() f.Doc {
 }
 
 func (p *Printer) header() f.Doc {
+	if p.CustomHeader != "" {
+		return f.Group(f.Content(p.CustomHeader), f.LineBreak())
+	}
+
 	return f.Group(
-		f.Content(`import { request } from "umi";`),
+		f.Content(`import axios, { AxiosRequestConfig } from "axios";`),
 		f.LineBreak(),
 	)
 }
@@ -141,6 +155,7 @@ func (p *Printer) request(path string, method string, item *spec.Operation) f.Do
 	if len(queryParams) > 0 {
 		params = append(params, f.Group(f.Content("query: "), p.paramsType(queryParams)))
 	}
+	params = append(params, f.Content("config?: AxiosRequestConfig"))
 
 	if item.RequestBody != nil {
 		_, mediaType := p.getRequestMediaType(item)
@@ -214,18 +229,18 @@ func (p *Printer) requestFunctionBody(pathName string, method string, queryParam
 		}
 	}
 
-	var request f.Doc = f.Content("return request(`" + pathName + "`, {")
+	var request f.Doc = f.Content("return axios." + method + "(`" + pathName + "`")
 	if item.Responses != nil {
 		for status := 200; status < 300; status++ {
 			response := item.Responses.Get(status)
 			if response != nil {
-				request = f.Group(f.Content("return request<"), p.responseType(response.Value), f.Content(">(`"+pathName+"`, {"))
+				request = f.Group(f.Content(`return axios.`+method+`<`), p.responseType(response.Value), f.Content(">(`", pathName, "`"))
 			}
 		}
 	}
 	res.Docs = append(res.Docs, request)
 
-	options := f.Group(f.LineBreak(), f.Content(`method: "`+method+`",`))
+	options := f.Group()
 	if len(queryParams) > 0 {
 		options.Docs = append(options.Docs, f.LineBreak(), f.Content("params: query,"))
 	}
@@ -236,8 +251,14 @@ func (p *Printer) requestFunctionBody(pathName string, method string, queryParam
 			options.Docs = append(options.Docs, f.LineBreak(), f.Content("data,"))
 		}
 	}
-	res.Docs = append(res.Docs, f.Indent(options))
-	res.Docs = append(res.Docs, f.LineBreak(), f.Content("}"), f.Content(");"))
+	options.Docs = append(options.Docs, f.LineBreak(), f.Content("...config,"))
+	res.Docs = append(res.Docs,
+		f.Content(", {"),
+		f.Indent(options), f.LineBreak(),
+		f.Content("}"),
+	)
+
+	res.Docs = append(res.Docs, f.Content(");"))
 	return res
 }
 
@@ -334,6 +355,9 @@ func (p *Printer) requestFnName(item *spec.Operation) string {
 	slices := strings.Split(item.OperationID, ".")
 	if len(slices) == 1 {
 		return p.toLowerCamelCase(item.OperationID)
+	}
+	if p.RemoveFuncPkgPrefix {
+		return p.toLowerCamelCase(slices[len(slices)-1])
 	}
 
 	var res = p.toLowerCamelCase(slices[0])
