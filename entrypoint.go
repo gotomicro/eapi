@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 
 	_ "github.com/gotomicro/eapi/generators/ts"
 	_ "github.com/gotomicro/eapi/generators/umi"
@@ -134,7 +135,8 @@ func (e *Entrypoint) Run(args []string) {
 		Required: false,
 	})
 
-	app.Before = e.before
+	app.Commands = append(app.Commands, showVersion())
+
 	app.Action = e.run
 
 	err := app.Run(args)
@@ -182,6 +184,11 @@ func (e *Entrypoint) loadConfig(cfg string) error {
 
 func (e *Entrypoint) run(c *cli.Context) error {
 	var plugin Plugin
+
+	err := e.before(c)
+	if err != nil {
+		return err
+	}
 
 	for _, p := range e.plugins {
 		if p.Name() == e.cfg.Plugin {
@@ -231,4 +238,20 @@ func (e *Entrypoint) run(c *cli.Context) error {
 	}
 
 	return nil
+}
+
+func showVersion() *cli.Command {
+	return &cli.Command{
+		Name: "version",
+		Action: func(c *cli.Context) error {
+			info, ok := debug.ReadBuildInfo()
+			if !ok {
+				fmt.Printf("unknown version\n")
+				os.Exit(1)
+				return nil
+			}
+			fmt.Printf("%v\n", info.Main)
+			return nil
+		},
+	}
 }
