@@ -155,8 +155,6 @@ func (p *Printer) request(path string, method string, item *spec.Operation) f.Do
 	if len(queryParams) > 0 {
 		params = append(params, f.Group(f.Content("query: "), p.paramsType(queryParams)))
 	}
-	params = append(params, f.Content("config?: AxiosRequestConfig"))
-
 	if item.RequestBody != nil {
 		_, mediaType := p.getRequestMediaType(item)
 		if mediaType != nil {
@@ -172,6 +170,7 @@ func (p *Printer) request(path string, method string, item *spec.Operation) f.Do
 			}
 		}
 	}
+	params = append(params, f.Content("config?: AxiosRequestConfig"))
 
 	functionBody := p.requestFunctionBody(pathName, method, queryParams, item)
 	return f.Group(
