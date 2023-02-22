@@ -14,7 +14,7 @@ import (
 // @summary 创建商品
 // @consume application/json
 // @produce application/json
-func GoodsCreate(c *gin.Context) {
+func GoodsCreate(c *handler.CustomContext) {
 	var req view.GoodsCreateReq
 	if err := c.Bind(&req); err != nil {
 		// 参数无效
@@ -26,7 +26,7 @@ func GoodsCreate(c *gin.Context) {
 
 	var res view.GoodsCreateRes
 	// 创建成功
-	c.JSON(http.StatusOK, res)
+	c.JSONOK(res)
 }
 
 // GoodsDown 下架商品

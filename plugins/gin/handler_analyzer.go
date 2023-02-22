@@ -1,9 +1,7 @@
 package gin
 
 import (
-	"fmt"
 	"go/ast"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -11,10 +9,7 @@ import (
 	analyzer "github.com/gotomicro/eapi"
 	"github.com/gotomicro/eapi/plugins/common"
 	"github.com/gotomicro/eapi/spec"
-	"github.com/gotomicro/eapi/utils"
 	"github.com/iancoleman/strcase"
-	"github.com/robertkrimen/otto"
-	"github.com/samber/lo"
 )
 
 const ginContextIdentName = "*github.com/gin-gonic/gin.Context"
@@ -69,11 +64,17 @@ func (p *handlerAnalyzer) WithConfig(c *common.Config) *handlerAnalyzer {
 
 func (p *handlerAnalyzer) Parse() {
 	ast.Inspect(p.decl, func(node ast.Node) bool {
-		matched := p.matchCustomResponseRule(node)
+		customRuleAnalyzer := common.NewCustomRuleAnalyzer(
+			p.ctx,
+			p.spec,
+			p.api,
+			p.c,
+		)
+		matched := customRuleAnalyzer.MatchCustomResponseRule(node)
 		if matched {
 			return true
 		}
-		matched = p.matchCustomRequestRule(node)
+		matched = customRuleAnalyzer.MatchCustomRequestRule(node)
 		if matched {
 			return true
 		}
@@ -147,7 +148,7 @@ func (p *handlerAnalyzer) parseBinding(call *ast.CallExpr) {
 			p.spec.AddParameter(param)
 		}
 	default:
-		contentType := p.getRequestContentType("")
+		contentType := p.getDefaultContentType()
 		p.parseBindWithContentType(call, contentType)
 	}
 }
@@ -317,212 +318,8 @@ func (p *handlerAnalyzer) primitiveParam(call *ast.CallExpr, in string) *spec.Pa
 	return res
 }
 
-func (p *handlerAnalyzer) matchCustomResponseRule(node ast.Node) (matched bool) {
-	if p.c == nil || len(p.c.Response) == 0 {
-		return false
-	}
-
-	for _, rule := range p.c.Response {
-		p.ctx.MatchCall(
-			node,
-			analyzer.NewCallRule().WithRule(rule.Type, rule.Method),
-			func(call *ast.CallExpr, typeName, fnName string) {
-				matched = true
-
-				var contentType = rule.Return.ContentType
-				//if !lo.Contains(p.spec.Produces, contentType) {
-				//	p.spec.Produces = append(p.spec.Produces, contentType)
-				//}
-
-				res := spec.NewResponse()
-				comment := p.ctx.ParseComment(p.ctx.GetHeadingCommentOf(call.Pos()))
-				res.Description = comment.TextPointer()
-				schema := p.parseDataType(call, rule.Return.Data, contentType)
-				res.WithContent(spec.NewContentWithSchemaRef(schema, []string{contentType}))
-				statusCode := p.parseStatusCodeInCall(call, rule.Return.Status)
-				p.spec.AddResponse(statusCode, res)
-			},
-		)
-	}
-
-	return
-}
-
-func (p *handlerAnalyzer) matchCustomRequestRule(node ast.Node) (matched bool) {
-	if p.c == nil || len(p.c.Request) == 0 {
-		return false
-	}
-
-	for _, rule := range p.c.Request {
-		p.ctx.MatchCall(
-			node,
-			analyzer.NewCallRule().WithRule(rule.Type, rule.Method),
-			func(call *ast.CallExpr, typeName, fnName string) {
-				matched = true
-
-				switch p.api.Method {
-				case http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodDelete:
-					params := p.parseParamsInCall(call, rule.Return.Data, analyzer.MimeTypeFormData)
-					for _, param := range params {
-						p.spec.AddParameter(param)
-					}
-
-				default:
-					contentType := p.getRequestContentType(rule.Return.ContentType)
-					schema := p.parseDataType(call, rule.Return.Data, contentType)
-					if schema == nil {
-						return
-					}
-					reqBody := spec.NewRequestBody()
-					reqBody.Required = true
-					commentGroup := p.ctx.GetHeadingCommentOf(call.Pos())
-					if commentGroup != nil {
-						comment := p.ctx.ParseComment(commentGroup)
-						reqBody.Description = comment.Text()
-					}
-					reqBody.WithSchemaRef(schema, []string{contentType})
-					p.spec.RequestBody = &spec.RequestBodyRef{Value: reqBody}
-				}
-
-			},
-		)
-	}
-
-	return
-}
-
-func (p *handlerAnalyzer) getFormDataIn() string {
-	var in string
-	switch p.api.Method {
-	case http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodDelete:
-		in = "query"
-	default:
-		in = "form"
-	}
-	return in
-}
-
-func (p *handlerAnalyzer) parseStatusCodeInCall(call *ast.CallExpr, statusCode string) (code int) {
-	if statusCode == "" {
-		return 200 // default to 200
-	}
-
-	output := p.evaluate(call, statusCode)
-	switch value := output.(type) {
-	case int64:
-		code = int(value)
-	case int:
-		code = value
-	case ast.Expr:
-		code = p.ctx.ParseStatusCode(value)
-	}
-
-	return
-}
-
-func (p *handlerAnalyzer) parseDataType(call *ast.CallExpr, dataType *common.DataSchema, contentType string) (schema *spec.SchemaRef) {
-	switch dataType.Type {
-	case common.DataTypeString:
-		return p.basicSchemaType("string")
-	case common.DataTypeNumber:
-		return p.basicSchemaType("number")
-	case common.DataTypeInteger:
-		return p.basicSchemaType("integer")
-	case common.DataTypeBoolean:
-		return p.basicSchemaType("boolean")
-	case common.DataTypeFile:
-		return p.basicSchemaType("file")
-	case common.DataTypeArray:
-		return spec.NewArraySchema(p.parseDataType(call, dataType.Item, contentType)).NewRef()
-	case common.DataTypeObject:
-		schema := spec.NewObjectSchema()
-		properties := make(spec.Schemas)
-		utils.RangeMapInOrder(
-			dataType.Properties,
-			func(a, b string) bool { return a < b },
-			func(name string, dataSchema *common.DataSchema) {
-				if !dataSchema.Optional {
-					schema.Required = append(schema.Required, name)
-				}
-				s := p.parseDataType(call, dataSchema, contentType)
-				if s != nil {
-					properties[name] = s
-				}
-			},
-		)
-		schema.Properties = properties
-		return spec.NewSchemaRef("", schema)
-	default: // fallback to js expression
-		output := p.evaluate(call, string(dataType.Type))
-		if output == nil {
-			return nil
-		}
-		expr, ok := output.(ast.Expr)
-		if !ok {
-			fmt.Printf("invalid data type '%s' in configuration file\n", dataType.Type)
-			return nil
-		}
-		return p.ctx.GetSchemaByExpr(expr, contentType)
-	}
-}
-
-func (p *handlerAnalyzer) basicSchemaType(t string) *spec.SchemaRef {
-	return &spec.SchemaRef{
-		Value: &spec.Schema{
-			Type: t,
-		},
-	}
-}
-
-func (p *handlerAnalyzer) parseParamsInCall(call *ast.CallExpr, dataType *common.DataSchema, contentType string) (params []*spec.Parameter) {
-	switch dataType.Type {
-	case common.DataTypeString, common.DataTypeNumber, common.DataTypeInteger, common.DataTypeBoolean, common.DataTypeFile, common.DataTypeArray:
-		param := &spec.Parameter{}
-		schema := spec.NewSchema()
-		schema.Type = string(dataType.Type)
-		schema.Format = dataType.Format
-		param.Schema = spec.NewSchemaRef("", schema)
-		return append(params, param)
-
-	case common.DataTypeObject: // unsupported in form data
-		fmt.Printf("object is unsupported in form data\n")
-		return
-
-	default:
-		output := p.evaluate(call, string(dataType.Type))
-		expr, ok := output.(ast.Expr)
-		if !ok {
-			fmt.Printf("invalid data type '%s' in configuration file\n", dataType.Type)
-			return nil
-		}
-		return analyzer.NewParamParser(p.ctx, p.paramNameParser).Parse(expr)
-	}
-}
-
-func (p *handlerAnalyzer) evaluate(call *ast.CallExpr, code string) interface{} {
-	env := otto.New()
-	_ = env.Set("args", call.Args)
-	output, err := env.Run(code)
-	if err != nil {
-		log.Fatalln("evaluate failed", err)
-	}
-
-	value, err := output.Export()
-	if err != nil {
-		log.Fatalln("evaluate failed", err)
-	}
-
-	return value
-}
-
 // 获取一个尽可能正确的 request payload contentType
-func (p *handlerAnalyzer) getRequestContentType(contentType string) string {
-	if contentType != "" {
-		if !lo.Contains(p.spec.Consumes, contentType) {
-			p.spec.Consumes = append(p.spec.Consumes, contentType)
-		}
-		return contentType
-	}
+func (p *handlerAnalyzer) getDefaultContentType() string {
 	if len(p.spec.Consumes) != 0 {
 		return p.spec.Consumes[0]
 	}

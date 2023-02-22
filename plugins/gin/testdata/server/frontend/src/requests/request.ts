@@ -1,6 +1,7 @@
 import { request } from "umi";
 import { 
   ViewGoodsCreateReq,
+  CustomResponseType,
   ViewGoodsCreateRes,
   ShopGoodsDownRequest,
   ViewGoodsDownRes,
@@ -11,7 +12,7 @@ import {
  * @description GoodsCreate 创建商品接口
  */
 export function shopGoodsCreate(data: ViewGoodsCreateReq) {
-  return request<ViewGoodsCreateRes>(`/api/goods`, {
+  return request<CustomResponseType<ViewGoodsCreateRes>>(`/api/goods`, {
     method: "post",
     data,
   });
@@ -53,7 +54,7 @@ export function shopGoodsInfo(guid: string) {
  * @description wrapped handler
  */
 export function shopWrappedHandler(query: { hello?: string; world?: string }) {
-  return request<{ code: number; data: Record<string, any>; msg: string; }>(`/wrapped-handler`, {
+  return request<CustomResponseType<Record<string, any>>>(`/wrapped-handler`, {
     method: "get",
     params: query,
   });

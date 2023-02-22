@@ -145,16 +145,10 @@ func (p *Printer) request(path string, method string, item *spec.Operation) f.Do
 	if item.RequestBody != nil {
 		_, mediaType := p.getRequestMediaType(item)
 		if mediaType != nil {
-			if mediaType.Schema.Ref != "" {
-				s := spec.Unref(p.schema, mediaType.Schema)
-				p.importType(s.Value.Title)
-				params = append(params, f.Content("data: "+s.Value.Title))
-			} else {
-				params = append(params, f.Group(
-					f.Content("data: "),
-					ts.NewPrinter(p.schema).SetTypeFieldsInline(true).PrintTypeName(mediaType.Schema),
-				))
-			}
+			params = append(params, f.Group(
+				f.Content("data: "),
+				p.printType(mediaType.Schema),
+			))
 		}
 	}
 
@@ -250,7 +244,7 @@ func (p *Printer) paramsType(params []*spec.ParameterRef) f.Doc {
 	for _, param := range params {
 		fields = append(fields, f.Group(
 			f.Content(param.Value.Name+"?: "),
-			ts.NewPrinter(p.schema).SetTypeFieldsInline(true).PrintTypeName(param.Value.Schema),
+			p.printType(param.Value.Schema),
 		))
 	}
 
@@ -315,21 +309,25 @@ func (p *Printer) jsDoc(item *spec.Operation) f.Doc {
 	return res
 }
 
+func (p *Printer) printType(schema *spec.SchemaRef) f.Doc {
+	tsPrinter := ts.NewPrinter(p.schema).SetTypeFieldsInline(true)
+	var ret f.Doc
+	if schema.Ref != "" {
+		ret = tsPrinter.PrintTypeName(schema)
+	} else {
+		ret = tsPrinter.PrintTypeBody(schema)
+	}
+	p.importType(tsPrinter.ReferencedTypes...)
+	return ret
+}
+
 func (p *Printer) responseType(res *spec.Response) f.Doc {
 	for _, mediaType := range res.Content {
 		schema := mediaType.Schema
 		if schema == nil {
 			continue
 		}
-		tsPrinter := ts.NewPrinter(p.schema).SetTypeFieldsInline(true)
-		var ret f.Doc
-		if schema.Ref != "" {
-			ret = tsPrinter.PrintTypeName(schema)
-		} else {
-			ret = tsPrinter.PrintTypeBody(schema)
-		}
-		p.importType(tsPrinter.ReferencedTypes...)
-		return ret
+		return p.printType(schema)
 	}
 
 	return f.Content("any")

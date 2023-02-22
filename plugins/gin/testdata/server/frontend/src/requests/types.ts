@@ -1,3 +1,9 @@
+export type CustomResponseType<A> = {
+  code: number;
+  data: A;
+  msg: string;
+}
+
 export type ShopGoodsDownRequest = {
   /*
    * @description 日期范围

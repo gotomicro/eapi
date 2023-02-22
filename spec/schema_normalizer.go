@@ -91,7 +91,11 @@ func (s *schemaNormalizer) process(ref *SchemaRef, args []*SchemaRef) *SchemaRef
 		case ExtendedTypeSpecific:
 			return s.process(ext.SpecificType.Type, s.mergeArgs(ext.SpecificType.Args, args))
 		case ExtendedTypeParam:
-			res.Value = args[ext.TypeParam.Index].Value
+			arg := args[ext.TypeParam.Index]
+			if arg == nil {
+				return nil
+			}
+			res.Value = arg.Value
 		}
 	}
 

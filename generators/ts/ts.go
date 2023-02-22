@@ -156,6 +156,10 @@ func (p *Printer) PrintTypeBody(definition *spec.SchemaRef) f.Doc {
 			return f.Content(ext.TypeParam.Name)
 		case spec.ExtendedTypeSpecific:
 			return p.printSpecific(ext)
+		case spec.ExtendedTypeNull:
+			return f.Content("null")
+		case spec.ExtendedTypeUnknown:
+			return f.Content("unknown")
 		case spec.ExtendedTypeObject:
 			// ignore
 		}
@@ -201,6 +205,10 @@ func (p *Printer) PrintTypeName(definition *spec.SchemaRef) f.Doc {
 			return f.Content(ext.TypeParam.Name)
 		case spec.ExtendedTypeSpecific:
 			return p.printSpecific(ext)
+		case spec.ExtendedTypeNull:
+			return f.Content("null")
+		case spec.ExtendedTypeUnknown:
+			return f.Content("unknown")
 		case spec.ExtendedTypeObject:
 			// ignore
 		}
