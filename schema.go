@@ -20,37 +20,18 @@ const (
 	MimeTypeFormUrlencoded = "application/x-www-form-urlencoded"
 )
 
-type delayParsingJob struct {
+type SchemaBuilder struct {
 	ctx         *Context
 	contentType string
 	stack       Stack[string]
-	params      []*spec.SchemaRef
+	typeArgs    []*spec.SchemaRef
 	typeParams  []*spec.TypeParam
-	expr        ast.Expr
-}
-
-type delayParsingList struct {
-	list []*delayParsingJob
-}
-
-func newDelayParsingList() *delayParsingList {
-	return &delayParsingList{}
-}
-
-type SchemaBuilder struct {
-	ctx              *Context
-	contentType      string
-	stack            Stack[string]
-	typeArgs         []*spec.SchemaRef
-	typeParams       []*spec.TypeParam
-	delayParsingList *delayParsingList
 }
 
 func NewSchemaBuilder(ctx *Context, contentType string) *SchemaBuilder {
 	return &SchemaBuilder{
-		ctx:              ctx,
-		contentType:      contentType,
-		delayParsingList: newDelayParsingList(),
+		ctx:         ctx,
+		contentType: contentType,
 	}
 }
 
@@ -61,11 +42,6 @@ func newSchemaBuilderWithStack(ctx *Context, contentType string, stack Stack[str
 func (s *SchemaBuilder) clone() *SchemaBuilder {
 	ret := *s
 	return &ret
-}
-
-func (s *SchemaBuilder) withDelayParsingList(list *delayParsingList) *SchemaBuilder {
-	s.delayParsingList = list
-	return s
 }
 
 func (s *SchemaBuilder) parseTypeDef(def *TypeDefinition) *spec.SchemaRef {
