@@ -41,7 +41,7 @@ func (s *schemaNormalizer) processPathItem(item *PathItem) {
 }
 
 func (s *schemaNormalizer) processSchemaRef(ref *SchemaRef) *SchemaRef {
-	if ref.Ref != "" || ref.Value == nil {
+	if ref == nil || ref.Ref != "" || ref.Value == nil {
 		return ref
 	}
 	ext := ref.Value.ExtendedTypeInfo
