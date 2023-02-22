@@ -99,7 +99,7 @@ func (p *handlerAnalyzer) Parse() {
 				case "JSON":
 					p.parseResBody(call, analyzer.MimeTypeJson)
 				case "XML":
-					p.parseResBody(call, analyzer.MimeTypeXml)
+					p.parseResBody(call, analyzer.MimeApplicationXml)
 				case "Query": // query parameter
 					p.parsePrimitiveParam(call, "query")
 				case "Param": // path parameter

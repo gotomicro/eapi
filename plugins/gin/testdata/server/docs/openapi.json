@@ -339,7 +339,7 @@
                 "responses": {
                     "200": {
                         "content": {
-                            "text/xml": {
+                            "application/xml": {
                                 "schema": {
                                     "$ref": "#/components/schemas/server_pkg_view.GoodsDownRes"
                                 }
