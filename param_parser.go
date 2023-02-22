@@ -108,14 +108,12 @@ func (p *ParamParser) typeOf(expr ast.Expr) *spec.Parameter {
 
 	case *ast.ArrayType:
 		param := &spec.Parameter{}
-		paramSchema := spec.NewArraySchema()
-		paramSchema.WithItems(p.typeOf(t.Elt).Schema.Value)
+		paramSchema := spec.NewArraySchema(p.typeOf(t.Elt).Schema.Value.NewRef())
 		return param.WithSchema(paramSchema)
 
 	case *ast.SliceExpr:
 		param := &spec.Parameter{}
-		paramSchema := spec.NewArraySchema()
-		paramSchema.WithItems(p.typeOf(t.X).Schema.Value)
+		paramSchema := spec.NewArraySchema(p.typeOf(t.X).Schema.Value.NewRef())
 		return param.WithSchema(paramSchema)
 
 	case *ast.StarExpr:

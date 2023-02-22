@@ -3,6 +3,7 @@ package spec
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/getkin/kin-openapi/jsoninfo"
 	"github.com/go-openapi/jsonpointer"
@@ -362,13 +363,38 @@ func (value *SchemaRef) Validate(ctx context.Context) error {
 }
 
 // JSONLookup implements github.com/go-openapi/jsonpointer#JSONPointable
-func (value SchemaRef) JSONLookup(token string) (interface{}, error) {
+func (value *SchemaRef) JSONLookup(token string) (interface{}, error) {
 	if token == "$ref" {
 		return value.Ref, nil
 	}
 
 	ptr, _, err := jsonpointer.GetForToken(value.Value, token)
 	return ptr, err
+}
+
+func (value *SchemaRef) Unref(doc *T) *SchemaRef {
+	if value.Ref != "" {
+		return doc.GetSchemaByRef(value.Ref)
+	}
+	return value
+}
+
+func (value *SchemaRef) Clone() *SchemaRef {
+	res := *value
+	if res.Value != nil {
+		res.Value = res.Value.Clone()
+	}
+	return &res
+}
+
+func (value *SchemaRef) Key() string {
+	if value.Ref != "" {
+		return strings.TrimPrefix(value.Ref, "#/components/schemas/")
+	}
+	if value.Value.Key != "" {
+		return value.Value.Key
+	}
+	return value.Value.Type
 }
 
 // SecuritySchemeRef represents either a SecurityScheme or a $ref to a SecurityScheme.

@@ -8,12 +8,6 @@ func RefSchema(id string) *SchemaRef {
 	return NewSchemaRef(id, nil)
 }
 
-func ArrayProperty(item *SchemaRef) *SchemaRef {
-	val := NewArraySchema()
-	val.Items = item
-	return NewSchemaRef("", val)
-}
-
 func Unref(t *T, schema *SchemaRef) *SchemaRef {
 	if schema.Ref == "" {
 		return schema
@@ -26,16 +20,20 @@ func Unref(t *T, schema *SchemaRef) *SchemaRef {
 
 	switch slices[2] {
 	case "schemas":
-		return t.Components.Schemas[slices[3]]
+		schema = t.Components.Schemas[slices[3]]
+		if schema != nil && schema.Ref != "" {
+			return Unref(t, schema)
+		}
+		return schema
 	}
 
 	return nil
 }
 
-// UnrefRecursively 递归 unref
-func UnrefRecursively(t *T, schema *SchemaRef) *SchemaRef {
-	for schema != nil && schema.Ref != "" {
-		schema = Unref(t, schema)
-	}
-	return schema
+func RefTo(path ...string) *SchemaRef {
+	return RefSchema("#/" + strings.Join(path, "/"))
+}
+
+func RefComponentSchemas(key string) *SchemaRef {
+	return RefTo("components", "schemas", key)
 }

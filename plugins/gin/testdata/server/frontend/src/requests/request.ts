@@ -2,6 +2,7 @@ import { request } from "umi";
 import { 
   ViewGoodsCreateReq,
   ViewGoodsCreateRes,
+  ShopGoodsDownRequest,
   ViewGoodsDownRes,
   ViewGoodsInfoRes
  } from "./types";
@@ -29,7 +30,7 @@ export function shopGoodsDelete(guid: string, query: { formDataField?: string })
 /*
  * @description 下架商品
  */
-export function shopGoodsDown(guid: string, query: { defaultQuery?: string }, data: { dateRange?: string[]; defaultPostForm?: string; operatorUid?: string; }) {
+export function shopGoodsDown(guid: string, query: { defaultQuery?: string }, data: ShopGoodsDownRequest) {
   const formData = new FormData();
   Object.keys(data).forEach((key) => formData.append(key, data[key]));
   return request<ViewGoodsDownRes>(`/api/goods/${guid}/down`, {

@@ -57,24 +57,45 @@ func (p *Printer) Print() f.Doc {
 		p.schema.Components.Schemas,
 		func(a, b string) bool { return a < b },
 		func(key string, schema *spec.SchemaRef) {
-			docs = append(docs, p.definition(schema))
+			d := p.definition(schema)
+			if d != nil {
+				docs = append(docs, d)
+			}
 		},
 	)
 	return f.Join(f.Group(f.LineBreak(), f.LineBreak()), docs...)
 }
 
 func (p *Printer) definition(definition *spec.SchemaRef) f.Doc {
-	if definition.Ref != "" {
-		// ignore
-		return f.Group()
+	if definition.Ref != "" || definition.Value.SpecializedFromGeneric {
+		return nil
 	}
 
 	ext := definition.Value.ExtendedTypeInfo
-	if ext != nil && ext.Type == spec.ExtendedTypeEnum { // enum
-		return f.Group(
-			f.Content("export enum ", definition.Value.Title, " "),
-			p.PrintEnumBody(ext.EnumItems),
-		)
+	var typeName = f.Content(definition.Value.Title)
+	var typeParams = f.Content()
+	if ext != nil {
+		if ext.Type == spec.ExtendedTypeEnum { // enum
+			return f.Group(
+				f.Content("export enum ", definition.Value.Title, " "),
+				p.PrintEnumBody(ext.EnumItems),
+			)
+		}
+		if len(ext.TypeParams) > 0 {
+			typeParams = f.Group(
+				f.Content("<"),
+				f.Join(
+					f.Content(", "),
+					lo.Map(ext.TypeParams, func(t *spec.TypeParam, i int) f.Doc {
+						return f.Group(
+							f.Content(t.Name),
+							p.printConstraint(t.Constraint),
+						)
+					})...,
+				),
+				f.Content(">"),
+			)
+		}
 	}
 
 	var description string
@@ -98,8 +119,8 @@ func (p *Printer) definition(definition *spec.SchemaRef) f.Doc {
 				},
 			}),
 		),
-		f.Content("export type "+definition.Value.Title+" = "),
-		p.PrintType(definition),
+		f.Content("export type ", typeName, typeParams, " = "),
+		p.PrintTypeBody(definition),
 	)
 }
 
@@ -113,20 +134,31 @@ func (p *Printer) PrintEnumBody(enum []*spec.ExtendedEnumItem) f.Doc {
 	)
 }
 
-func (p *Printer) PrintType(definition *spec.SchemaRef) f.Doc {
+func (p *Printer) PrintTypeBody(definition *spec.SchemaRef) f.Doc {
+	if definition == nil {
+		return f.Content("unknown")
+	}
 	if definition.Ref != "" {
-		referencedType := spec.UnrefRecursively(p.schema, definition)
-		if referencedType == nil {
-			return f.Content("unknown")
-		}
-		typeName := referencedType.Value.Title
-		p.ReferencedTypes = lo.Uniq(append(p.ReferencedTypes, typeName))
-		return f.Content(typeName)
+		definition = spec.Unref(p.schema, definition)
+		p.ReferencedTypes = append(p.ReferencedTypes, definition.Value.Title)
+		return p.PrintTypeName(definition)
 	}
 
 	schema := definition.Value
-	if schema.ExtendedTypeInfo != nil {
-		return p.printExtendedType(schema.ExtendedTypeInfo)
+	ext := schema.ExtendedTypeInfo
+	if ext != nil {
+		switch ext.Type {
+		case spec.ExtendedTypeAny:
+			return f.Content("any")
+		case spec.ExtendedTypeMap:
+			return f.Content("Record<", p.PrintTypeName(ext.MapKey), ", ", p.PrintTypeName(ext.MapValue), ">")
+		case spec.ExtendedTypeParam:
+			return f.Content(ext.TypeParam.Name)
+		case spec.ExtendedTypeSpecific:
+			return p.printSpecific(ext)
+		case spec.ExtendedTypeObject:
+			// ignore
+		}
 	}
 
 	var t = schema.Type
@@ -139,7 +171,52 @@ func (p *Printer) PrintType(definition *spec.SchemaRef) f.Doc {
 		}
 		schema := definition.Value.Items
 		return f.Group(
-			p.PrintType(schema),
+			p.PrintTypeName(schema),
+			f.Content("[]"),
+		)
+	default:
+		return p.printBasicType(t)
+	}
+}
+
+func (p *Printer) PrintTypeName(definition *spec.SchemaRef) f.Doc {
+	if definition == nil {
+		return f.Content("unknown")
+	}
+	if definition.Ref != "" {
+		definition = spec.Unref(p.schema, definition)
+		p.ReferencedTypes = append(p.ReferencedTypes, definition.Value.Title)
+		return p.PrintTypeName(definition)
+	}
+
+	schema := definition.Value
+	ext := schema.ExtendedTypeInfo
+	if ext != nil {
+		switch ext.Type {
+		case spec.ExtendedTypeAny:
+			return f.Content("any")
+		case spec.ExtendedTypeMap:
+			return f.Content("Record<", p.PrintTypeName(ext.MapKey), ", ", p.PrintTypeName(ext.MapValue), ">")
+		case spec.ExtendedTypeParam:
+			return f.Content(ext.TypeParam.Name)
+		case spec.ExtendedTypeSpecific:
+			return p.printSpecific(ext)
+		case spec.ExtendedTypeObject:
+			// ignore
+		}
+	}
+
+	var t = schema.Type
+	switch t {
+	case "object":
+		return f.Content(schema.Title)
+	case "array":
+		if definition.Value.Items == nil {
+			return f.Content("any[]")
+		}
+		schema := definition.Value.Items
+		return f.Group(
+			p.PrintTypeName(schema),
 			f.Content("[]"),
 		)
 	default:
@@ -198,7 +275,7 @@ func (p *Printer) property(name string, schema *spec.SchemaRef, required bool) f
 			}),
 		),
 		f.Content(name), f.If(!required, f.Content("?")), f.Content(": "),
-		p.PrintType(schema),
+		p.PrintTypeName(schema),
 		f.Content(";"),
 	)
 }
@@ -222,9 +299,10 @@ func (p *Printer) multilineComment(options *multilineCommentOptions) f.Doc {
 		f.If(len(options.tags) > 0, f.Group(lo.Map(options.tags, func(t *multilineCommentTag, _ int) f.Doc {
 			return f.Group(
 				f.Content(" * "+t.tag+" "),
-				f.Join(f.Group(f.LineBreak(), f.Content(" *\t")), lo.Map(t.text, func(line string, _ int) f.Doc {
-					return f.Content(strings.TrimSpace(line))
-				})...),
+				f.Join(
+					f.Group(f.LineBreak(), f.Content(" *\t")),
+					lo.Map(t.text, func(line string, _ int) f.Doc { return f.Content(strings.TrimSpace(line)) })...,
+				),
 			)
 		})...)), f.LineBreak(),
 		f.Content(" */"), f.LineBreak(),
@@ -245,16 +323,6 @@ func (p *Printer) printBasicType(t string) f.Doc {
 	return f.Content("any")
 }
 
-func (p *Printer) printExtendedType(info *spec.ExtendedTypeInfo) f.Doc {
-	switch info.Type {
-	case spec.ExtendedTypeAny:
-		return f.Content("any")
-	case spec.ExtendedTypeMap:
-		return f.Content("Record<", p.PrintType(info.Key), ", ", p.PrintType(info.Value), ">")
-	}
-	return f.Content("unknown")
-}
-
 func (p *Printer) printValue(value interface{}) interface{} {
 	switch value := value.(type) {
 	case string:
@@ -270,4 +338,28 @@ func (p *Printer) printValue(value interface{}) interface{} {
 		return "false"
 	}
 	return cast.ToString(value)
+}
+
+func (p *Printer) printSpecific(ext *spec.ExtendedTypeInfo) f.Doc {
+	schema := spec.Unref(p.schema, ext.SpecificType.Type)
+	return f.Group(
+		f.Content(schema.Value.Title),
+		f.Content("<"),
+		f.Join(
+			f.Content(", "),
+			lo.Map(ext.SpecificType.Args, func(t *spec.SchemaRef, i int) f.Doc {
+				return p.PrintTypeName(t)
+			})...,
+		),
+		f.Content(">"),
+	)
+}
+
+func (p *Printer) printConstraint(constraint string) f.Doc {
+	switch constraint {
+	case "comparable":
+		return f.Content(" extends string | number")
+	default:
+		return f.Content()
+	}
 }

@@ -216,7 +216,7 @@ func (e *Entrypoint) run(c *cli.Context) error {
 	}
 
 	a := NewAnalyzer(e.k).Plugin(plugin).Depends(e.cfg.Depends...)
-	doc := a.Process(e.cfg.Dir).Doc()
+	doc := a.Process(e.cfg.Dir).Doc().Specialize()
 	e.cfg.OpenAPI.applyToDoc(doc)
 
 	// write documentation

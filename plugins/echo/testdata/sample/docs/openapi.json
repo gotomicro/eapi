@@ -1,6 +1,27 @@
 {
     "components": {
         "schemas": {
+            "UploaderUploadFileRequest": {
+                "properties": {
+                    "file": {
+                        "title": "file",
+                        "type": "file"
+                    },
+                    "saveToLib": {
+                        "title": "saveToLib",
+                        "type": "string"
+                    }
+                },
+                "title": "UploaderUploadFileRequest",
+                "type": "object"
+            },
+            "sample_model.Array[string]": {
+                "items": {
+                    "type": "string"
+                },
+                "title": "ModelArray",
+                "type": "array"
+            },
             "sample_model.CreateGoodsRequest": {
                 "properties": {
                     "cover": {
@@ -25,6 +46,25 @@
                     }
                 },
                 "title": "ModelCreateGoodsRequest",
+                "type": "object"
+            },
+            "sample_model.GenericTypeResponse[string]": {
+                "properties": {
+                    "data": {
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "additionalProperties": {
+                            "description": "Any Type",
+                            "type": "object"
+                        },
+                        "type": "object"
+                    },
+                    "value": {
+                        "$ref": "#/components/schemas/sample_model.SampleGenericType[string]"
+                    }
+                },
+                "title": "ModelGenericTypeResponse",
                 "type": "object"
             },
             "sample_model.GoodsInfo": {
@@ -93,6 +133,56 @@
                     }
                 },
                 "title": "ModelListGoodsResponse",
+                "type": "object"
+            },
+            "sample_model.List[string]": {
+                "items": {
+                    "type": "string"
+                },
+                "title": "ModelList",
+                "type": "array"
+            },
+            "sample_model.Map[integer,string]": {
+                "additionalProperties": {
+                    "type": "string"
+                },
+                "title": "ModelMap",
+                "type": "object"
+            },
+            "sample_model.MultipleParamGeneric[integer,string]": {
+                "properties": {
+                    "A": {
+                        "type": "integer"
+                    },
+                    "B": {
+                        "type": "string"
+                    }
+                },
+                "title": "ModelMultipleParamGeneric",
+                "type": "object"
+            },
+            "sample_model.SampleGenericType[string]": {
+                "properties": {
+                    "array": {
+                        "$ref": "#/components/schemas/sample_model.Array[string]"
+                    },
+                    "list": {
+                        "$ref": "#/components/schemas/sample_model.List[string]"
+                    },
+                    "map": {
+                        "$ref": "#/components/schemas/sample_model.Map[integer,string]"
+                    },
+                    "multipleParamGeneric": {
+                        "$ref": "#/components/schemas/sample_model.MultipleParamGeneric[integer,string]"
+                    },
+                    "selfRef": {
+                        "$ref": "#/components/schemas/sample_model.GenericTypeResponse[string]"
+                    },
+                    "value": {
+                        "type": "string"
+                    }
+                },
+                "title": "ModelSampleGenericType",
                 "type": "object"
             },
             "sample_model.UpdateGoodsRequest": {
@@ -194,7 +284,10 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/sample_model.GoodsInfo"
+                                    "items": {
+                                        "$ref": "#/components/schemas/sample_model.GoodsInfo"
+                                    },
+                                    "type": "array"
                                 }
                             }
                         }
@@ -247,7 +340,17 @@
                         }
                     }
                 ],
-                "responses": {},
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/sample_model.GenericTypeResponse[string]"
+                                }
+                            }
+                        }
+                    }
+                },
                 "summary": "Delete Goods",
                 "tags": [
                     "Goods"
@@ -261,19 +364,7 @@
                     "content": {
                         "multipart/form-data": {
                             "schema": {
-                                "properties": {
-                                    "file": {
-                                        "title": "file",
-                                        "type": "file"
-                                    },
-                                    "saveToLib": {
-                                        "description": "If set true, this file would be saved to lib",
-                                        "title": "saveToLib",
-                                        "type": "string"
-                                    }
-                                },
-                                "title": "UploaderUploadFileRequest",
-                                "type": "object"
+                                "$ref": "#/components/schemas/UploaderUploadFileRequest"
                             }
                         }
                     }

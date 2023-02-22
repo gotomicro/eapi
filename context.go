@@ -16,9 +16,10 @@ type RouteAnalyzer func(ctx *Context, node ast.Node) (routes []*API)
 type Context struct {
 	Env *Environment
 
-	pkg      *packages.Package
-	file     *ast.File
-	analyzer *Analyzer
+	pkg          *packages.Package
+	file         *ast.File
+	analyzer     *Analyzer
+	commentStack *CommentStack
 }
 
 func newContext(analyzer *Analyzer, env *Environment) *Context {
@@ -43,7 +44,12 @@ func (c *Context) WithFile(file *ast.File) *Context {
 func (c *Context) Block() *Context {
 	res := *c
 	res.Env = NewEnvironment(c.Env)
+	res.commentStack = NewCommentStack(c.commentStack, nil)
 	return &res
+}
+
+func (c *Context) CommentStack() *CommentStack {
+	return c.commentStack
 }
 
 func (c *Context) Package() *packages.Package {

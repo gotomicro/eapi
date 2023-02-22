@@ -152,7 +152,7 @@ func (p *Printer) request(path string, method string, item *spec.Operation) f.Do
 			} else {
 				params = append(params, f.Group(
 					f.Content("data: "),
-					ts.NewPrinter(p.schema).SetTypeFieldsInline(true).PrintType(mediaType.Schema),
+					ts.NewPrinter(p.schema).SetTypeFieldsInline(true).PrintTypeName(mediaType.Schema),
 				))
 			}
 		}
@@ -250,7 +250,7 @@ func (p *Printer) paramsType(params []*spec.ParameterRef) f.Doc {
 	for _, param := range params {
 		fields = append(fields, f.Group(
 			f.Content(param.Value.Name+"?: "),
-			ts.NewPrinter(p.schema).SetTypeFieldsInline(true).PrintType(param.Value.Schema),
+			ts.NewPrinter(p.schema).SetTypeFieldsInline(true).PrintTypeName(param.Value.Schema),
 		))
 	}
 
@@ -322,7 +322,12 @@ func (p *Printer) responseType(res *spec.Response) f.Doc {
 			continue
 		}
 		tsPrinter := ts.NewPrinter(p.schema).SetTypeFieldsInline(true)
-		ret := tsPrinter.PrintType(schema)
+		var ret f.Doc
+		if schema.Ref != "" {
+			ret = tsPrinter.PrintTypeName(schema)
+		} else {
+			ret = tsPrinter.PrintTypeBody(schema)
+		}
 		p.importType(tsPrinter.ReferencedTypes...)
 		return ret
 	}
@@ -344,5 +349,5 @@ func (p *Printer) requestFnName(item *spec.Operation) string {
 }
 
 func (p *Printer) importType(types ...string) {
-	p.importTypes = append(p.importTypes, types...)
+	p.importTypes = lo.Uniq(append(p.importTypes, types...))
 }

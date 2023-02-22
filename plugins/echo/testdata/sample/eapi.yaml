@@ -1,3 +1,7 @@
 plugin: echo
 dir: .
 output: docs
+
+generators:
+  - name: umi
+    output: ./frontend

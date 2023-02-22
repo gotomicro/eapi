@@ -1,16 +1,14 @@
-/*
- * @description is a single URL parameter, consisting of a key and a value.
- */
+export type ShopGoodsDownRequest = {
+  dateRange?: string[];
+  defaultPostForm?: string;
+  operatorUid?: string;
+}
+
 export type GinParam = {
   Key?: string;
   Value?: string;
 }
 
-/*
- * @description is a Param-slice, as returned by the router.
- *	The slice is ordered, the first URL parameter is also the first slice value.
- *	It is therefore safe to read values by the index.
- */
 export type GinParams = GinParam[]
 
 export type GormDeletedAt = string
@@ -23,7 +21,7 @@ export enum ViewErrCode {
 }
 
 export type ViewError = {
-  code?: ViewErrCode;
+  code?: number;
   msg?: string;
 }
 
@@ -54,7 +52,7 @@ export type ViewGoodsCreateRes = {
   /*
    * @description 测试引用第三方包
    */
-  Status?: GinParams;
+  Status?: GinParam[];
   /*
    * @description 商品 GUID
    */
@@ -79,7 +77,7 @@ export type ViewGoodsDownRes = {
 
 export type ViewGoodsInfoRes = {
   cover?: string;
-  deletedAt?: GormDeletedAt;
+  deletedAt?: string;
   mapInt?: Record<number, ViewProperty>;
   price?: number;
   properties?: Record<string, ViewProperty>;
@@ -87,9 +85,6 @@ export type ViewGoodsInfoRes = {
   title?: string;
 }
 
-/*
- * @description 商品图片
- */
 export type ViewImage = {
   /*
    * @description 图片链接

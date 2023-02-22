@@ -15,6 +15,7 @@ import (
 	"unicode/utf16"
 
 	"github.com/go-openapi/jsonpointer"
+	"github.com/gotomicro/eapi/utils"
 	"github.com/mohae/deepcopy"
 	"github.com/spf13/cast"
 
@@ -168,7 +169,9 @@ type Schema struct {
 	Discriminator               *Discriminator `json:"discriminator,omitempty" yaml:"discriminator,omitempty"`
 
 	// 拓展类型信息. 用于代码生成
-	ExtendedTypeInfo *ExtendedTypeInfo `json:"-" yaml:"-"`
+	ExtendedTypeInfo       *ExtendedTypeInfo `json:"extendedTypeInfo,omitempty" yaml:"-"`
+	Key                    string            `json:"-" yaml:"-"`
+	SpecializedFromGeneric bool              `json:"-"`
 }
 
 var _ jsonpointer.JSONPointable = (*Schema)(nil)
@@ -197,6 +200,9 @@ func (schema *Schema) MarshalJSON() ([]byte, error) {
 		}
 		desc += "</table>"
 		schema.Description = desc
+	}
+	if !utils.Debug() {
+		schema.ExtendedTypeInfo = nil
 	}
 	return jsoninfo.MarshalStrictStruct(schema)
 }
@@ -310,6 +316,13 @@ func (schema *Schema) NewRef() *SchemaRef {
 	}
 }
 
+func NewTypeParamSchema(param *TypeParam) *Schema {
+	return &Schema{
+		Type:             "typeParam",
+		ExtendedTypeInfo: NewTypeParamExtendedType(param),
+	}
+}
+
 func NewOneOfSchema(schemas ...*Schema) *Schema {
 	refs := make([]*SchemaRef, 0, len(schemas))
 	for _, schema := range schemas {
@@ -399,16 +412,19 @@ func NewBytesSchema() *Schema {
 	}
 }
 
-func NewArraySchema() *Schema {
+func NewArraySchema(item *SchemaRef) *Schema {
 	return &Schema{
-		Type: TypeArray,
+		Type:             TypeArray,
+		Items:            item,
+		ExtendedTypeInfo: NewArrayExtType(item),
 	}
 }
 
 func NewObjectSchema() *Schema {
 	return &Schema{
-		Type:       TypeObject,
-		Properties: make(Schemas),
+		Type:             TypeObject,
+		Properties:       make(Schemas),
+		ExtendedTypeInfo: NewObjectExtType(),
 	}
 }
 
@@ -501,6 +517,7 @@ func (schema *Schema) WithItems(value *Schema) *Schema {
 	schema.Items = &SchemaRef{
 		Value: value,
 	}
+	schema.ExtendedTypeInfo.Items = schema.Items
 	return schema
 }
 
@@ -1694,8 +1711,8 @@ func (schema *Schema) WithDescription(s string) *Schema {
 }
 
 func (schema *Schema) Clone() *Schema {
-	res := *schema
-	return &res
+	ret := deepcopy.Copy(*schema).(Schema)
+	return &ret
 }
 
 type SchemaError struct {

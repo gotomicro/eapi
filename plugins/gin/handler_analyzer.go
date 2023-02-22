@@ -99,7 +99,7 @@ func (p *handlerAnalyzer) Parse() {
 				case "JSON":
 					p.parseResBody(call, analyzer.MimeTypeJson)
 				case "XML":
-					p.parseResBody(call, analyzer.MimeTypeXml)
+					p.parseResBody(call, analyzer.MimeApplicationXml)
 				case "Query": // query parameter
 					p.parsePrimitiveParam(call, "query")
 				case "Param": // path parameter
@@ -235,30 +235,34 @@ func (p *handlerAnalyzer) parseFormData(call *ast.CallExpr, fieldType string, op
 		option(paramSchema)
 	}
 
-	mediaType := spec.NewMediaType()
 	requestBody := p.spec.RequestBody
 	if requestBody == nil {
 		requestBody = &spec.RequestBodyRef{Value: spec.NewRequestBody().WithContent(spec.NewContent())}
 		p.spec.RequestBody = requestBody
 	}
-	if requestBody.Value.GetMediaType(analyzer.MimeTypeFormData) != nil {
-		mediaType = p.spec.RequestBody.Value.GetMediaType(analyzer.MimeTypeFormData)
-	}
-
-	var schema *spec.SchemaRef
-	if mediaType.Schema != nil {
-		schema = spec.Unref(p.ctx.Doc(), mediaType.Schema)
-		schema.Value.WithProperty(name, paramSchema)
-	} else {
-		schema = spec.NewSchemaRef("", spec.NewObjectSchema())
-		schema.Value.Title = strcase.ToCamel(p.spec.OperationID) + "Request"
-		schema.Value.WithProperty(name, paramSchema)
-		mediaType.Schema = schema
-		p.spec.RequestBody.Value.Content[analyzer.MimeTypeFormData] = mediaType
+	mediaType := requestBody.Value.GetMediaType(analyzer.MimeTypeFormData)
+	if mediaType == nil {
+		mediaType = spec.NewMediaType()
+		requestBody.Value.Content[analyzer.MimeTypeFormData] = mediaType
 	}
 
 	comment := p.ctx.ParseComment(p.ctx.GetHeadingCommentOf(call.Pos()))
 	paramSchema.Description = comment.Text()
+
+	var schemaRef = mediaType.Schema
+	var schema *spec.SchemaRef
+	if schemaRef != nil {
+		schema = spec.Unref(p.ctx.Doc(), schemaRef)
+		schema.Value.WithProperty(name, paramSchema)
+	} else {
+		schema = spec.NewObjectSchema().NewRef()
+		title := strcase.ToCamel(p.spec.OperationID) + "Request"
+		schema.Value.Title = title
+		schema.Value.WithProperty(name, paramSchema)
+		p.ctx.Doc().Components.Schemas[title] = schema
+		schemaRef = spec.RefComponentSchemas(title)
+		mediaType.Schema = schemaRef
+	}
 	if comment.Required() {
 		schema.Value.Required = append(schema.Value.Required, name)
 	}
@@ -429,9 +433,7 @@ func (p *handlerAnalyzer) parseDataType(call *ast.CallExpr, dataType *common.Dat
 	case common.DataTypeFile:
 		return p.basicSchemaType("file")
 	case common.DataTypeArray:
-		schema := spec.NewArraySchema()
-		schema.Items = p.parseDataType(call, dataType.Item, contentType)
-		return spec.NewSchemaRef("", schema)
+		return spec.NewArraySchema(p.parseDataType(call, dataType.Item, contentType)).NewRef()
 	case common.DataTypeObject:
 		schema := spec.NewObjectSchema()
 		properties := make(spec.Schemas)
