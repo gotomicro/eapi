@@ -87,7 +87,7 @@ func (s *APISpec) LoadFromFuncDecl(ctx *Context, funcDecl *ast.FuncDecl) {
 func (s *APISpec) LoadFromComment(ctx *Context, comment *Comment) {
 	if comment != nil {
 		if s.Description == "" {
-			s.Description = strings.Join(comment.Description(), "\n\n")
+			s.Description = comment.Text()
 		}
 		if s.Summary == "" {
 			s.Summary = comment.Summary()

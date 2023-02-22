@@ -4,6 +4,7 @@
             "ShopGoodsDownRequest": {
                 "properties": {
                     "dateRange": {
+                        "description": "日期范围",
                         "items": {
                             "type": "string"
                         },
@@ -11,10 +12,12 @@
                         "type": "array"
                     },
                     "defaultPostForm": {
+                        "description": "Default Post Form",
                         "title": "defaultPostForm",
                         "type": "string"
                     },
                     "operatorUid": {
+                        "description": "操作人 UID",
                         "title": "operatorUid",
                         "type": "string"
                     }
@@ -23,6 +26,7 @@
                 "type": "object"
             },
             "github.com_gin-gonic_gin.Param": {
+                "description": "Param is a single URL parameter, consisting of a key and a value.",
                 "properties": {
                     "Key": {
                         "type": "string"
@@ -35,6 +39,7 @@
                 "type": "object"
             },
             "github.com_gin-gonic_gin.Params": {
+                "description": "Params is a Param-slice, as returned by the router.\n\nThe slice is ordered, the first URL parameter is also the first slice value.\n\nIt is therefore safe to read values by the index.",
                 "items": {
                     "$ref": "#/components/schemas/github.com_gin-gonic_gin.Param"
                 },
@@ -172,6 +177,7 @@
                 "type": "object"
             },
             "server_pkg_view.Image": {
+                "description": "Image 商品图片",
                 "properties": {
                     "url": {
                         "description": "图片链接",
@@ -230,7 +236,7 @@
     "paths": {
         "/api/goods": {
             "post": {
-                "description": "创建商品接口",
+                "description": "GoodsCreate 创建商品接口",
                 "operationId": "shop.GoodsCreate",
                 "requestBody": {
                     "content": {
@@ -279,7 +285,7 @@
         },
         "/api/goods/{guid}": {
             "delete": {
-                "description": "删除商品",
+                "description": "GoodsDelete 删除商品",
                 "operationId": "shop.GoodsDelete",
                 "parameters": [
                     {
@@ -305,10 +311,11 @@
         },
         "/api/goods/{guid}/down": {
             "post": {
-                "description": "下架商品",
+                "description": "GoodsDown 下架商品",
                 "operationId": "shop.GoodsDown",
                 "parameters": [
                     {
+                        "description": "商品 GUID",
                         "in": "path",
                         "name": "guid",
                         "required": true,
@@ -318,6 +325,7 @@
                         }
                     },
                     {
+                        "description": "Default Query",
                         "in": "query",
                         "name": "defaultQuery",
                         "schema": {
@@ -362,7 +370,7 @@
         },
         "/api/v2/goods/{guid}": {
             "get": {
-                "description": "商品详情",
+                "description": "GoodsInfo 商品详情",
                 "operationId": "shop.GoodsInfo",
                 "parameters": [
                     {
@@ -400,6 +408,7 @@
         },
         "/wrapped-handler": {
             "get": {
+                "description": "wrapped handler",
                 "operationId": "shop.WrappedHandler",
                 "parameters": [
                     {
