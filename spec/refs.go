@@ -2,7 +2,9 @@ package spec
 
 import (
 	"context"
+	"crypto/md5"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/getkin/kin-openapi/jsoninfo"
@@ -388,13 +390,40 @@ func (value *SchemaRef) Clone() *SchemaRef {
 }
 
 func (value *SchemaRef) Key() string {
+	if value == nil {
+		return ""
+	}
 	if value.Ref != "" {
 		return strings.TrimPrefix(value.Ref, "#/components/schemas/")
 	}
 	if value.Value.Key != "" {
 		return value.Value.Key
 	}
-	return value.Value.Type
+	if value.Value.Title != "" {
+		return value.Value.Title
+	}
+	switch value.Value.Type {
+	case TypeBoolean, TypeInteger, TypeNumber, TypeString:
+		return value.Value.Type
+
+	default: // TypeArray, TypeObject:
+		h := md5.New()
+		b, _ := json.Marshal(value)
+		h.Write(b)
+		md5Hex := fmt.Sprintf("%x", h.Sum(nil))
+		return md5Hex[:12]
+	}
+}
+
+func (value *SchemaRef) IsTypeAlias() bool {
+	if value.Ref != "" {
+		return true
+	}
+	ext := value.Value.ExtendedTypeInfo
+	if ext == nil {
+		return false
+	}
+	return ext.Type == ExtendedTypeParam && len(ext.TypeParams) == 1
 }
 
 // SecuritySchemeRef represents either a SecurityScheme or a $ref to a SecurityScheme.

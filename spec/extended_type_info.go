@@ -10,6 +10,8 @@ const (
 	ExtendedTypeParam    ExtendedType = "param"
 	ExtendedTypeObject   ExtendedType = "object"
 	ExtendedTypeArray    ExtendedType = "array"
+	ExtendedTypeNull     ExtendedType = "null"
+	ExtendedTypeUnknown  ExtendedType = "unknown"
 )
 
 type ExtendedTypeInfo struct {
@@ -93,4 +95,12 @@ func NewObjectExtType() *ExtendedTypeInfo {
 
 func NewArrayExtType(items *SchemaRef) *ExtendedTypeInfo {
 	return &ExtendedTypeInfo{Type: ExtendedTypeArray, Items: items}
+}
+
+func NewNullExtType() *ExtendedTypeInfo {
+	return &ExtendedTypeInfo{Type: ExtendedTypeNull}
+}
+
+func NewUnknownExtType() *ExtendedTypeInfo {
+	return &ExtendedTypeInfo{Type: ExtendedTypeUnknown}
 }

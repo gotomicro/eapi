@@ -30,7 +30,7 @@ func ServeHttp() *gin.Engine {
 	{
 		// @security oauth2 goods:read goods:write
 		{
-			g.POST("/goods", shop.GoodsCreate)
+			g.POST("/goods", handler.Handler(shop.GoodsCreate))
 			g.POST("/goods/:guid/down", shop.GoodsDown)
 		}
 		g = g.Group("/v2")

@@ -3,7 +3,9 @@ package eapi
 import (
 	"fmt"
 	"go/ast"
+	"go/token"
 	"go/types"
+	"os"
 	"strings"
 
 	"github.com/gotomicro/eapi/spec"
@@ -106,6 +108,9 @@ func (s *SchemaBuilder) setTypeArgs(args ...*spec.SchemaRef) *SchemaBuilder {
 
 func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *spec.SchemaRef) {
 	switch expr := expr.(type) {
+	case *ast.BasicLit:
+		return s.parseBasicLit(expr)
+
 	case *ast.StructType:
 		return s.parseStruct(expr)
 
@@ -153,10 +158,29 @@ func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *spec.SchemaRef) {
 
 	case *ast.IndexListExpr:
 		return s.parseIndexListExpr(expr)
+
 	}
 
-	// TODO
-	return nil
+	fmt.Fprintf(os.Stderr, "unknown type at %s\n", s.ctx.LineColumn(expr.Pos()))
+	return spec.NewObjectSchema().WithExtendedType(spec.NewUnknownExtType()).NewRef()
+}
+
+func (s *SchemaBuilder) parseBasicLit(expr *ast.BasicLit) *spec.SchemaRef {
+	switch expr.Kind {
+	case token.INT:
+		return s.basicType("int")
+	case token.FLOAT:
+		return s.basicType("float64")
+	case token.IMAG:
+		return s.basicType("float64")
+	case token.CHAR:
+		return s.basicType("string")
+	case token.STRING:
+		return s.basicType("string")
+	}
+
+	fmt.Fprintf(os.Stderr, "unknown type at %s\n", s.ctx.LineColumn(expr.Pos()))
+	return spec.NewObjectSchema().WithExtendedType(spec.NewUnknownExtType()).NewRef()
 }
 
 func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *spec.SchemaRef {
@@ -324,6 +348,13 @@ func (s *SchemaBuilder) parseType(t types.Type) *spec.SchemaRef {
 		return spec.NewArraySchema(s.parseType(t.Elem())).NewRef()
 	case *types.Pointer:
 		return s.parseType(t.Elem())
+	case *types.Map:
+		valueType := s.parseType(t.Elem())
+		keyType := s.parseType(t.Key())
+		return spec.NewObjectSchema().
+			WithAdditionalProperties(valueType).
+			WithExtendedType(spec.NewMapExtendedType(keyType, valueType)).
+			NewRef()
 	case *types.Named:
 		// parse type arguments
 		args := t.TypeArgs()
@@ -345,7 +376,8 @@ func (s *SchemaBuilder) parseType(t types.Type) *spec.SchemaRef {
 	def := s.ctx.ParseType(t)
 	typeDef, ok := def.(*TypeDefinition)
 	if !ok {
-		return nil
+		fmt.Fprintf(os.Stderr, "unknown type %s\n", t.String())
+		return spec.NewSchema().WithExtendedType(spec.NewUnknownExtType()).NewRef()
 	}
 
 	modelKey := typeDef.ModelKey()

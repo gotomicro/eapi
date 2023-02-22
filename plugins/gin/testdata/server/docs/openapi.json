@@ -1,6 +1,48 @@
 {
     "components": {
         "schemas": {
+            "CustomResponseType[b76073db434d]": {
+                "properties": {
+                    "code": {
+                        "type": "number"
+                    },
+                    "data": {
+                        "additionalProperties": {
+                            "description": "Any Type",
+                            "type": "object"
+                        },
+                        "type": "object"
+                    },
+                    "msg": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "code",
+                    "data",
+                    "msg"
+                ],
+                "title": "CustomResponseType",
+                "type": "object"
+            },
+            "CustomResponseType[server_pkg_view.GoodsCreateRes]": {
+                "properties": {
+                    "code": {
+                        "type": "number"
+                    },
+                    "data": null,
+                    "msg": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "code",
+                    "data",
+                    "msg"
+                ],
+                "title": "CustomResponseType",
+                "type": "object"
+            },
             "ShopGoodsDownRequest": {
                 "properties": {
                     "dateRange": {
@@ -245,14 +287,15 @@
                                 "$ref": "#/components/schemas/server_pkg_view.GoodsCreateReq"
                             }
                         }
-                    }
+                    },
+                    "required": true
                 },
                 "responses": {
                     "200": {
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/server_pkg_view.GoodsCreateRes"
+                                    "$ref": "#/components/schemas/CustomResponseType[server_pkg_view.GoodsCreateRes]"
                                 }
                             }
                         },
@@ -433,27 +476,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "code": {
-                                            "type": "number"
-                                        },
-                                        "data": {
-                                            "additionalProperties": {
-                                                "description": "Any Type",
-                                                "type": "object"
-                                            },
-                                            "type": "object"
-                                        },
-                                        "msg": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": [
-                                        "code",
-                                        "data",
-                                        "msg"
-                                    ],
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/CustomResponseType[b76073db434d]"
                                 }
                             }
                         },
