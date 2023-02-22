@@ -9,6 +9,9 @@ import {
   ModelUploadFileRes
  } from "./types";
 
+/*
+ * @description List
+ */
 export function goodsList(query: { since?: string; limit?: number }) {
   return request<ModelListGoodsResponse>(`/v1/goods`, {
     method: "get",
@@ -16,6 +19,9 @@ export function goodsList(query: { since?: string; limit?: number }) {
   });
 }
 
+/*
+ * @description Create
+ */
 export function goodsCreate(data: ModelCreateGoodsRequest) {
   return request<ModelGoodsInfo>(`/v1/goods`, {
     method: "post",
@@ -23,6 +29,9 @@ export function goodsCreate(data: ModelCreateGoodsRequest) {
   });
 }
 
+/*
+ * @description Update
+ */
 export function goodsUpdate(data: ModelUpdateGoodsRequest) {
   return request<ModelGoodsInfo[]>(`/v1/goods`, {
     method: "patch",
@@ -30,12 +39,18 @@ export function goodsUpdate(data: ModelUpdateGoodsRequest) {
   });
 }
 
+/*
+ * @description Delete
+ */
 export function goodsDelete(id: string) {
   return request<ModelGenericTypeResponse<string>>(`/v1/goods/${id}`, {
     method: "delete",
   });
 }
 
+/*
+ * @description UploadFile
+ */
 export function uploaderUploadFile(data: UploaderUploadFileRequest) {
   const formData = new FormData();
   Object.keys(data).forEach((key) => formData.append(key, data[key]));

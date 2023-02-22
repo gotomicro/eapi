@@ -85,15 +85,11 @@ func (s *SchemaBuilder) parseTypeSpec(t *ast.TypeSpec) *spec.SchemaRef {
 		schema.Value.ExtendedTypeInfo.TypeParams = typeParams
 	}
 
-	comment := s.ctx.ParseComment(s.ctx.GetHeadingCommentOf(t.Pos()))
-	if schema.Ref != "" {
-		comment.ApplyToSchema(schema)
-		schema.Description = strings.TrimSpace(comment.TrimPrefix(t.Name.Name))
-		return schema
+	comment := s.ctx.ParseComment(s.ctx.GetHeadingCommentOf(t.Type.Pos()))
+	comment.ApplyToSchema(schema)
+	if schema.Ref == "" {
+		schema.Value.Title = strcase.ToCamel(s.ctx.Package().Name + t.Name.Name)
 	}
-	schema.Value.Title = strcase.ToCamel(s.ctx.Package().Name + t.Name.Name)
-	schema.Value.Description = strings.TrimSpace(comment.TrimPrefix(t.Name.Name))
-	schema.Value.Deprecated = comment.Deprecated()
 	return schema
 }
 

@@ -69,7 +69,7 @@ func (c *Comment) ApplyToSchema(schema *spec.SchemaRef) {
 		return
 	}
 	if schema.Ref != "" {
-		schema.Description = c.text
+		schema.Description = c.Text()
 		schema.Summary = c.Summary()
 		return
 	}
@@ -78,7 +78,7 @@ func (c *Comment) ApplyToSchema(schema *spec.SchemaRef) {
 	if value == nil {
 		return
 	}
-	value.Description = c.text
+	value.Description = c.Text()
 	value.Deprecated = c.Deprecated()
 }
 
@@ -114,21 +114,6 @@ func (c *Comment) Tags() []string {
 		tags, ok := annot.(*annotation.TagAnnotation)
 		if ok {
 			res = append(res, tags.Tag)
-		}
-	}
-	return res
-}
-
-func (c *Comment) Description() []string {
-	if c == nil {
-		return nil
-	}
-
-	var res []string
-	for _, annot := range c.Annotations {
-		desc, ok := annot.(*annotation.DescriptionAnnotation)
-		if ok {
-			res = append(res, desc.Text)
 		}
 	}
 	return res
@@ -201,6 +186,7 @@ func ParseComment(commentGroup *ast.CommentGroup, fSet *token.FileSet) *Comment 
 	}
 	c := &Comment{}
 	var lines []string
+	var descriptions []*annotation.DescriptionAnnotation
 	for _, comment := range commentGroup.List {
 		annot, err := annotation.NewParser(comment.Text).Parse()
 		if err != nil {
@@ -210,10 +196,19 @@ func ParseComment(commentGroup *ast.CommentGroup, fSet *token.FileSet) *Comment 
 		}
 		if annot != nil {
 			c.Annotations = append(c.Annotations, annot)
+			desc, ok := annot.(*annotation.DescriptionAnnotation)
+			if ok {
+				descriptions = append(descriptions, desc)
+			}
 		} else {
 			line := strings.TrimPrefix(comment.Text, "//")
 			lines = append(lines, strings.TrimSpace(line))
 		}
+	}
+
+	if len(descriptions) > 0 {
+		// 如果写了 @description 注解，则忽略普通注释文本
+		lines = lo.Map(descriptions, func(t *annotation.DescriptionAnnotation, i int) string { return t.Text })
 	}
 	c.text = strings.Join(lines, "\n\n")
 	return c

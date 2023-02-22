@@ -8,6 +8,7 @@
                         "type": "file"
                     },
                     "saveToLib": {
+                        "description": "If set true, this file would be saved to lib",
                         "title": "saveToLib",
                         "type": "string"
                     }
@@ -49,6 +50,7 @@
                 "type": "object"
             },
             "sample_model.GenericTypeResponse[string]": {
+                "description": "GenericTypeResponse used for testing generic type",
                 "properties": {
                     "data": {
                         "type": "string"
@@ -233,6 +235,7 @@
     "paths": {
         "/v1/goods": {
             "get": {
+                "description": "List",
                 "operationId": "goods.List",
                 "parameters": [
                     {
@@ -269,6 +272,7 @@
                 ]
             },
             "patch": {
+                "description": "Update",
                 "operationId": "goods.Update",
                 "requestBody": {
                     "content": {
@@ -299,6 +303,7 @@
                 ]
             },
             "post": {
+                "description": "Create",
                 "operationId": "goods.Create",
                 "requestBody": {
                     "content": {
@@ -328,6 +333,7 @@
         },
         "/v1/goods/{id}": {
             "delete": {
+                "description": "Delete",
                 "operationId": "goods.Delete",
                 "parameters": [
                     {
@@ -359,6 +365,7 @@
         },
         "/v1/upload": {
             "post": {
+                "description": "UploadFile",
                 "operationId": "uploader.UploadFile",
                 "requestBody": {
                     "content": {

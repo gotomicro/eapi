@@ -1,5 +1,8 @@
 export type UploaderUploadFileRequest = {
   file?: File;
+  /*
+   * @description If set true, this file would be saved to lib
+   */
   saveToLib?: string;
 }
 
@@ -19,6 +22,9 @@ export type ModelCreateGoodsRequest = {
   title?: string;
 }
 
+/*
+ * @description GenericTypeResponse used for testing generic type
+ */
 export type ModelGenericTypeResponse<T> = {
   data?: T;
   metadata?: Record<string, any>;
