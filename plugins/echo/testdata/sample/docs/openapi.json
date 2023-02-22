@@ -2,9 +2,6 @@
     "components": {
         "schemas": {
             "UploaderUploadFileRequest": {
-                "extendedTypeInfo": {
-                    "type": "object"
-                },
                 "properties": {
                     "file": {
                         "title": "file",
@@ -18,56 +15,7 @@
                 "title": "UploaderUploadFileRequest",
                 "type": "object"
             },
-            "sample_model.Array": {
-                "extendedTypeInfo": {
-                    "type": "array",
-                    "items": {
-                        "extendedTypeInfo": {
-                            "type": "param",
-                            "typeParam": {
-                                "index": 0,
-                                "name": "T",
-                                "constraint": "any"
-                            }
-                        },
-                        "type": "typeParam"
-                    },
-                    "typeParams": [
-                        {
-                            "index": 0,
-                            "name": "T",
-                            "constraint": "any"
-                        }
-                    ]
-                },
-                "items": {
-                    "extendedTypeInfo": {
-                        "type": "param",
-                        "typeParam": {
-                            "index": 0,
-                            "name": "T",
-                            "constraint": "any"
-                        }
-                    },
-                    "type": "typeParam"
-                },
-                "title": "ModelArray",
-                "type": "array"
-            },
             "sample_model.Array[string]": {
-                "extendedTypeInfo": {
-                    "type": "specific",
-                    "specificType": {
-                        "args": [
-                            {
-                                "type": "string"
-                            }
-                        ],
-                        "type": {
-                            "$ref": "#/components/schemas/sample_model.Array"
-                        }
-                    }
-                },
                 "items": {
                     "type": "string"
                 },
@@ -75,9 +23,6 @@
                 "type": "array"
             },
             "sample_model.CreateGoodsRequest": {
-                "extendedTypeInfo": {
-                    "type": "object"
-                },
                 "properties": {
                     "cover": {
                         "description": "Url of cover image",
@@ -85,12 +30,6 @@
                     },
                     "images": {
                         "description": "Detail images",
-                        "extendedTypeInfo": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/components/schemas/sample_model.Image"
-                            }
-                        },
                         "items": {
                             "$ref": "#/components/schemas/sample_model.Image"
                         },
@@ -109,93 +48,7 @@
                 "title": "ModelCreateGoodsRequest",
                 "type": "object"
             },
-            "sample_model.GenericTypeResponse": {
-                "extendedTypeInfo": {
-                    "type": "object",
-                    "typeParams": [
-                        {
-                            "index": 0,
-                            "name": "T",
-                            "constraint": "any"
-                        }
-                    ]
-                },
-                "properties": {
-                    "data": {
-                        "extendedTypeInfo": {
-                            "type": "param",
-                            "typeParam": {
-                                "index": 0,
-                                "name": "T",
-                                "constraint": "any"
-                            }
-                        },
-                        "type": "typeParam"
-                    },
-                    "metadata": {
-                        "additionalProperties": {
-                            "description": "Any Type",
-                            "extendedTypeInfo": {
-                                "type": "any"
-                            },
-                            "type": "object"
-                        },
-                        "extendedTypeInfo": {
-                            "type": "map",
-                            "mapKey": {
-                                "type": "string"
-                            },
-                            "mapValue": {
-                                "description": "Any Type",
-                                "extendedTypeInfo": {
-                                    "type": "any"
-                                },
-                                "type": "object"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "value": {
-                        "extendedTypeInfo": {
-                            "type": "specific",
-                            "specificType": {
-                                "args": [
-                                    {
-                                        "extendedTypeInfo": {
-                                            "type": "param",
-                                            "typeParam": {
-                                                "index": 0,
-                                                "name": "T",
-                                                "constraint": "any"
-                                            }
-                                        },
-                                        "type": "typeParam"
-                                    }
-                                ],
-                                "type": {
-                                    "$ref": "#/components/schemas/sample_model.SampleGenericType"
-                                }
-                            }
-                        }
-                    }
-                },
-                "title": "ModelGenericTypeResponse",
-                "type": "object"
-            },
             "sample_model.GenericTypeResponse[string]": {
-                "extendedTypeInfo": {
-                    "type": "specific",
-                    "specificType": {
-                        "args": [
-                            {
-                                "type": "string"
-                            }
-                        ],
-                        "type": {
-                            "$ref": "#/components/schemas/sample_model.GenericTypeResponse"
-                        }
-                    }
-                },
                 "properties": {
                     "data": {
                         "type": "string"
@@ -203,23 +56,7 @@
                     "metadata": {
                         "additionalProperties": {
                             "description": "Any Type",
-                            "extendedTypeInfo": {
-                                "type": "any"
-                            },
                             "type": "object"
-                        },
-                        "extendedTypeInfo": {
-                            "type": "map",
-                            "mapKey": {
-                                "type": "string"
-                            },
-                            "mapValue": {
-                                "description": "Any Type",
-                                "extendedTypeInfo": {
-                                    "type": "any"
-                                },
-                                "type": "object"
-                            }
                         },
                         "type": "object"
                     },
@@ -231,9 +68,6 @@
                 "type": "object"
             },
             "sample_model.GoodsInfo": {
-                "extendedTypeInfo": {
-                    "type": "object"
-                },
                 "properties": {
                     "cover": {
                         "description": "Url of cover image",
@@ -245,12 +79,6 @@
                     },
                     "images": {
                         "description": "Detail images",
-                        "extendedTypeInfo": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/components/schemas/sample_model.Image"
-                            }
-                        },
                         "items": {
                             "$ref": "#/components/schemas/sample_model.Image"
                         },
@@ -276,33 +104,10 @@
                     2,
                     3
                 ],
-                "extendedTypeInfo": {
-                    "type": "enum",
-                    "enumItems": [
-                        {
-                            "key": "GoodsOnSale",
-                            "value": 1,
-                            "description": ""
-                        },
-                        {
-                            "key": "GoodsOffSale",
-                            "value": 2,
-                            "description": ""
-                        },
-                        {
-                            "key": "GoodsOutOfStock",
-                            "value": 3,
-                            "description": ""
-                        }
-                    ]
-                },
                 "title": "ModelGoodsStatus",
                 "type": "integer"
             },
             "sample_model.Image": {
-                "extendedTypeInfo": {
-                    "type": "object"
-                },
                 "properties": {
                     "src": {
                         "type": "string"
@@ -314,54 +119,9 @@
                 "title": "ModelImage",
                 "type": "object"
             },
-            "sample_model.List": {
-                "extendedTypeInfo": {
-                    "type": "array",
-                    "items": {
-                        "extendedTypeInfo": {
-                            "type": "param",
-                            "typeParam": {
-                                "index": 0,
-                                "name": "T",
-                                "constraint": "any"
-                            }
-                        },
-                        "type": "typeParam"
-                    },
-                    "typeParams": [
-                        {
-                            "index": 0,
-                            "name": "T",
-                            "constraint": "any"
-                        }
-                    ]
-                },
-                "items": {
-                    "extendedTypeInfo": {
-                        "type": "param",
-                        "typeParam": {
-                            "index": 0,
-                            "name": "T",
-                            "constraint": "any"
-                        }
-                    },
-                    "type": "typeParam"
-                },
-                "title": "ModelList",
-                "type": "array"
-            },
             "sample_model.ListGoodsResponse": {
-                "extendedTypeInfo": {
-                    "type": "object"
-                },
                 "properties": {
                     "items": {
-                        "extendedTypeInfo": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/components/schemas/sample_model.GoodsInfo"
-                            }
-                        },
                         "items": {
                             "$ref": "#/components/schemas/sample_model.GoodsInfo"
                         },
@@ -376,160 +136,20 @@
                 "type": "object"
             },
             "sample_model.List[string]": {
-                "extendedTypeInfo": {
-                    "type": "specific",
-                    "specificType": {
-                        "args": [
-                            {
-                                "type": "string"
-                            }
-                        ],
-                        "type": {
-                            "$ref": "#/components/schemas/sample_model.List"
-                        }
-                    }
-                },
                 "items": {
                     "type": "string"
                 },
                 "title": "ModelList",
                 "type": "array"
             },
-            "sample_model.Map": {
-                "additionalProperties": {
-                    "extendedTypeInfo": {
-                        "type": "param",
-                        "typeParam": {
-                            "index": 1,
-                            "name": "V",
-                            "constraint": "any"
-                        }
-                    },
-                    "type": "typeParam"
-                },
-                "extendedTypeInfo": {
-                    "type": "map",
-                    "mapKey": {
-                        "extendedTypeInfo": {
-                            "type": "param",
-                            "typeParam": {
-                                "index": 0,
-                                "name": "T",
-                                "constraint": "comparable"
-                            }
-                        },
-                        "type": "typeParam"
-                    },
-                    "mapValue": {
-                        "extendedTypeInfo": {
-                            "type": "param",
-                            "typeParam": {
-                                "index": 1,
-                                "name": "V",
-                                "constraint": "any"
-                            }
-                        },
-                        "type": "typeParam"
-                    },
-                    "typeParams": [
-                        {
-                            "index": 0,
-                            "name": "T",
-                            "constraint": "comparable"
-                        },
-                        {
-                            "index": 1,
-                            "name": "V",
-                            "constraint": "any"
-                        }
-                    ]
-                },
-                "title": "ModelMap",
-                "type": "object"
-            },
             "sample_model.Map[integer,string]": {
                 "additionalProperties": {
                     "type": "string"
                 },
-                "extendedTypeInfo": {
-                    "type": "specific",
-                    "specificType": {
-                        "args": [
-                            {
-                                "type": "integer"
-                            },
-                            {
-                                "type": "string"
-                            }
-                        ],
-                        "type": {
-                            "$ref": "#/components/schemas/sample_model.Map"
-                        }
-                    }
-                },
                 "title": "ModelMap",
                 "type": "object"
             },
-            "sample_model.MultipleParamGeneric": {
-                "extendedTypeInfo": {
-                    "type": "object",
-                    "typeParams": [
-                        {
-                            "index": 0,
-                            "name": "T",
-                            "constraint": "any"
-                        },
-                        {
-                            "index": 1,
-                            "name": "V",
-                            "constraint": "any"
-                        }
-                    ]
-                },
-                "properties": {
-                    "A": {
-                        "extendedTypeInfo": {
-                            "type": "param",
-                            "typeParam": {
-                                "index": 0,
-                                "name": "T",
-                                "constraint": "any"
-                            }
-                        },
-                        "type": "typeParam"
-                    },
-                    "B": {
-                        "extendedTypeInfo": {
-                            "type": "param",
-                            "typeParam": {
-                                "index": 1,
-                                "name": "V",
-                                "constraint": "any"
-                            }
-                        },
-                        "type": "typeParam"
-                    }
-                },
-                "title": "ModelMultipleParamGeneric",
-                "type": "object"
-            },
             "sample_model.MultipleParamGeneric[integer,string]": {
-                "extendedTypeInfo": {
-                    "type": "specific",
-                    "specificType": {
-                        "args": [
-                            {
-                                "type": "integer"
-                            },
-                            {
-                                "type": "string"
-                            }
-                        ],
-                        "type": {
-                            "$ref": "#/components/schemas/sample_model.MultipleParamGeneric"
-                        }
-                    }
-                },
                 "properties": {
                     "A": {
                         "type": "integer"
@@ -541,168 +161,7 @@
                 "title": "ModelMultipleParamGeneric",
                 "type": "object"
             },
-            "sample_model.SampleGenericType": {
-                "extendedTypeInfo": {
-                    "type": "object",
-                    "typeParams": [
-                        {
-                            "index": 0,
-                            "name": "T",
-                            "constraint": "any"
-                        }
-                    ]
-                },
-                "properties": {
-                    "array": {
-                        "extendedTypeInfo": {
-                            "type": "specific",
-                            "specificType": {
-                                "args": [
-                                    {
-                                        "extendedTypeInfo": {
-                                            "type": "param",
-                                            "typeParam": {
-                                                "index": 0,
-                                                "name": "T",
-                                                "constraint": "any"
-                                            }
-                                        },
-                                        "type": "typeParam"
-                                    }
-                                ],
-                                "type": {
-                                    "$ref": "#/components/schemas/sample_model.Array"
-                                }
-                            }
-                        }
-                    },
-                    "list": {
-                        "extendedTypeInfo": {
-                            "type": "specific",
-                            "specificType": {
-                                "args": [
-                                    {
-                                        "extendedTypeInfo": {
-                                            "type": "param",
-                                            "typeParam": {
-                                                "index": 0,
-                                                "name": "T",
-                                                "constraint": "any"
-                                            }
-                                        },
-                                        "type": "typeParam"
-                                    }
-                                ],
-                                "type": {
-                                    "$ref": "#/components/schemas/sample_model.List"
-                                }
-                            }
-                        }
-                    },
-                    "map": {
-                        "extendedTypeInfo": {
-                            "type": "specific",
-                            "specificType": {
-                                "args": [
-                                    {
-                                        "type": "integer"
-                                    },
-                                    {
-                                        "extendedTypeInfo": {
-                                            "type": "param",
-                                            "typeParam": {
-                                                "index": 0,
-                                                "name": "T",
-                                                "constraint": "any"
-                                            }
-                                        },
-                                        "type": "typeParam"
-                                    }
-                                ],
-                                "type": {
-                                    "$ref": "#/components/schemas/sample_model.Map"
-                                }
-                            }
-                        }
-                    },
-                    "multipleParamGeneric": {
-                        "extendedTypeInfo": {
-                            "type": "specific",
-                            "specificType": {
-                                "args": [
-                                    {
-                                        "type": "integer"
-                                    },
-                                    {
-                                        "extendedTypeInfo": {
-                                            "type": "param",
-                                            "typeParam": {
-                                                "index": 0,
-                                                "name": "T",
-                                                "constraint": "any"
-                                            }
-                                        },
-                                        "type": "typeParam"
-                                    }
-                                ],
-                                "type": {
-                                    "$ref": "#/components/schemas/sample_model.MultipleParamGeneric"
-                                }
-                            }
-                        }
-                    },
-                    "selfRef": {
-                        "extendedTypeInfo": {
-                            "type": "specific",
-                            "specificType": {
-                                "args": [
-                                    {
-                                        "extendedTypeInfo": {
-                                            "type": "param",
-                                            "typeParam": {
-                                                "index": 0,
-                                                "name": "T",
-                                                "constraint": "any"
-                                            }
-                                        },
-                                        "type": "typeParam"
-                                    }
-                                ],
-                                "type": {
-                                    "$ref": "#/components/schemas/sample_model.GenericTypeResponse"
-                                }
-                            }
-                        }
-                    },
-                    "value": {
-                        "extendedTypeInfo": {
-                            "type": "param",
-                            "typeParam": {
-                                "index": 0,
-                                "name": "T",
-                                "constraint": "any"
-                            }
-                        },
-                        "type": "typeParam"
-                    }
-                },
-                "title": "ModelSampleGenericType",
-                "type": "object"
-            },
             "sample_model.SampleGenericType[string]": {
-                "extendedTypeInfo": {
-                    "type": "specific",
-                    "specificType": {
-                        "args": [
-                            {
-                                "type": "string"
-                            }
-                        ],
-                        "type": {
-                            "$ref": "#/components/schemas/sample_model.SampleGenericType"
-                        }
-                    }
-                },
                 "properties": {
                     "array": {
                         "$ref": "#/components/schemas/sample_model.Array[string]"
@@ -727,9 +186,6 @@
                 "type": "object"
             },
             "sample_model.UpdateGoodsRequest": {
-                "extendedTypeInfo": {
-                    "type": "object"
-                },
                 "properties": {
                     "cover": {
                         "description": "Url of cover image",
@@ -737,12 +193,6 @@
                     },
                     "images": {
                         "description": "Detail images",
-                        "extendedTypeInfo": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/components/schemas/sample_model.Image"
-                            }
-                        },
                         "items": {
                             "$ref": "#/components/schemas/sample_model.Image"
                         },
@@ -762,9 +212,6 @@
                 "type": "object"
             },
             "sample_model.UploadFileRes": {
-                "extendedTypeInfo": {
-                    "type": "object"
-                },
                 "properties": {
                     "id": {
                         "type": "integer"
@@ -837,12 +284,6 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "extendedTypeInfo": {
-                                        "type": "array",
-                                        "items": {
-                                            "$ref": "#/components/schemas/sample_model.GoodsInfo"
-                                        }
-                                    },
                                     "items": {
                                         "$ref": "#/components/schemas/sample_model.GoodsInfo"
                                     },
