@@ -60,6 +60,13 @@ func (s *schemaNormalizer) processOperation(op *Operation) {
 			mediaType.Schema = s.processSchemaRef(mediaType.Schema)
 		}
 	}
+	requestBody := op.RequestBody
+	if requestBody != nil && requestBody.Value != nil {
+		content := requestBody.Value.Content
+		for _, mediaType := range content {
+			mediaType.Schema = s.processSchemaRef(mediaType.Schema)
+		}
+	}
 }
 
 func (s *schemaNormalizer) process(ref *SchemaRef, args []*SchemaRef) *SchemaRef {
