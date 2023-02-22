@@ -76,11 +76,11 @@ func (s *schemaNormalizer) process(ref *SchemaRef, args []*SchemaRef) *SchemaRef
 	schema := res.Value
 	ext := schema.ExtendedTypeInfo
 	specificTypeKey := s.modelKey(ref.Key(), args)
-	refKey := "#/components/schemas/" + specificTypeKey
+	resRef := RefComponentSchemas(specificTypeKey)
 	if ref.Ref != "" {
 		_, exists := s.doc.Components.Schemas[specificTypeKey]
 		if exists {
-			return NewSchemaRef(refKey, nil)
+			return resRef
 		}
 		res.Value.ExtendedTypeInfo = NewSpecificExtendType(ref, args...)
 		s.doc.Components.Schemas[specificTypeKey] = res
@@ -105,7 +105,7 @@ func (s *schemaNormalizer) process(ref *SchemaRef, args []*SchemaRef) *SchemaRef
 		schema.Properties[key] = s.process(property, args)
 	}
 	if ref.Ref != "" {
-		return NewSchemaRef(refKey, nil)
+		return resRef
 	}
 	return res
 }
