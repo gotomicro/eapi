@@ -50,7 +50,7 @@ func (d *DataSchemaTransformer) TransformToGeneric() *spec.SchemaRef {
 				},
 			)
 			schema.Properties = properties
-			return spec.NewSchemaRef("", schema)
+			return schema
 		default:
 			typeArg := &spec.TypeParam{
 				Index:      len(typeArgs),
@@ -63,7 +63,7 @@ func (d *DataSchemaTransformer) TransformToGeneric() *spec.SchemaRef {
 		}
 	}
 	res := transform(d.dataSchema)
-	res.Value.ExtendedTypeInfo.TypeParams = typeArgs
+	res.ExtendedTypeInfo.TypeParams = typeArgs
 	return res
 }
 
@@ -109,9 +109,7 @@ func (d *DataSchemaTransformer) TransformToSpecific(genericType *spec.SchemaRef,
 }
 
 func (d *DataSchemaTransformer) basicSchemaType(s string) *spec.SchemaRef {
-	return &spec.SchemaRef{
-		Value: &spec.Schema{
-			Type: s,
-		},
+	return &spec.Schema{
+		Type: s,
 	}
 }

@@ -16,7 +16,7 @@ import (
 type MediaType struct {
 	ExtensionProps `json:"-" yaml:"-"`
 
-	Schema   *SchemaRef           `json:"schema,omitempty" yaml:"schema,omitempty"`
+	Schema   *Schema              `json:"schema,omitempty" yaml:"schema,omitempty"`
 	Example  interface{}          `json:"example,omitempty" yaml:"example,omitempty"`
 	Examples Examples             `json:"examples,omitempty" yaml:"examples,omitempty"`
 	Encoding map[string]*Encoding `json:"encoding,omitempty" yaml:"encoding,omitempty"`
@@ -32,12 +32,12 @@ func (mediaType *MediaType) WithSchema(schema *Schema) *MediaType {
 	if schema == nil {
 		mediaType.Schema = nil
 	} else {
-		mediaType.Schema = &SchemaRef{Value: schema}
+		mediaType.Schema = schema
 	}
 	return mediaType
 }
 
-func (mediaType *MediaType) WithSchemaRef(schema *SchemaRef) *MediaType {
+func (mediaType *MediaType) WithSchemaRef(schema *Schema) *MediaType {
 	mediaType.Schema = schema
 	return mediaType
 }
@@ -93,7 +93,7 @@ func (mediaType *MediaType) Validate(ctx context.Context) error {
 		}
 
 		if example := mediaType.Example; example != nil {
-			if err := validateExampleValue(ctx, example, schema.Value); err != nil {
+			if err := validateExampleValue(ctx, example, schema); err != nil {
 				return fmt.Errorf("invalid example: %w", err)
 			}
 		}
@@ -109,7 +109,7 @@ func (mediaType *MediaType) Validate(ctx context.Context) error {
 				if err := v.Validate(ctx); err != nil {
 					return fmt.Errorf("example %s: %w", k, err)
 				}
-				if err := validateExampleValue(ctx, v.Value.Value, schema.Value); err != nil {
+				if err := validateExampleValue(ctx, v.Value.Value, schema); err != nil {
 					return fmt.Errorf("example %s: %w", k, err)
 				}
 			}
@@ -127,7 +127,7 @@ func (mediaType MediaType) JSONLookup(token string) (interface{}, error) {
 			if mediaType.Schema.Ref != "" {
 				return &Ref{Ref: mediaType.Schema.Ref}, nil
 			}
-			return mediaType.Schema.Value, nil
+			return mediaType.Schema, nil
 		}
 	case "example":
 		return mediaType.Example, nil

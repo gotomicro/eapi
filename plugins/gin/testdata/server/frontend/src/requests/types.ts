@@ -29,8 +29,8 @@ export type GinParam = {
 
 /*
  * @description Params is a Param-slice, as returned by the router.
- *	The slice is ordered, the first URL parameter is also the first slice value.
- *	It is therefore safe to read values by the index.
+ * 	The slice is ordered, the first URL parameter is also the first slice value.
+ * 	It is therefore safe to read values by the index.
  */
 export type GinParams = GinParam[]
 
@@ -44,7 +44,7 @@ export enum ViewErrCode {
 }
 
 export type ViewError = {
-  code?: number;
+  code?: ViewErrCode;
   msg?: string;
 }
 
@@ -75,7 +75,7 @@ export type ViewGoodsCreateRes = {
   /*
    * @description 测试引用第三方包
    */
-  Status?: GinParam[];
+  Status?: GinParams;
   /*
    * @description 商品 GUID
    */
@@ -100,7 +100,7 @@ export type ViewGoodsDownRes = {
 
 export type ViewGoodsInfoRes = {
   cover?: string;
-  deletedAt?: string;
+  deletedAt?: GormDeletedAt;
   mapInt?: Record<number, ViewProperty>;
   price?: number;
   properties?: Record<string, ViewProperty>;
@@ -126,3 +126,4 @@ export type ViewSelfRefType = {
   data?: string;
   parent?: ViewSelfRefType;
 }
+

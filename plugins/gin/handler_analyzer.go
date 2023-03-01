@@ -111,7 +111,11 @@ func (p *handlerAnalyzer) Parse() {
 					p.parseFormData(call, "file")
 				case "PostFormArray", "GetPostFormArray":
 					p.parseFormData(call, spec.TypeArray, func(s *spec.Schema) {
-						s.Items = spec.NewSchemaRef("", spec.NewStringSchema())
+						s.Items = spec.NewStringSchema()
+						s.ExtendedTypeInfo = &spec.ExtendedTypeInfo{
+							Type:  spec.ExtendedTypeArray,
+							Items: s.Items,
+						}
 					})
 				case "Redirect":
 					p.parseRedirectRes(call)
@@ -130,6 +134,7 @@ func (p *handlerAnalyzer) Parse() {
 func (p *handlerAnalyzer) paramNameParser(fieldName string, tags map[string]string) (name, in string) {
 	name, ok := tags["form"]
 	if ok {
+		name, _, _ = strings.Cut(name, ",")
 		return name, "query"
 	}
 	return fieldName, "query"
@@ -169,7 +174,7 @@ func (p *handlerAnalyzer) parseBindWithContentType(call *ast.CallExpr, contentTy
 		schema.Description = comment.Text()
 	}
 	reqBody := spec.NewRequestBody().WithSchemaRef(schema, []string{contentType})
-	p.spec.RequestBody = &spec.RequestBodyRef{Value: reqBody}
+	p.spec.RequestBody = reqBody
 }
 
 func (p *handlerAnalyzer) parseResBody(call *ast.CallExpr, contentType string) {
@@ -238,13 +243,13 @@ func (p *handlerAnalyzer) parseFormData(call *ast.CallExpr, fieldType string, op
 
 	requestBody := p.spec.RequestBody
 	if requestBody == nil {
-		requestBody = &spec.RequestBodyRef{Value: spec.NewRequestBody().WithContent(spec.NewContent())}
+		requestBody = spec.NewRequestBody().WithContent(spec.NewContent())
 		p.spec.RequestBody = requestBody
 	}
-	mediaType := requestBody.Value.GetMediaType(analyzer.MimeTypeFormData)
+	mediaType := requestBody.GetMediaType(analyzer.MimeTypeFormData)
 	if mediaType == nil {
 		mediaType = spec.NewMediaType()
-		requestBody.Value.Content[analyzer.MimeTypeFormData] = mediaType
+		requestBody.Content[analyzer.MimeTypeFormData] = mediaType
 	}
 
 	comment := p.ctx.ParseComment(p.ctx.GetHeadingCommentOf(call.Pos()))
@@ -254,18 +259,18 @@ func (p *handlerAnalyzer) parseFormData(call *ast.CallExpr, fieldType string, op
 	var schema *spec.SchemaRef
 	if schemaRef != nil {
 		schema = spec.Unref(p.ctx.Doc(), schemaRef)
-		schema.Value.WithProperty(name, paramSchema)
+		schema.WithProperty(name, paramSchema)
 	} else {
 		schema = spec.NewObjectSchema().NewRef()
 		title := strcase.ToCamel(p.spec.OperationID) + "Request"
-		schema.Value.Title = title
-		schema.Value.WithProperty(name, paramSchema)
+		schema.Title = title
+		schema.WithProperty(name, paramSchema)
 		p.ctx.Doc().Components.Schemas[title] = schema
 		schemaRef = spec.RefComponentSchemas(title)
 		mediaType.Schema = schemaRef
 	}
 	if comment.Required() {
-		schema.Value.Required = append(schema.Value.Required, name)
+		schema.Required = append(schema.Required, name)
 	}
 }
 
@@ -282,7 +287,7 @@ func (p *handlerAnalyzer) primitiveParamWithDefault(call *ast.CallExpr, in strin
 	if !ok {
 		return nil
 	}
-	param.Schema.Value.Default, _ = strconv.Unquote(arg1Lit.Value)
+	param.Schema.Default, _ = strconv.Unquote(arg1Lit.Value)
 
 	return param
 }

@@ -315,7 +315,7 @@ func spec() *T {
 					Value: response,
 				},
 			},
-			Schemas: map[string]*SchemaRef{
+			Schemas: map[string]*Schema{
 				"someSchema": {
 					Value: schema,
 				},

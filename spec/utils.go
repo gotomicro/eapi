@@ -4,11 +4,11 @@ import (
 	"strings"
 )
 
-func RefSchema(id string) *SchemaRef {
-	return NewSchemaRef(id, nil)
+func RefSchema(id string) *Schema {
+	return &SchemaRef{Ref: id}
 }
 
-func Unref(t *T, schema *SchemaRef) *SchemaRef {
+func Unref(t *T, schema *Schema) *Schema {
 	if schema.Ref == "" {
 		return schema
 	}
@@ -30,10 +30,10 @@ func Unref(t *T, schema *SchemaRef) *SchemaRef {
 	return nil
 }
 
-func RefTo(path ...string) *SchemaRef {
+func RefTo(path ...string) *Schema {
 	return RefSchema("#/" + strings.Join(path, "/"))
 }
 
-func RefComponentSchemas(key string) *SchemaRef {
+func RefComponentSchemas(key string) *Schema {
 	return RefTo("components", "schemas", key)
 }

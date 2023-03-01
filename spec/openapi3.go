@@ -124,7 +124,7 @@ func (doc *T) Validate(ctx context.Context, opts ...ValidationOption) error {
 	return nil
 }
 
-func (doc *T) GetSchemaByRef(ref string) *SchemaRef {
+func (doc *T) GetSchemaByRef(ref string) *Schema {
 	if !strings.HasPrefix(ref, "#/components/schemas/") {
 		return nil
 	}

@@ -9,3 +9,4 @@ logs
 bin/
 bak
 tmpls/dist
+node_modules/

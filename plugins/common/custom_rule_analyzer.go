@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"log"
 	"net/http"
+	"strings"
 
 	analyzer "github.com/gotomicro/eapi"
 	"github.com/gotomicro/eapi/spec"
@@ -38,7 +39,7 @@ func (p *CustomRuleAnalyzer) MatchCustomResponseRule(node ast.Node) (matched boo
 		genericType, ok := p.ctx.Doc().Components.Schemas[responseTypeTitle]
 		if !ok {
 			genericType = NewDataSchemaTransformer(rule.Return.Data).TransformToGeneric()
-			genericType.Value.Title = responseTypeTitle
+			genericType.Title = responseTypeTitle
 			p.ctx.Doc().Components.Schemas[responseTypeTitle] = genericType
 		}
 
@@ -80,7 +81,7 @@ func (p *CustomRuleAnalyzer) MatchCustomRequestRule(node ast.Node) (matched bool
 		genericType, ok := p.ctx.Doc().Components.Schemas[requestTypeTitle]
 		if !ok {
 			genericType = NewDataSchemaTransformer(rule.Return.Data).TransformToGeneric()
-			genericType.Value.Title = requestTypeTitle
+			genericType.Title = requestTypeTitle
 			p.ctx.Doc().Components.Schemas[requestTypeTitle] = genericType
 		}
 
@@ -111,7 +112,7 @@ func (p *CustomRuleAnalyzer) MatchCustomRequestRule(node ast.Node) (matched bool
 						reqBody.Description = comment.Text()
 					}
 					reqBody.WithSchemaRef(schema, []string{contentType})
-					p.spec.RequestBody = &spec.RequestBodyRef{Value: reqBody}
+					p.spec.RequestBody = reqBody
 				}
 
 			},
@@ -140,7 +141,7 @@ func (p *CustomRuleAnalyzer) parseDataType(call *ast.CallExpr, dataType *DataSch
 	})
 
 	resUnref := spec.Unref(p.ctx.Doc(), res)
-	ext := resUnref.Value.ExtendedTypeInfo
+	ext := resUnref.ExtendedTypeInfo
 	if ext != nil && ext.Type == spec.ExtendedTypeSpecific {
 		generic := spec.Unref(p.ctx.Doc(), ext.SpecificType.Type)
 		if len(ext.SpecificType.Args) == 1 && generic.IsTypeAlias() {
@@ -158,7 +159,7 @@ func (p *CustomRuleAnalyzer) parseParamsInCall(call *ast.CallExpr, dataType *Dat
 		schema := spec.NewSchema()
 		schema.Type = string(dataType.Type)
 		schema.Format = dataType.Format
-		param.Schema = spec.NewSchemaRef("", schema)
+		param.Schema = schema
 		return append(params, param)
 
 	case DataTypeObject: // unsupported in form data
@@ -200,6 +201,7 @@ func (p *CustomRuleAnalyzer) getRequestContentType(contentType string) string {
 func (p *CustomRuleAnalyzer) paramNameParser(fieldName string, tags map[string]string) (name, in string) {
 	name, ok := tags["form"]
 	if ok {
+		name, _, _ = strings.Cut(name, ",")
 		return name, "query"
 	}
 	return fieldName, "query"

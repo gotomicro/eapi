@@ -884,7 +884,7 @@ var schemaExamples = []schemaExample{
 	{
 		Title: "ANY OF",
 		Schema: &Schema{
-			AnyOf: []*SchemaRef{
+			AnyOf: []*Schema{
 				{
 					Value: NewFloat64Schema().
 						WithMin(1).
@@ -925,7 +925,7 @@ var schemaExamples = []schemaExample{
 	{
 		Title: "ALL OF",
 		Schema: &Schema{
-			AllOf: []*SchemaRef{
+			AllOf: []*Schema{
 				{
 					Value: NewFloat64Schema().
 						WithMin(1).
@@ -966,7 +966,7 @@ var schemaExamples = []schemaExample{
 	{
 		Title: "ONE OF",
 		Schema: &Schema{
-			OneOf: []*SchemaRef{
+			OneOf: []*Schema{
 				{
 					Value: NewFloat64Schema().
 						WithMin(1).

@@ -26,7 +26,7 @@ func NewContentWithSchema(schema *Schema, consumes []string) Content {
 	return content
 }
 
-func NewContentWithSchemaRef(schema *SchemaRef, consumes []string) Content {
+func NewContentWithSchemaRef(schema *Schema, consumes []string) Content {
 	if len(consumes) == 0 {
 		return Content{
 			"*/*": NewMediaType().WithSchemaRef(schema),
@@ -44,7 +44,7 @@ func NewContentWithJSONSchema(schema *Schema) Content {
 		"application/json": NewMediaType().WithSchema(schema),
 	}
 }
-func NewContentWithJSONSchemaRef(schema *SchemaRef) Content {
+func NewContentWithJSONSchemaRef(schema *Schema) Content {
 	return Content{
 		"application/json": NewMediaType().WithSchemaRef(schema),
 	}
@@ -56,7 +56,7 @@ func NewContentWithFormDataSchema(schema *Schema) Content {
 	}
 }
 
-func NewContentWithFormDataSchemaRef(schema *SchemaRef) Content {
+func NewContentWithFormDataSchemaRef(schema *Schema) Content {
 	return Content{
 		"multipart/form-data": NewMediaType().WithSchemaRef(schema),
 	}

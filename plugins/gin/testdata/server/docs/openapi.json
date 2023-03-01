@@ -1,7 +1,78 @@
 {
     "components": {
         "schemas": {
-            "CustomResponseType[b76073db434d]": {
+            "CustomResponseType": {
+                "ext": {
+                    "type": "object",
+                    "typeParams": [
+                        {
+                            "index": 0,
+                            "name": "A",
+                            "constraint": "any"
+                        }
+                    ]
+                },
+                "properties": {
+                    "code": {
+                        "type": "number"
+                    },
+                    "data": {
+                        "ext": {
+                            "type": "param",
+                            "typeParam": {
+                                "index": 0,
+                                "name": "A",
+                                "constraint": "any"
+                            }
+                        },
+                        "type": "typeParam"
+                    },
+                    "msg": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "code",
+                    "data",
+                    "msg"
+                ],
+                "title": "CustomResponseType",
+                "type": "object"
+            },
+            "CustomResponseType[20c6dc665200]": {
+                "ext": {
+                    "type": "specific",
+                    "specificType": {
+                        "args": [
+                            {
+                                "additionalProperties": {
+                                    "description": "Any Type",
+                                    "ext": {
+                                        "type": "any"
+                                    },
+                                    "type": "object"
+                                },
+                                "ext": {
+                                    "type": "map",
+                                    "mapKey": {
+                                        "type": "string"
+                                    },
+                                    "mapValue": {
+                                        "description": "Any Type",
+                                        "ext": {
+                                            "type": "any"
+                                        },
+                                        "type": "object"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        ],
+                        "type": {
+                            "$ref": "#/components/schemas/CustomResponseType"
+                        }
+                    }
+                },
                 "properties": {
                     "code": {
                         "type": "number"
@@ -9,7 +80,23 @@
                     "data": {
                         "additionalProperties": {
                             "description": "Any Type",
+                            "ext": {
+                                "type": "any"
+                            },
                             "type": "object"
+                        },
+                        "ext": {
+                            "type": "map",
+                            "mapKey": {
+                                "type": "string"
+                            },
+                            "mapValue": {
+                                "description": "Any Type",
+                                "ext": {
+                                    "type": "any"
+                                },
+                                "type": "object"
+                            }
                         },
                         "type": "object"
                     },
@@ -26,11 +113,26 @@
                 "type": "object"
             },
             "CustomResponseType[server_pkg_view.GoodsCreateRes]": {
+                "ext": {
+                    "type": "specific",
+                    "specificType": {
+                        "args": [
+                            {
+                                "$ref": "#/components/schemas/server_pkg_view.GoodsCreateRes"
+                            }
+                        ],
+                        "type": {
+                            "$ref": "#/components/schemas/CustomResponseType"
+                        }
+                    }
+                },
                 "properties": {
                     "code": {
                         "type": "number"
                     },
-                    "data": null,
+                    "data": {
+                        "$ref": "#/components/schemas/server_pkg_view.GoodsCreateRes"
+                    },
                     "msg": {
                         "type": "string"
                     }
@@ -44,9 +146,18 @@
                 "type": "object"
             },
             "ShopGoodsDownRequest": {
+                "ext": {
+                    "type": "object"
+                },
                 "properties": {
                     "dateRange": {
                         "description": "日期范围",
+                        "ext": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
                         "items": {
                             "type": "string"
                         },
@@ -69,6 +180,9 @@
             },
             "github.com_gin-gonic_gin.Param": {
                 "description": "Param is a single URL parameter, consisting of a key and a value.",
+                "ext": {
+                    "type": "object"
+                },
                 "properties": {
                     "Key": {
                         "type": "string"
@@ -82,6 +196,12 @@
             },
             "github.com_gin-gonic_gin.Params": {
                 "description": "Params is a Param-slice, as returned by the router.\n\nThe slice is ordered, the first URL parameter is also the first slice value.\n\nIt is therefore safe to read values by the index.",
+                "ext": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/components/schemas/github.com_gin-gonic_gin.Param"
+                    }
+                },
                 "items": {
                     "$ref": "#/components/schemas/github.com_gin-gonic_gin.Param"
                 },
@@ -94,17 +214,61 @@
                 "type": "string"
             },
             "server_pkg_view.ErrCode": {
-                "description": "\u003ctable\u003e\u003ctr\u003e\u003cth\u003eValue\u003c/th\u003e\u003cth\u003eKey\u003c/th\u003e\u003cth\u003eDescription\u003c/th\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e10000\u003c/td\u003e\u003ctd\u003eCodeNotFound\u003c/td\u003e\u003ctd\u003eResource not found\u003c/td\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e10001\u003c/td\u003e\u003ctd\u003eCodeCancled\u003c/td\u003e\u003ctd\u003eRequest canceld\u003c/td\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e10002\u003c/td\u003e\u003ctd\u003eCodeUnknown\u003c/td\u003e\u003ctd\u003e\u003c/td\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e10003\u003c/td\u003e\u003ctd\u003eCodeInvalidArgument\u003c/td\u003e\u003ctd\u003e\u003c/td\u003e\u003c/tr\u003e\u003c/table\u003e",
+                "description": "\u003ctable\u003e\u003ctr\u003e\u003cth\u003eValue\u003c/th\u003e\u003cth\u003eKey\u003c/th\u003e\u003cth\u003eDescription\u003c/th\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e\u003c/td\u003e\u003ctd\u003eCodeNotFound\u003c/td\u003e\u003ctd\u003eResource not found\u003c/td\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e\u003c/td\u003e\u003ctd\u003eCodeCancled\u003c/td\u003e\u003ctd\u003eRequest canceld\u003c/td\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e\u003c/td\u003e\u003ctd\u003eCodeUnknown\u003c/td\u003e\u003ctd\u003e\u003c/td\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e\u003c/td\u003e\u003ctd\u003eCodeInvalidArgument\u003c/td\u003e\u003ctd\u003e\u003c/td\u003e\u003c/tr\u003e\u003c/table\u003e",
                 "enum": [
-                    10000,
-                    10001,
-                    10002,
-                    10003
+                    {
+                        "key": "CodeNotFound",
+                        "value": 10000,
+                        "description": "Resource not found"
+                    },
+                    {
+                        "key": "CodeCancled",
+                        "value": 10001,
+                        "description": "Request canceld"
+                    },
+                    {
+                        "key": "CodeUnknown",
+                        "value": 10002,
+                        "description": ""
+                    },
+                    {
+                        "key": "CodeInvalidArgument",
+                        "value": 10003,
+                        "description": ""
+                    }
                 ],
+                "ext": {
+                    "type": "enum",
+                    "enumItems": [
+                        {
+                            "key": "CodeNotFound",
+                            "value": 10000,
+                            "description": "Resource not found"
+                        },
+                        {
+                            "key": "CodeCancled",
+                            "value": 10001,
+                            "description": "Request canceld"
+                        },
+                        {
+                            "key": "CodeUnknown",
+                            "value": 10002,
+                            "description": ""
+                        },
+                        {
+                            "key": "CodeInvalidArgument",
+                            "value": 10003,
+                            "description": ""
+                        }
+                    ]
+                },
                 "title": "ViewErrCode",
                 "type": "integer"
             },
             "server_pkg_view.Error": {
+                "ext": {
+                    "type": "object"
+                },
                 "properties": {
                     "code": {
                         "$ref": "#/components/schemas/server_pkg_view.ErrCode"
@@ -117,6 +281,9 @@
                 "type": "object"
             },
             "server_pkg_view.GoodsCreateReq": {
+                "ext": {
+                    "type": "object"
+                },
                 "properties": {
                     "cover": {
                         "description": "封面图",
@@ -124,6 +291,12 @@
                     },
                     "images": {
                         "description": "详情图",
+                        "ext": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/components/schemas/server_pkg_view.Image"
+                            }
+                        },
                         "items": {
                             "$ref": "#/components/schemas/server_pkg_view.Image"
                         },
@@ -150,6 +323,9 @@
                 "type": "object"
             },
             "server_pkg_view.GoodsCreateRes": {
+                "ext": {
+                    "type": "object"
+                },
                 "properties": {
                     "Status": {
                         "description": "测试引用第三方包",
@@ -162,6 +338,9 @@
                     "raw": {
                         "deprecated": true,
                         "description": "测试引用内置包类型",
+                        "ext": {
+                            "type": "any"
+                        },
                         "type": "object"
                     },
                     "selfRef": {
@@ -177,6 +356,9 @@
                 "type": "object"
             },
             "server_pkg_view.GoodsDownRes": {
+                "ext": {
+                    "type": "object"
+                },
                 "properties": {
                     "Status": {
                         "type": "string"
@@ -186,6 +368,9 @@
                 "type": "object"
             },
             "server_pkg_view.GoodsInfoRes": {
+                "ext": {
+                    "type": "object"
+                },
                 "properties": {
                     "cover": {
                         "type": "string"
@@ -197,6 +382,15 @@
                         "additionalProperties": {
                             "$ref": "#/components/schemas/server_pkg_view.Property"
                         },
+                        "ext": {
+                            "type": "map",
+                            "mapKey": {
+                                "type": "integer"
+                            },
+                            "mapValue": {
+                                "$ref": "#/components/schemas/server_pkg_view.Property"
+                            }
+                        },
                         "type": "object"
                     },
                     "price": {
@@ -205,6 +399,15 @@
                     "properties": {
                         "additionalProperties": {
                             "$ref": "#/components/schemas/server_pkg_view.Property"
+                        },
+                        "ext": {
+                            "type": "map",
+                            "mapKey": {
+                                "type": "string"
+                            },
+                            "mapValue": {
+                                "$ref": "#/components/schemas/server_pkg_view.Property"
+                            }
                         },
                         "type": "object"
                     },
@@ -220,6 +423,9 @@
             },
             "server_pkg_view.Image": {
                 "description": "Image 商品图片",
+                "ext": {
+                    "type": "object"
+                },
                 "properties": {
                     "url": {
                         "description": "图片链接",
@@ -233,6 +439,9 @@
                 "type": "object"
             },
             "server_pkg_view.Property": {
+                "ext": {
+                    "type": "object"
+                },
                 "properties": {
                     "title": {
                         "type": "string"
@@ -242,6 +451,9 @@
                 "type": "object"
             },
             "server_pkg_view.SelfRefType": {
+                "ext": {
+                    "type": "object"
+                },
                 "properties": {
                     "data": {
                         "type": "string"
@@ -476,7 +688,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/CustomResponseType[b76073db434d]"
+                                    "$ref": "#/components/schemas/CustomResponseType[20c6dc665200]"
                                 }
                             }
                         },
@@ -487,6 +699,9 @@
                             "application/json": {
                                 "schema": {
                                     "description": "Any Json Type",
+                                    "ext": {
+                                        "type": "any"
+                                    },
                                     "type": "object"
                                 }
                             }

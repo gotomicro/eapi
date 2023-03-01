@@ -47,7 +47,7 @@ properties:
         status: 200
 
 generators:
-  - name: ts # generator name
-    output: ./frontend/src/types # output directory
-  - name: umi # generator name
-    output: ./frontend/src/requests # output directory
+#  - name: ts # generator name
+#    output: ./frontend/src/types # output directory
+  - file: ./plugin/custom-generator.js # for custom generator
+    output: ./frontend/ # output directory

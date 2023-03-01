@@ -1,0 +1,22 @@
+{
+  "name": "eapi-js",
+  "version": "1.0.0",
+  "description": "JS lib for eAPI plugin",
+  "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gotomicro/eapi.git"
+  },
+  "scripts": {
+    "build": "rollup -c --bundleConfigAsCjs"
+  },
+  "keywords": ["eAPI", "swagger", "OpenAPI", "Go", "golang"],
+  "author": {
+    "name": "Link Duan",
+    "email": "itsl@foxmail.com"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "rollup": "^3.17.2"
+  }
+}
