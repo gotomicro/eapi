@@ -85,6 +85,7 @@ func (p *handlerAnalyzer) Parse() {
 func (p *handlerAnalyzer) paramNameParser(field string, tags map[string]string) (name string, in string) {
 	name, ok := tags["query"]
 	if ok {
+		name, _, _ = strings.Cut(name, ",")
 		return name, "query"
 	}
 	// fallback

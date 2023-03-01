@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"log"
 	"net/http"
+	"strings"
 
 	analyzer "github.com/gotomicro/eapi"
 	"github.com/gotomicro/eapi/spec"
@@ -200,6 +201,7 @@ func (p *CustomRuleAnalyzer) getRequestContentType(contentType string) string {
 func (p *CustomRuleAnalyzer) paramNameParser(fieldName string, tags map[string]string) (name, in string) {
 	name, ok := tags["form"]
 	if ok {
+		name, _, _ = strings.Cut(name, ",")
 		return name, "query"
 	}
 	return fieldName, "query"
