@@ -15,9 +15,11 @@ class Printer {
    */
   openAPI = null;
   tsPrinter = null;
+  options = null;
 
-  constructor(openAPI) {
+  constructor(openAPI, options) {
     this.openAPI = openAPI;
+    this.options = options;
     this.tsPrinter = new TsPrinter(openAPI);
   }
 
@@ -27,8 +29,10 @@ class Printer {
       const pathItem = this.openAPI.paths[path]
       requests.push(...this.pathItem(path, pathItem))
     })
+    const header = this.options.getConfig('customHeader') || 'import axios, { AxiosRequestConfig } from "axios";';
+
     const imports = group([
-      'import axios, { AxiosRequestConfig } from "axios";', hardline,
+      header, hardline,
       'import {',
       indent([
         hardline,
@@ -193,7 +197,7 @@ const tsPrinter = require("eapi/generators/ts")
  * @returns {*}
  */
 function print(t, options) {
-  const printer = new Printer(t);
+  const printer = new Printer(t, options);
   const doc = printer.print()
   const code = printDocToString(doc, {printWidth: 80, tabWidth: 2}).formatted
 
