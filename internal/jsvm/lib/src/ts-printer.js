@@ -77,7 +77,6 @@ class Printer {
    * @param {Schema} schema
    */
   typeBody(schema) {
-    console.log('typeBody(schema)', JSON.stringify(schema.ext?.type))
     const ref = schema.$ref;
     if (ref) {
       const typeName = this.unRef(ref)?.title;
