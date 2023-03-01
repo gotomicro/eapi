@@ -3,5 +3,5 @@ dir: .
 output: docs
 
 generators:
-  - name: umi
+  - name: axios
     output: ./frontend

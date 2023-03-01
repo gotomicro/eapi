@@ -11,6 +11,14 @@ import (
 	"github.com/go-openapi/jsonpointer"
 )
 
+func foundUnresolvedRef(ref string) error {
+	return fmt.Errorf("found unresolved ref: %q", ref)
+}
+
+func failedToResolveRefFragmentPart(value, what string) error {
+	return fmt.Errorf("failed to resolve %q in fragment in URI: %q", what, value)
+}
+
 // Ref is specified by OpenAPI/Swagger 3.0 standard.
 // See https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#referenceObject
 type Ref struct {
@@ -175,151 +183,19 @@ func (value *LinkRef) Validate(ctx context.Context) error {
 
 // ParameterRef represents either a Parameter or a $ref to a Parameter.
 // When serializing and both fields are set, Ref is preferred over Value.
-type ParameterRef struct {
-	Ref   string
-	Value *Parameter
-}
-
-var _ jsonpointer.JSONPointable = (*ParameterRef)(nil)
-
-// MarshalYAML returns the YAML encoding of ParameterRef.
-func (value *ParameterRef) MarshalYAML() (interface{}, error) {
-	return marshalRefYAML(value.Ref, value.Value)
-}
-
-// MarshalJSON returns the JSON encoding of ParameterRef.
-func (value *ParameterRef) MarshalJSON() ([]byte, error) {
-	return jsoninfo.MarshalRef(value.Ref, value.Value)
-}
-
-// UnmarshalJSON sets ParameterRef to a copy of data.
-func (value *ParameterRef) UnmarshalJSON(data []byte) error {
-	return jsoninfo.UnmarshalRef(data, &value.Ref, &value.Value)
-}
-
-// Validate returns an error if ParameterRef does not comply with the OpenAPI spec.
-func (value *ParameterRef) Validate(ctx context.Context) error {
-	if v := value.Value; v != nil {
-		return v.Validate(ctx)
-	}
-	return foundUnresolvedRef(value.Ref)
-}
-
-// JSONLookup implements github.com/go-openapi/jsonpointer#JSONPointable
-func (value ParameterRef) JSONLookup(token string) (interface{}, error) {
-	if token == "$ref" {
-		return value.Ref, nil
-	}
-
-	ptr, _, err := jsonpointer.GetForToken(value.Value, token)
-	return ptr, err
-}
+type ParameterRef = Parameter
 
 // ResponseRef represents either a Response or a $ref to a Response.
 // When serializing and both fields are set, Ref is preferred over Value.
-type ResponseRef struct {
-	Ref   string
-	Value *Response
-}
-
-var _ jsonpointer.JSONPointable = (*ResponseRef)(nil)
-
-// MarshalYAML returns the YAML encoding of ResponseRef.
-func (value *ResponseRef) MarshalYAML() (interface{}, error) {
-	return marshalRefYAML(value.Ref, value.Value)
-}
-
-// MarshalJSON returns the JSON encoding of ResponseRef.
-func (value *ResponseRef) MarshalJSON() ([]byte, error) {
-	return jsoninfo.MarshalRef(value.Ref, value.Value)
-}
-
-// UnmarshalJSON sets ResponseRef to a copy of data.
-func (value *ResponseRef) UnmarshalJSON(data []byte) error {
-	return jsoninfo.UnmarshalRef(data, &value.Ref, &value.Value)
-}
-
-// Validate returns an error if ResponseRef does not comply with the OpenAPI spec.
-func (value *ResponseRef) Validate(ctx context.Context) error {
-	if v := value.Value; v != nil {
-		return v.Validate(ctx)
-	}
-	return foundUnresolvedRef(value.Ref)
-}
-
-// JSONLookup implements github.com/go-openapi/jsonpointer#JSONPointable
-func (value ResponseRef) JSONLookup(token string) (interface{}, error) {
-	if token == "$ref" {
-		return value.Ref, nil
-	}
-
-	ptr, _, err := jsonpointer.GetForToken(value.Value, token)
-	return ptr, err
-}
+type ResponseRef = Response
 
 // RequestBodyRef represents either a RequestBody or a $ref to a RequestBody.
 // When serializing and both fields are set, Ref is preferred over Value.
-type RequestBodyRef struct {
-	Ref   string
-	Value *RequestBody
-}
-
-var _ jsonpointer.JSONPointable = (*RequestBodyRef)(nil)
-
-// MarshalYAML returns the YAML encoding of RequestBodyRef.
-func (value *RequestBodyRef) MarshalYAML() (interface{}, error) {
-	return marshalRefYAML(value.Ref, value.Value)
-}
-
-// MarshalJSON returns the JSON encoding of RequestBodyRef.
-func (value *RequestBodyRef) MarshalJSON() ([]byte, error) {
-	return jsoninfo.MarshalRef(value.Ref, value.Value)
-}
-
-// UnmarshalJSON sets RequestBodyRef to a copy of data.
-func (value *RequestBodyRef) UnmarshalJSON(data []byte) error {
-	return jsoninfo.UnmarshalRef(data, &value.Ref, &value.Value)
-}
-
-// Validate returns an error if RequestBodyRef does not comply with the OpenAPI spec.
-func (value *RequestBodyRef) Validate(ctx context.Context) error {
-	if v := value.Value; v != nil {
-		return v.Validate(ctx)
-	}
-	return foundUnresolvedRef(value.Ref)
-}
-
-// JSONLookup implements github.com/go-openapi/jsonpointer#JSONPointable
-func (value RequestBodyRef) JSONLookup(token string) (interface{}, error) {
-	if token == "$ref" {
-		return value.Ref, nil
-	}
-
-	ptr, _, err := jsonpointer.GetForToken(value.Value, token)
-	return ptr, err
-}
+type RequestBodyRef = RequestBody
 
 // SchemaRef represents either a Schema or a $ref to a Schema.
 // When serializing and both fields are set, Ref is preferred over Value.
-type SchemaRef struct {
-	// A short summary which by default SHOULD override that of the referenced component.
-	// If the referenced object-type does not allow a summary field, then this field has no effect.
-	Summary string `json:"summary,omitempty" yaml:"summary,omitempty"`
-	// A description which by default SHOULD override that of the referenced component. CommonMark's syntax MAY be used for rich text representation.
-	// If the referenced object-type does not allow a description field, then this field has no effect.
-	Description string  `json:"description,omitempty" yaml:"description,omitempty"`
-	Ref         string  `json:"$ref,omitempty" yaml:"$ref,omitempty"`
-	Value       *Schema `json:"-" yaml:"-"`
-}
-
-var _ jsonpointer.JSONPointable = (*SchemaRef)(nil)
-
-func NewSchemaRef(ref string, value *Schema) *SchemaRef {
-	return &SchemaRef{
-		Ref:   ref,
-		Value: value,
-	}
-}
+type SchemaRef = Schema
 
 type schemaRef struct {
 	Summary     string `json:"summary,omitempty" yaml:"summary,omitempty"`
@@ -327,84 +203,29 @@ type schemaRef struct {
 	Ref         string `json:"$ref,omitempty" yaml:"$ref,omitempty"`
 }
 
-// MarshalYAML returns the YAML encoding of SchemaRef.
-func (value *SchemaRef) MarshalYAML() (interface{}, error) {
-	if value.Ref != "" {
-		return schemaRef{
-			Summary:     value.Summary,
-			Description: value.Description,
-			Ref:         value.Ref,
-		}, nil
-	}
-	return value.Value, nil
-}
-
-// MarshalJSON returns the JSON encoding of SchemaRef.
-func (value *SchemaRef) MarshalJSON() ([]byte, error) {
-	if value.Ref != "" {
-		return json.Marshal(schemaRef{
-			Summary:     value.Summary,
-			Description: value.Description,
-			Ref:         value.Ref,
-		})
-	}
-	return json.Marshal(value.Value)
-}
-
-// UnmarshalJSON sets SchemaRef to a copy of data.
-func (value *SchemaRef) UnmarshalJSON(data []byte) error {
-	return jsoninfo.UnmarshalRef(data, &value.Ref, &value.Value)
-}
-
-// Validate returns an error if SchemaRef does not comply with the OpenAPI spec.
-func (value *SchemaRef) Validate(ctx context.Context) error {
-	if v := value.Value; v != nil {
-		return v.Validate(ctx)
-	}
-	return foundUnresolvedRef(value.Ref)
-}
-
-// JSONLookup implements github.com/go-openapi/jsonpointer#JSONPointable
-func (value *SchemaRef) JSONLookup(token string) (interface{}, error) {
-	if token == "$ref" {
-		return value.Ref, nil
-	}
-
-	ptr, _, err := jsonpointer.GetForToken(value.Value, token)
-	return ptr, err
-}
-
-func (value *SchemaRef) Unref(doc *T) *SchemaRef {
+func (value *Schema) Unref(doc *T) *Schema {
 	if value.Ref != "" {
 		return doc.GetSchemaByRef(value.Ref)
 	}
 	return value
 }
 
-func (value *SchemaRef) Clone() *SchemaRef {
-	res := *value
-	if res.Value != nil {
-		res.Value = res.Value.Clone()
-	}
-	return &res
-}
-
-func (value *SchemaRef) Key() string {
+func (value *Schema) GetKey() string {
 	if value == nil {
 		return ""
 	}
 	if value.Ref != "" {
 		return strings.TrimPrefix(value.Ref, "#/components/schemas/")
 	}
-	if value.Value.Key != "" {
-		return value.Value.Key
+	if value.Key != "" {
+		return value.Key
 	}
-	if value.Value.Title != "" {
-		return value.Value.Title
+	if value.Title != "" {
+		return value.Title
 	}
-	switch value.Value.Type {
+	switch value.Type {
 	case TypeBoolean, TypeInteger, TypeNumber, TypeString:
-		return value.Value.Type
+		return value.Type
 
 	default: // TypeArray, TypeObject:
 		h := md5.New()
@@ -415,11 +236,11 @@ func (value *SchemaRef) Key() string {
 	}
 }
 
-func (value *SchemaRef) IsTypeAlias() bool {
+func (value *Schema) IsTypeAlias() bool {
 	if value.Ref != "" {
 		return true
 	}
-	ext := value.Value.ExtendedTypeInfo
+	ext := value.ExtendedTypeInfo
 	if ext == nil {
 		return false
 	}

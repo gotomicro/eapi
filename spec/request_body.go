@@ -5,14 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/go-openapi/jsonpointer"
-
 	"github.com/getkin/kin-openapi/jsoninfo"
 )
 
 type RequestBodies map[string]*RequestBodyRef
-
-var _ jsonpointer.JSONPointable = (*RequestBodyRef)(nil)
 
 // JSONLookup implements github.com/go-openapi/jsonpointer#JSONPointable
 func (r RequestBodies) JSONLookup(token string) (interface{}, error) {
@@ -24,7 +20,7 @@ func (r RequestBodies) JSONLookup(token string) (interface{}, error) {
 	if ref != nil && ref.Ref != "" {
 		return &Ref{Ref: ref.Ref}, nil
 	}
-	return ref.Value, nil
+	return ref, nil
 }
 
 // RequestBody is specified by OpenAPI/Swagger 3.0 standard.
@@ -32,6 +28,7 @@ func (r RequestBodies) JSONLookup(token string) (interface{}, error) {
 type RequestBody struct {
 	ExtensionProps `json:"-" yaml:"-"`
 
+	Ref         string  `json:"$ref,omitempty"`
 	Description string  `json:"description,omitempty" yaml:"description,omitempty"`
 	Required    bool    `json:"required,omitempty" yaml:"required,omitempty"`
 	Content     Content `json:"content" yaml:"content"`
@@ -56,7 +53,7 @@ func (requestBody *RequestBody) WithContent(content Content) *RequestBody {
 	return requestBody
 }
 
-func (requestBody *RequestBody) WithSchemaRef(value *SchemaRef, consumes []string) *RequestBody {
+func (requestBody *RequestBody) WithSchemaRef(value *Schema, consumes []string) *RequestBody {
 	requestBody.Content = NewContentWithSchemaRef(value, consumes)
 	return requestBody
 }
@@ -66,7 +63,7 @@ func (requestBody *RequestBody) WithSchema(value *Schema, consumes []string) *Re
 	return requestBody
 }
 
-func (requestBody *RequestBody) WithJSONSchemaRef(value *SchemaRef) *RequestBody {
+func (requestBody *RequestBody) WithJSONSchemaRef(value *Schema) *RequestBody {
 	requestBody.Content = NewContentWithJSONSchemaRef(value)
 	return requestBody
 }
@@ -76,7 +73,7 @@ func (requestBody *RequestBody) WithJSONSchema(value *Schema) *RequestBody {
 	return requestBody
 }
 
-func (requestBody *RequestBody) WithFormDataSchemaRef(value *SchemaRef) *RequestBody {
+func (requestBody *RequestBody) WithFormDataSchemaRef(value *Schema) *RequestBody {
 	requestBody.Content = NewContentWithFormDataSchemaRef(value)
 	return requestBody
 }
@@ -96,6 +93,9 @@ func (requestBody *RequestBody) GetMediaType(mediaType string) *MediaType {
 
 // MarshalJSON returns the JSON encoding of RequestBody.
 func (requestBody *RequestBody) MarshalJSON() ([]byte, error) {
+	if requestBody.Ref != "" {
+		return jsoninfo.MarshalRef(requestBody.Ref, requestBody)
+	}
 	return jsoninfo.MarshalStrictStruct(requestBody)
 }
 

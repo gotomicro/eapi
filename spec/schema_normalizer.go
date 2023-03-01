@@ -12,10 +12,10 @@ func newSchemaNormalizer(doc *T) *schemaNormalizer {
 
 func (s *schemaNormalizer) normalize() *T {
 	for key, ref := range s.doc.Components.Schemas {
-		if ref.Ref != "" || ref.Value == nil {
+		if ref == nil || ref.Ref != "" {
 			continue
 		}
-		ext := ref.Value.ExtendedTypeInfo
+		ext := ref.ExtendedTypeInfo
 		if ext == nil || ext.Type != ExtendedTypeSpecific {
 			continue
 		}
@@ -40,11 +40,11 @@ func (s *schemaNormalizer) processPathItem(item *PathItem) {
 	s.processOperation(item.Trace)
 }
 
-func (s *schemaNormalizer) processSchemaRef(ref *SchemaRef) *SchemaRef {
-	if ref == nil || ref.Ref != "" || ref.Value == nil {
+func (s *schemaNormalizer) processSchemaRef(ref *Schema) *Schema {
+	if ref == nil || ref.Ref != "" {
 		return ref
 	}
-	ext := ref.Value.ExtendedTypeInfo
+	ext := ref.ExtendedTypeInfo
 	if ext == nil || ext.Type != ExtendedTypeSpecific {
 		return ref
 	}
@@ -56,33 +56,33 @@ func (s *schemaNormalizer) processOperation(op *Operation) {
 		return
 	}
 	for _, ref := range op.Responses {
-		for _, mediaType := range ref.Value.Content {
+		for _, mediaType := range ref.Content {
 			mediaType.Schema = s.processSchemaRef(mediaType.Schema)
 		}
 	}
 	requestBody := op.RequestBody
-	if requestBody != nil && requestBody.Value != nil {
-		content := requestBody.Value.Content
+	if requestBody != nil && requestBody.Ref == "" {
+		content := requestBody.Content
 		for _, mediaType := range content {
 			mediaType.Schema = s.processSchemaRef(mediaType.Schema)
 		}
 	}
 }
 
-func (s *schemaNormalizer) process(ref *SchemaRef, args []*SchemaRef) *SchemaRef {
+func (s *schemaNormalizer) process(ref *Schema, args []*Schema) *Schema {
 	schemaRef := Unref(s.doc, ref)
 	res := schemaRef.Clone()
-	res.Value.SpecializedFromGeneric = true
-	schema := res.Value
+	res.SpecializedFromGeneric = true
+	schema := res
 	ext := schema.ExtendedTypeInfo
-	specificTypeKey := s.modelKey(ref.Key(), args)
+	specificTypeKey := s.modelKey(ref.GetKey(), args)
 	resRef := RefComponentSchemas(specificTypeKey)
 	if ref.Ref != "" {
 		_, exists := s.doc.Components.Schemas[specificTypeKey]
 		if exists {
 			return resRef
 		}
-		res.Value.ExtendedTypeInfo = NewSpecificExtendType(ref, args...)
+		res.ExtendedTypeInfo = NewSpecificExtendType(ref, args...)
 		s.doc.Components.Schemas[specificTypeKey] = res
 	}
 
@@ -95,15 +95,15 @@ func (s *schemaNormalizer) process(ref *SchemaRef, args []*SchemaRef) *SchemaRef
 			if arg == nil {
 				return nil
 			}
-			res.Value = arg.Value
+			res = arg
 		}
 	}
 
 	if schema.Items != nil {
-		res.Value.Items = s.process(res.Value.Items, args)
+		res.Items = s.process(res.Items, args)
 	}
 	if schema.AdditionalProperties != nil {
-		res.Value.AdditionalProperties = s.process(res.Value.AdditionalProperties, args)
+		res.AdditionalProperties = s.process(res.AdditionalProperties, args)
 	}
 	for key, property := range schema.Properties {
 		schema.Properties[key] = s.process(property, args)
@@ -114,11 +114,11 @@ func (s *schemaNormalizer) process(ref *SchemaRef, args []*SchemaRef) *SchemaRef
 	return res
 }
 
-func (s *schemaNormalizer) mergeArgs(args []*SchemaRef, args2 []*SchemaRef) []*SchemaRef {
-	res := make([]*SchemaRef, 0, len(args))
+func (s *schemaNormalizer) mergeArgs(args []*Schema, args2 []*Schema) []*Schema {
+	res := make([]*Schema, 0, len(args))
 	for _, _arg := range args {
 		arg := _arg
-		ext := arg.Value.ExtendedTypeInfo
+		ext := arg.ExtendedTypeInfo
 		if ext != nil && ext.Type == ExtendedTypeParam {
 			arg = args2[ext.TypeParam.Index]
 		}
@@ -127,15 +127,15 @@ func (s *schemaNormalizer) mergeArgs(args []*SchemaRef, args2 []*SchemaRef) []*S
 	return res
 }
 
-func (s *schemaNormalizer) modelKey(key string, args []*SchemaRef) string {
+func (s *schemaNormalizer) modelKey(key string, args []*Schema) string {
 	sb := strings.Builder{}
 	sb.WriteString(key)
 	if len(args) <= 0 {
 		return key
 	}
-	sb.WriteString("[" + args[0].Key())
+	sb.WriteString("[" + args[0].GetKey())
 	for _, ref := range args[1:] {
-		sb.WriteString("," + ref.Key())
+		sb.WriteString("," + ref.GetKey())
 	}
 	sb.WriteString("]")
 	return sb.String()

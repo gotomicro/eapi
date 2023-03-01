@@ -1,6 +1,6 @@
 package spec
 
-type ExtendedType string
+type ExtendedType = string
 
 const (
 	ExtendedTypeMap      ExtendedType = "map"
@@ -15,13 +15,13 @@ const (
 )
 
 type ExtendedTypeInfo struct {
-	Type ExtendedType `json:"type,omitempty"`
+	Type string `json:"type,omitempty"`
 
 	// for array
-	Items *SchemaRef `json:"items,omitempty"`
+	Items *Schema `json:"items,omitempty"`
 
-	MapKey   *SchemaRef `json:"mapKey,omitempty"`
-	MapValue *SchemaRef `json:"mapValue,omitempty"`
+	MapKey   *Schema `json:"mapKey,omitempty"`
+	MapValue *Schema `json:"mapValue,omitempty"`
 
 	EnumItems []*ExtendedEnumItem `json:"enumItems,omitempty"`
 
@@ -45,7 +45,7 @@ func NewAnyExtendedType() *ExtendedTypeInfo {
 	return &ExtendedTypeInfo{Type: ExtendedTypeAny}
 }
 
-func NewMapExtendedType(key, value *SchemaRef) *ExtendedTypeInfo {
+func NewMapExtendedType(key, value *Schema) *ExtendedTypeInfo {
 	return &ExtendedTypeInfo{
 		Type:     ExtendedTypeMap,
 		MapKey:   key,
@@ -68,11 +68,11 @@ func NewExtendEnumItem(key string, value interface{}, description string) *Exten
 }
 
 type SpecificType struct {
-	Args []*SchemaRef `json:"args"`
-	Type *SchemaRef   `json:"type"`
+	Args []*Schema `json:"args"`
+	Type *Schema   `json:"type"`
 }
 
-func NewSpecificExtendType(genericType *SchemaRef, args ...*SchemaRef) *ExtendedTypeInfo {
+func NewSpecificExtendType(genericType *Schema, args ...*Schema) *ExtendedTypeInfo {
 	return &ExtendedTypeInfo{
 		Type:         ExtendedTypeSpecific,
 		SpecificType: &SpecificType{Args: args, Type: genericType},
@@ -93,7 +93,7 @@ func NewObjectExtType() *ExtendedTypeInfo {
 	return &ExtendedTypeInfo{Type: ExtendedTypeObject}
 }
 
-func NewArrayExtType(items *SchemaRef) *ExtendedTypeInfo {
+func NewArrayExtType(items *Schema) *ExtendedTypeInfo {
 	return &ExtendedTypeInfo{Type: ExtendedTypeArray, Items: items}
 }
 

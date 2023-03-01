@@ -40,7 +40,7 @@ func (paths Paths) Validate(ctx context.Context) error {
 		var commonParams []string
 		for _, parameterRef := range pathItem.Parameters {
 			if parameterRef != nil {
-				if parameter := parameterRef.Value; parameter != nil && parameter.In == ParameterInPath {
+				if parameter := parameterRef; parameter != nil && parameter.In == ParameterInPath {
 					commonParams = append(commonParams, parameter.Name)
 				}
 			}
@@ -56,7 +56,7 @@ func (paths Paths) Validate(ctx context.Context) error {
 			var setParams []string
 			for _, parameterRef := range operation.Parameters {
 				if parameterRef != nil {
-					if parameter := parameterRef.Value; parameter != nil && parameter.In == ParameterInPath {
+					if parameter := parameterRef; parameter != nil && parameter.In == ParameterInPath {
 						setParams = append(setParams, parameter.Name)
 					}
 				}

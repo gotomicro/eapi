@@ -104,10 +104,10 @@ func (t *TypeDefinition) ModelKey(typeArgs ...*spec.SchemaRef) string {
 	sb.WriteString(t.Spec.Name.Name)
 	if len(typeArgs) > 0 {
 		sb.WriteString("[")
-		sb.WriteString(typeArgs[0].Key())
+		sb.WriteString(typeArgs[0].GetKey())
 		for _, arg := range typeArgs[1:] {
 			sb.WriteString(",")
-			sb.WriteString(arg.Key())
+			sb.WriteString(arg.GetKey())
 		}
 		sb.WriteString("]")
 	}

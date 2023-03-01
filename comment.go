@@ -74,7 +74,7 @@ func (c *Comment) ApplyToSchema(schema *spec.SchemaRef) {
 		return
 	}
 
-	value := schema.Value
+	value := schema
 	if value == nil {
 		return
 	}

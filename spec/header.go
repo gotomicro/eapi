@@ -100,7 +100,7 @@ func (header Header) JSONLookup(token string) (interface{}, error) {
 			if header.Schema.Ref != "" {
 				return &Ref{Ref: header.Schema.Ref}, nil
 			}
-			return header.Schema.Value, nil
+			return header.Schema, nil
 		}
 	case "name":
 		return header.Name, nil

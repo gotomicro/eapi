@@ -20,7 +20,7 @@ var _ jsonpointer.JSONPointable = (*Responses)(nil)
 
 func NewResponses() Responses {
 	r := make(Responses)
-	r["default"] = &ResponseRef{Value: NewResponse().WithDescription("")}
+	r["default"] = NewResponse().WithDescription("")
 	return r
 }
 
@@ -62,7 +62,7 @@ func (responses Responses) JSONLookup(token string) (interface{}, error) {
 	if ref != nil && ref.Ref != "" {
 		return &Ref{Ref: ref.Ref}, nil
 	}
-	return ref.Value, nil
+	return ref, nil
 }
 
 // Response is specified by OpenAPI/Swagger 3.0 standard.
@@ -70,6 +70,7 @@ func (responses Responses) JSONLookup(token string) (interface{}, error) {
 type Response struct {
 	ExtensionProps `json:"-" yaml:"-"`
 
+	Ref         string  `json:"$ref,omitempty"`
 	Description *string `json:"description,omitempty" yaml:"description,omitempty"`
 	Headers     Headers `json:"headers,omitempty" yaml:"headers,omitempty"`
 	Content     Content `json:"content,omitempty" yaml:"content,omitempty"`
@@ -95,7 +96,7 @@ func (response *Response) WithJSONSchema(schema *Schema) *Response {
 	return response
 }
 
-func (response *Response) WithJSONSchemaRef(schema *SchemaRef) *Response {
+func (response *Response) WithJSONSchemaRef(schema *Schema) *Response {
 	response.Content = NewContentWithJSONSchemaRef(schema)
 	return response
 }

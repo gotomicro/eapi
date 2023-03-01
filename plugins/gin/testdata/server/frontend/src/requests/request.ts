@@ -1,12 +1,12 @@
 import { request } from "umi";
-import { 
+import {
   ViewGoodsCreateReq,
   CustomResponseType,
   ViewGoodsCreateRes,
   ShopGoodsDownRequest,
   ViewGoodsDownRes,
   ViewGoodsInfoRes
- } from "./types";
+} from "./types";
 
 /*
  * @description GoodsCreate 创建商品接口

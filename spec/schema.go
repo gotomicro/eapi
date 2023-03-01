@@ -72,7 +72,7 @@ func Uint64Ptr(value uint64) *uint64 {
 	return &value
 }
 
-type Schemas map[string]*SchemaRef
+type Schemas map[string]*Schema
 
 var _ jsonpointer.JSONPointable = (*Schemas)(nil)
 
@@ -86,12 +86,12 @@ func (s Schemas) JSONLookup(token string) (interface{}, error) {
 	if ref.Ref != "" {
 		return &Ref{Ref: ref.Ref}, nil
 	}
-	return ref.Value, nil
+	return ref, nil
 }
 
-type SchemaRefs []*SchemaRef
+type SchemaRefs []*Schema
 
-var _ jsonpointer.JSONPointable = (*SchemaRefs)(nil)
+var _ jsonpointer.JSONPointable = (*Schemas)(nil)
 
 // JSONLookup implements github.com/go-openapi/jsonpointer#JSONPointable
 func (s SchemaRefs) JSONLookup(token string) (interface{}, error) {
@@ -109,7 +109,7 @@ func (s SchemaRefs) JSONLookup(token string) (interface{}, error) {
 	if ref == nil || ref.Ref != "" {
 		return &Ref{Ref: ref.Ref}, nil
 	}
-	return ref.Value, nil
+	return ref, nil
 }
 
 // Schema is specified by OpenAPI/Swagger 3.0 standard.
@@ -117,10 +117,12 @@ func (s SchemaRefs) JSONLookup(token string) (interface{}, error) {
 type Schema struct {
 	ExtensionProps `json:"-" yaml:"-"`
 
+	Ref          string        `json:"ref,omitempty"`
+	Summary      string        `json:"summary,omitempty"`
 	OneOf        SchemaRefs    `json:"oneOf,omitempty" yaml:"oneOf,omitempty"`
 	AnyOf        SchemaRefs    `json:"anyOf,omitempty" yaml:"anyOf,omitempty"`
 	AllOf        SchemaRefs    `json:"allOf,omitempty" yaml:"allOf,omitempty"`
-	Not          *SchemaRef    `json:"not,omitempty" yaml:"not,omitempty"`
+	Not          *Schema       `json:"not,omitempty" yaml:"not,omitempty"`
 	Type         string        `json:"type,omitempty" yaml:"type,omitempty"`
 	Title        string        `json:"title,omitempty" yaml:"title,omitempty"`
 	Format       string        `json:"format,omitempty" yaml:"format,omitempty"`
@@ -155,9 +157,9 @@ type Schema struct {
 	compiledPattern *regexp.Regexp
 
 	// Array
-	MinItems uint64     `json:"minItems,omitempty" yaml:"minItems,omitempty"`
-	MaxItems *uint64    `json:"maxItems,omitempty" yaml:"maxItems,omitempty"`
-	Items    *SchemaRef `json:"items,omitempty" yaml:"items,omitempty"`
+	MinItems uint64  `json:"minItems,omitempty" yaml:"minItems,omitempty"`
+	MaxItems *uint64 `json:"maxItems,omitempty" yaml:"maxItems,omitempty"`
+	Items    *Schema `json:"items,omitempty" yaml:"items,omitempty"`
 
 	// Object
 	Required                    []string       `json:"required,omitempty" yaml:"required,omitempty"`
@@ -165,11 +167,11 @@ type Schema struct {
 	MinProps                    uint64         `json:"minProperties,omitempty" yaml:"minProperties,omitempty"`
 	MaxProps                    *uint64        `json:"maxProperties,omitempty" yaml:"maxProperties,omitempty"`
 	AdditionalPropertiesAllowed *bool          `multijson:"additionalProperties,omitempty" json:"-" yaml:"-"` // In this order...
-	AdditionalProperties        *SchemaRef     `multijson:"additionalProperties,omitempty" json:"-" yaml:"-"` // ...for multijson
+	AdditionalProperties        *Schema        `multijson:"additionalProperties,omitempty" json:"-" yaml:"-"` // ...for multijson
 	Discriminator               *Discriminator `json:"discriminator,omitempty" yaml:"discriminator,omitempty"`
 
 	// 拓展类型信息. 用于代码生成
-	ExtendedTypeInfo       *ExtendedTypeInfo `json:"extendedTypeInfo,omitempty" yaml:"-"`
+	ExtendedTypeInfo       *ExtendedTypeInfo `json:"ext,omitempty" yaml:"-"`
 	Key                    string            `json:"-" yaml:"-"`
 	SpecializedFromGeneric bool              `json:"-"`
 }
@@ -187,6 +189,14 @@ func (schema *Schema) WithExtendedType(t *ExtendedTypeInfo) *Schema {
 
 // MarshalJSON returns the JSON encoding of Schema.
 func (schema *Schema) MarshalJSON() ([]byte, error) {
+	if schema.Ref != "" {
+		return json.Marshal(schemaRef{
+			Summary:     schema.Summary,
+			Description: schema.Description,
+			Ref:         schema.Ref,
+		})
+	}
+
 	schema = schema.Clone()
 	ext := schema.ExtendedTypeInfo
 	if ext != nil && len(ext.EnumItems) > 0 {
@@ -196,7 +206,7 @@ func (schema *Schema) MarshalJSON() ([]byte, error) {
 		}
 		desc += "<table><tr><th>Value</th><th>Key</th><th>Description</th></tr>"
 		for _, item := range ext.EnumItems {
-			desc += fmt.Sprintf("<tr><td>%s</td><td>%s</td><td>%s</td></tr>", cast.ToString(item.Value), item.Key, item.Description)
+			desc += fmt.Sprintf("<tr><td>%s</td><td>%s</td><td>%s</td></tr>", cast.ToString(item), item.Key, item.Description)
 		}
 		desc += "</table>"
 		schema.Description = desc
@@ -220,21 +230,21 @@ func (schema *Schema) JSONLookup(token string) (interface{}, error) {
 			if schema.AdditionalProperties.Ref != "" {
 				return &Ref{Ref: schema.AdditionalProperties.Ref}, nil
 			}
-			return schema.AdditionalProperties.Value, nil
+			return schema.AdditionalProperties, nil
 		}
 	case "not":
 		if schema.Not != nil {
 			if schema.Not.Ref != "" {
 				return &Ref{Ref: schema.Not.Ref}, nil
 			}
-			return schema.Not.Value, nil
+			return schema.Not, nil
 		}
 	case "items":
 		if schema.Items != nil {
 			if schema.Items.Ref != "" {
 				return &Ref{Ref: schema.Items.Ref}, nil
 			}
-			return schema.Items.Value, nil
+			return schema.Items, nil
 		}
 	case "oneOf":
 		return schema.OneOf, nil
@@ -310,10 +320,9 @@ func (schema *Schema) JSONLookup(token string) (interface{}, error) {
 	return v, err
 }
 
-func (schema *Schema) NewRef() *SchemaRef {
-	return &SchemaRef{
-		Value: schema,
-	}
+func (schema *Schema) NewRef() *Schema {
+	// TODO
+	return schema
 }
 
 func NewTypeParamSchema(param *TypeParam) *Schema {
@@ -324,32 +333,20 @@ func NewTypeParamSchema(param *TypeParam) *Schema {
 }
 
 func NewOneOfSchema(schemas ...*Schema) *Schema {
-	refs := make([]*SchemaRef, 0, len(schemas))
-	for _, schema := range schemas {
-		refs = append(refs, &SchemaRef{Value: schema})
-	}
 	return &Schema{
-		OneOf: refs,
+		OneOf: schemas,
 	}
 }
 
 func NewAnyOfSchema(schemas ...*Schema) *Schema {
-	refs := make([]*SchemaRef, 0, len(schemas))
-	for _, schema := range schemas {
-		refs = append(refs, &SchemaRef{Value: schema})
-	}
 	return &Schema{
-		AnyOf: refs,
+		AnyOf: schemas,
 	}
 }
 
 func NewAllOfSchema(schemas ...*Schema) *Schema {
-	refs := make([]*SchemaRef, 0, len(schemas))
-	for _, schema := range schemas {
-		refs = append(refs, &SchemaRef{Value: schema})
-	}
 	return &Schema{
-		AllOf: refs,
+		AllOf: schemas,
 	}
 }
 
@@ -412,7 +409,7 @@ func NewBytesSchema() *Schema {
 	}
 }
 
-func NewArraySchema(item *SchemaRef) *Schema {
+func NewArraySchema(item *Schema) *Schema {
 	return &Schema{
 		Type:             TypeArray,
 		Items:            item,
@@ -514,9 +511,7 @@ func (schema *Schema) WithPattern(pattern string) *Schema {
 }
 
 func (schema *Schema) WithItems(value *Schema) *Schema {
-	schema.Items = &SchemaRef{
-		Value: value,
-	}
+	schema.Items = value
 	schema.ExtendedTypeInfo.Items = schema.Items
 	return schema
 }
@@ -539,12 +534,10 @@ func (schema *Schema) WithUniqueItems(unique bool) *Schema {
 }
 
 func (schema *Schema) WithProperty(name string, propertySchema *Schema) *Schema {
-	return schema.WithPropertyRef(name, &SchemaRef{
-		Value: propertySchema,
-	})
+	return schema.WithPropertyRef(name, propertySchema)
 }
 
-func (schema *Schema) WithPropertyRef(name string, ref *SchemaRef) *Schema {
+func (schema *Schema) WithPropertyRef(name string, ref *Schema) *Schema {
 	properties := schema.Properties
 	if properties == nil {
 		properties = make(Schemas)
@@ -557,9 +550,7 @@ func (schema *Schema) WithPropertyRef(name string, ref *SchemaRef) *Schema {
 func (schema *Schema) WithProperties(properties map[string]*Schema) *Schema {
 	result := make(Schemas, len(properties))
 	for k, v := range properties {
-		result[k] = &SchemaRef{
-			Value: v,
-		}
+		result[k] = v
 	}
 	schema.Properties = result
 	return schema
@@ -584,7 +575,7 @@ func (schema *Schema) WithAnyAdditionalProperties() *Schema {
 	return schema
 }
 
-func (schema *Schema) WithAdditionalProperties(v *SchemaRef) *Schema {
+func (schema *Schema) WithAdditionalProperties(v *Schema) *Schema {
 	schema.AdditionalProperties = v
 	return schema
 }
@@ -600,35 +591,35 @@ func (schema *Schema) IsEmpty() bool {
 		schema.MinProps != 0 || schema.MaxProps != nil {
 		return false
 	}
-	if n := schema.Not; n != nil && !n.Value.IsEmpty() {
+	if n := schema.Not; n != nil && !n.IsEmpty() {
 		return false
 	}
-	if ap := schema.AdditionalProperties; ap != nil && !ap.Value.IsEmpty() {
+	if ap := schema.AdditionalProperties; ap != nil && !ap.IsEmpty() {
 		return false
 	}
 	if apa := schema.AdditionalPropertiesAllowed; apa != nil && !*apa {
 		return false
 	}
-	if items := schema.Items; items != nil && !items.Value.IsEmpty() {
+	if items := schema.Items; items != nil && !items.IsEmpty() {
 		return false
 	}
 	for _, s := range schema.Properties {
-		if !s.Value.IsEmpty() {
+		if !s.IsEmpty() {
 			return false
 		}
 	}
 	for _, s := range schema.OneOf {
-		if !s.Value.IsEmpty() {
+		if !s.IsEmpty() {
 			return false
 		}
 	}
 	for _, s := range schema.AnyOf {
-		if !s.Value.IsEmpty() {
+		if !s.IsEmpty() {
 			return false
 		}
 	}
 	for _, s := range schema.AllOf {
-		if !s.Value.IsEmpty() {
+		if !s.IsEmpty() {
 			return false
 		}
 	}
@@ -655,7 +646,7 @@ func (schema *Schema) validate(ctx context.Context, stack []*Schema) (err error)
 	}
 
 	for _, item := range schema.OneOf {
-		v := item.Value
+		v := item
 		if v == nil {
 			return foundUnresolvedRef(item.Ref)
 		}
@@ -665,7 +656,7 @@ func (schema *Schema) validate(ctx context.Context, stack []*Schema) (err error)
 	}
 
 	for _, item := range schema.AnyOf {
-		v := item.Value
+		v := item
 		if v == nil {
 			return foundUnresolvedRef(item.Ref)
 		}
@@ -675,7 +666,7 @@ func (schema *Schema) validate(ctx context.Context, stack []*Schema) (err error)
 	}
 
 	for _, item := range schema.AllOf {
-		v := item.Value
+		v := item
 		if v == nil {
 			return foundUnresolvedRef(item.Ref)
 		}
@@ -685,7 +676,7 @@ func (schema *Schema) validate(ctx context.Context, stack []*Schema) (err error)
 	}
 
 	if ref := schema.Not; ref != nil {
-		v := ref.Value
+		v := ref
 		if v == nil {
 			return foundUnresolvedRef(ref.Ref)
 		}
@@ -755,7 +746,7 @@ func (schema *Schema) validate(ctx context.Context, stack []*Schema) (err error)
 	}
 
 	if ref := schema.Items; ref != nil {
-		v := ref.Value
+		v := ref
 		if v == nil {
 			return foundUnresolvedRef(ref.Ref)
 		}
@@ -771,7 +762,7 @@ func (schema *Schema) validate(ctx context.Context, stack []*Schema) (err error)
 	sort.Strings(properties)
 	for _, name := range properties {
 		ref := schema.Properties[name]
-		v := ref.Value
+		v := ref
 		if v == nil {
 			return foundUnresolvedRef(ref.Ref)
 		}
@@ -781,7 +772,7 @@ func (schema *Schema) validate(ctx context.Context, stack []*Schema) (err error)
 	}
 
 	if ref := schema.AdditionalProperties; ref != nil {
-		v := ref.Value
+		v := ref
 		if v == nil {
 			return foundUnresolvedRef(ref.Ref)
 		}
@@ -923,7 +914,7 @@ func (schema *Schema) visitSetOperations(settings *schemaValidationSettings, val
 	}
 
 	if ref := schema.Not; ref != nil {
-		v := ref.Value
+		v := ref
 		if v == nil {
 			return foundUnresolvedRef(ref.Ref)
 		}
@@ -972,7 +963,7 @@ func (schema *Schema) visitSetOperations(settings *schemaValidationSettings, val
 			tempValue = deepcopy.Copy(value)
 		}
 		for idx, item := range v {
-			v := item.Value
+			v := item
 			if v == nil {
 				return foundUnresolvedRef(item.Ref)
 			}
@@ -1013,7 +1004,7 @@ func (schema *Schema) visitSetOperations(settings *schemaValidationSettings, val
 		}
 
 		if settings.asreq || settings.asrep {
-			_ = v[matchedOneOfIdx].Value.visitJSON(settings, value)
+			_ = v[matchedOneOfIdx].visitJSON(settings, value)
 		}
 	}
 
@@ -1028,7 +1019,7 @@ func (schema *Schema) visitSetOperations(settings *schemaValidationSettings, val
 			tempValue = deepcopy.Copy(value)
 		}
 		for idx, item := range v {
-			v := item.Value
+			v := item
 			if v == nil {
 				return foundUnresolvedRef(item.Ref)
 			}
@@ -1050,11 +1041,11 @@ func (schema *Schema) visitSetOperations(settings *schemaValidationSettings, val
 			}
 		}
 
-		_ = v[matchedAnyOfIdx].Value.visitJSON(settings, value)
+		_ = v[matchedAnyOfIdx].visitJSON(settings, value)
 	}
 
 	for _, item := range schema.AllOf {
-		v := item.Value
+		v := item
 		if v == nil {
 			return foundUnresolvedRef(item.Ref)
 		}
@@ -1463,7 +1454,7 @@ func (schema *Schema) visitJSONArray(settings *schemaValidationSettings, value [
 
 	// "items"
 	if itemSchemaRef := schema.Items; itemSchemaRef != nil {
-		itemSchema := itemSchemaRef.Value
+		itemSchema := itemSchemaRef
 		if itemSchema == nil {
 			return foundUnresolvedRef(itemSchemaRef.Ref)
 		}
@@ -1509,11 +1500,11 @@ func (schema *Schema) visitJSONObject(settings *schemaValidationSettings, value 
 		sort.Strings(properties)
 		for _, propName := range properties {
 			propSchema := schema.Properties[propName]
-			reqRO := settings.asreq && propSchema.Value.ReadOnly
-			repWO := settings.asrep && propSchema.Value.WriteOnly
+			reqRO := settings.asreq && propSchema.ReadOnly
+			repWO := settings.asrep && propSchema.WriteOnly
 
 			if value[propName] == nil {
-				if dlft := propSchema.Value.Default; dlft != nil && !reqRO && !repWO {
+				if dlft := propSchema.Default; dlft != nil && !reqRO && !repWO {
 					value[propName] = dlft
 					if f := settings.defaultsSet; f != nil {
 						settings.onceSettingDefaults.Do(f)
@@ -1574,7 +1565,7 @@ func (schema *Schema) visitJSONObject(settings *schemaValidationSettings, value 
 	// "additionalProperties"
 	var additionalProperties *Schema
 	if ref := schema.AdditionalProperties; ref != nil {
-		additionalProperties = ref.Value
+		additionalProperties = ref
 	}
 	keys := make([]string, 0, len(value))
 	for k := range value {
@@ -1586,7 +1577,7 @@ func (schema *Schema) visitJSONObject(settings *schemaValidationSettings, value 
 		if properties != nil {
 			propertyRef := properties[k]
 			if propertyRef != nil {
-				p := propertyRef.Value
+				p := propertyRef
 				if p == nil {
 					return foundUnresolvedRef(propertyRef.Ref)
 				}
@@ -1646,10 +1637,10 @@ func (schema *Schema) visitJSONObject(settings *schemaValidationSettings, value 
 	// "required"
 	for _, k := range schema.Required {
 		if _, ok := value[k]; !ok {
-			if s := schema.Properties[k]; s != nil && s.Value.ReadOnly && settings.asreq {
+			if s := schema.Properties[k]; s != nil && s.ReadOnly && settings.asreq {
 				continue
 			}
-			if s := schema.Properties[k]; s != nil && s.Value.WriteOnly && settings.asrep {
+			if s := schema.Properties[k]; s != nil && s.WriteOnly && settings.asrep {
 				continue
 			}
 			if settings.failfast {
@@ -1801,7 +1792,7 @@ func (err *SchemaError) Error() string {
 			panic(err)
 		}
 		buf.WriteString("\nValue:\n  ")
-		if err := encoder.Encode(err.Value); err != nil {
+		if err := encoder.Encode(err); err != nil {
 			panic(err)
 		}
 	}

@@ -115,7 +115,7 @@ func (p *handlerAnalyzer) parseBinding(call *ast.CallExpr) {
 			schema.Description = comment.Text()
 		}
 		reqBody := spec.NewRequestBody().WithSchemaRef(schema, []string{contentType})
-		p.spec.RequestBody = &spec.RequestBodyRef{Value: reqBody}
+		p.spec.RequestBody = reqBody
 	}
 }
 
@@ -183,13 +183,13 @@ func (p *handlerAnalyzer) parseFormData(call *ast.CallExpr, fieldType string, op
 
 	requestBody := p.spec.RequestBody
 	if requestBody == nil {
-		requestBody = &spec.RequestBodyRef{Value: spec.NewRequestBody().WithContent(spec.NewContent())}
+		requestBody = spec.NewRequestBody().WithContent(spec.NewContent())
 		p.spec.RequestBody = requestBody
 	}
-	mediaType := requestBody.Value.GetMediaType(analyzer.MimeTypeFormData)
+	mediaType := requestBody.GetMediaType(analyzer.MimeTypeFormData)
 	if mediaType == nil {
 		mediaType = spec.NewMediaType()
-		requestBody.Value.Content[analyzer.MimeTypeFormData] = mediaType
+		requestBody.Content[analyzer.MimeTypeFormData] = mediaType
 	}
 
 	comment := p.ctx.ParseComment(p.ctx.GetHeadingCommentOf(call.Pos()))
@@ -199,18 +199,18 @@ func (p *handlerAnalyzer) parseFormData(call *ast.CallExpr, fieldType string, op
 	var schema *spec.SchemaRef
 	if schemaRef != nil {
 		schema = spec.Unref(p.ctx.Doc(), schemaRef)
-		schema.Value.WithProperty(name, paramSchema)
+		schema.WithProperty(name, paramSchema)
 	} else {
 		schema = spec.NewObjectSchema().NewRef()
 		title := strcase.ToCamel(p.spec.OperationID) + "Request"
-		schema.Value.Title = title
-		schema.Value.WithProperty(name, paramSchema)
+		schema.Title = title
+		schema.WithProperty(name, paramSchema)
 		p.ctx.Doc().Components.Schemas[title] = schema
 		schemaRef = spec.RefComponentSchemas(title)
 		mediaType.Schema = schemaRef
 	}
 	if comment.Required() {
-		schema.Value.Required = append(schema.Value.Required, name)
+		schema.Required = append(schema.Required, name)
 	}
 }
 

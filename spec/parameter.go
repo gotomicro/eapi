@@ -26,7 +26,7 @@ func (p ParametersMap) JSONLookup(token string) (interface{}, error) {
 	if ref.Ref != "" {
 		return &Ref{Ref: ref.Ref}, nil
 	}
-	return ref.Value, nil
+	return ref, nil
 }
 
 // Parameters is specified by OpenAPI/Swagger 3.0 standard.
@@ -50,7 +50,7 @@ func (p Parameters) JSONLookup(token string) (interface{}, error) {
 	if ref != nil && ref.Ref != "" {
 		return &Ref{Ref: ref.Ref}, nil
 	}
-	return ref.Value, nil
+	return ref, nil
 }
 
 func NewParameters() Parameters {
@@ -59,7 +59,7 @@ func NewParameters() Parameters {
 
 func (parameters Parameters) GetByInAndName(in string, name string) *Parameter {
 	for _, item := range parameters {
-		if v := item.Value; v != nil {
+		if v := item; v != nil {
 			if v.Name == name && v.In == in {
 				return v
 			}
@@ -72,7 +72,7 @@ func (parameters Parameters) GetByInAndName(in string, name string) *Parameter {
 func (parameters Parameters) Validate(ctx context.Context) error {
 	dupes := make(map[string]struct{})
 	for _, parameterRef := range parameters {
-		if v := parameterRef.Value; v != nil {
+		if v := parameterRef; v != nil {
 			key := v.In + ":" + v.Name
 			if _, ok := dupes[key]; ok {
 				return fmt.Errorf("more than one %q parameter has name %q", v.In, v.Name)
@@ -92,6 +92,7 @@ func (parameters Parameters) Validate(ctx context.Context) error {
 type Parameter struct {
 	ExtensionProps `json:"-" yaml:"-"`
 
+	Ref             string      `json:"ref,omitempty"`
 	Name            string      `json:"name,omitempty" yaml:"name,omitempty"`
 	In              string      `json:"in,omitempty" yaml:"in,omitempty"`
 	Description     string      `json:"description,omitempty" yaml:"description,omitempty"`
@@ -101,7 +102,7 @@ type Parameter struct {
 	AllowReserved   bool        `json:"allowReserved,omitempty" yaml:"allowReserved,omitempty"`
 	Deprecated      bool        `json:"deprecated,omitempty" yaml:"deprecated,omitempty"`
 	Required        bool        `json:"required,omitempty" yaml:"required,omitempty"`
-	Schema          *SchemaRef  `json:"schema,omitempty" yaml:"schema,omitempty"`
+	Schema          *Schema     `json:"schema,omitempty" yaml:"schema,omitempty"`
 	Example         interface{} `json:"example,omitempty" yaml:"example,omitempty"`
 	Examples        Examples    `json:"examples,omitempty" yaml:"examples,omitempty"`
 	Content         Content     `json:"content,omitempty" yaml:"content,omitempty"`
@@ -159,9 +160,7 @@ func (parameter *Parameter) WithSchema(value *Schema) *Parameter {
 	if value == nil {
 		parameter.Schema = nil
 	} else {
-		parameter.Schema = &SchemaRef{
-			Value: value,
-		}
+		parameter.Schema = value
 	}
 	return parameter
 }
@@ -184,7 +183,7 @@ func (parameter Parameter) JSONLookup(token string) (interface{}, error) {
 			if parameter.Schema.Ref != "" {
 				return &Ref{Ref: parameter.Schema.Ref}, nil
 			}
-			return parameter.Schema.Value, nil
+			return parameter.Schema, nil
 		}
 	case "name":
 		return parameter.Name, nil
@@ -323,7 +322,7 @@ func (parameter *Parameter) Validate(ctx context.Context) error {
 			return nil
 		}
 		if example := parameter.Example; example != nil {
-			if err := validateExampleValue(ctx, example, schema.Value); err != nil {
+			if err := validateExampleValue(ctx, example, schema); err != nil {
 				return fmt.Errorf("invalid example: %w", err)
 			}
 		} else if examples := parameter.Examples; examples != nil {
@@ -337,7 +336,7 @@ func (parameter *Parameter) Validate(ctx context.Context) error {
 				if err := v.Validate(ctx); err != nil {
 					return fmt.Errorf("%s: %w", k, err)
 				}
-				if err := validateExampleValue(ctx, v.Value.Value, schema.Value); err != nil {
+				if err := validateExampleValue(ctx, v.Value.Value, schema); err != nil {
 					return fmt.Errorf("%s: %w", k, err)
 				}
 			}

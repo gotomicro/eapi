@@ -35,7 +35,7 @@ func (components *Components) MarshalJSON() ([]byte, error) {
 	c := *components
 	schemas := make(Schemas)
 	for key, schema := range components.Schemas {
-		ext := schema.Value.ExtendedTypeInfo
+		ext := schema.ExtendedTypeInfo
 		if ext != nil && len(ext.TypeParams) > 0 && !utils.Debug() { // ignore generic type
 			continue
 		}

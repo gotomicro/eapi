@@ -8,14 +8,10 @@ import (
 	"path/filepath"
 	"runtime/debug"
 
-	_ "github.com/gotomicro/eapi/generators/axios"
-	_ "github.com/gotomicro/eapi/generators/ts"
-	_ "github.com/gotomicro/eapi/generators/umi"
 	"github.com/gotomicro/eapi/spec"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
-	"github.com/mitchellh/mapstructure"
 	"github.com/urfave/cli/v2"
 )
 
@@ -65,6 +61,7 @@ func (c OpenAPIConfig) applyToDoc(doc *spec.T) {
 
 type GeneratorConfig struct {
 	Name   string
+	File   string
 	Output string
 }
 
@@ -236,18 +233,13 @@ func (e *Entrypoint) run(c *cli.Context) error {
 		err = newGeneratorExecutor(
 			item,
 			doc,
-			func(value interface{}) error {
-				raw := e.k.Raw()["generators"].([]interface{})[idx]
-				d, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-					DecodeHook: mapstructure.ComposeDecodeHookFunc(
-						mapstructure.StringToTimeDurationHookFunc(),
-						mapstructure.StringToSliceHookFunc(","),
-						mapstructure.TextUnmarshallerHookFunc()),
-					Metadata:         nil,
-					Result:           value,
-					WeaklyTypedInput: true,
-				})
-				return d.Decode(raw)
+			func(key string) interface{} {
+				confMap := e.k.Get("generators").([]interface{})[idx].(map[string]interface{})
+				val, ok := confMap[key]
+				if !ok {
+					return nil
+				}
+				return val
 			},
 		).execute()
 		if err != nil {

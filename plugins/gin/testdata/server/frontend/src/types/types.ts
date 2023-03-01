@@ -1,41 +1,51 @@
+/*
+ * @description
+ */
 export type CustomResponseType<A> = {
+  /*
+   * @description
+   */
   code: number;
+  /*
+   * @description
+   */
   data: A;
+  /*
+   * @description
+   */
   msg: string;
 }
 
+/*
+ * @description
+ */
 export type ShopGoodsDownRequest = {
-  /*
-   * @description 日期范围
-   */
   dateRange?: string[];
-  /*
-   * @description Default Post Form
-   */
   defaultPostForm?: string;
-  /*
-   * @description 操作人 UID
-   */
   operatorUid?: string;
 }
 
-/*
- * @description Param is a single URL parameter, consisting of a key and a value.
- */
 export type GinParam = {
+  /*
+   * @description
+   */
   Key?: string;
+  /*
+   * @description
+   */
   Value?: string;
 }
 
-/*
- * @description Params is a Param-slice, as returned by the router.
- *	The slice is ordered, the first URL parameter is also the first slice value.
- *	It is therefore safe to read values by the index.
- */
 export type GinParams = GinParam[]
 
+/*
+ * @description
+ */
 export type GormDeletedAt = string
 
+/*
+ * @description
+ */
 export enum ViewErrCode {
   CodeNotFound = 10000,
   CodeCancled = 10001,
@@ -43,86 +53,111 @@ export enum ViewErrCode {
   CodeInvalidArgument = 10003,
 }
 
+/*
+ * @description
+ */
 export type ViewError = {
-  code?: number;
+  /*
+   * @description
+   */
+  code?: ViewErrCode;
+  /*
+   * @description
+   */
   msg?: string;
 }
 
+/*
+ * @description
+ */
 export type ViewGoodsCreateReq = {
-  /*
-   * @description 封面图
-   */
   cover?: string;
-  /*
-   * @description 详情图
-   */
   images?: ViewImage[];
-  /*
-   * @description 价格(分)
-   */
   price: number;
-  /*
-   * @description 商品描述
-   */
   subTitle?: string;
-  /*
-   * @description 商品标题
-   */
   title: string;
 }
 
+/*
+ * @description
+ */
 export type ViewGoodsCreateRes = {
-  /*
-   * @description 测试引用第三方包
-   */
-  Status?: GinParam[];
-  /*
-   * @description 商品 GUID
-   */
+  Status?: GinParams;
   guid?: string;
-  /*
-   * @description 测试引用内置包类型
-   */
   raw?: any;
-  /*
-   * @description 测试循环引用
-   */
   selfRef?: ViewSelfRefType;
-  /*
-   * @description 测试类型别名
-   */
   stringAlias?: string;
 }
 
+/*
+ * @description
+ */
 export type ViewGoodsDownRes = {
+  /*
+   * @description
+   */
   Status?: string;
 }
 
+/*
+ * @description
+ */
 export type ViewGoodsInfoRes = {
+  /*
+   * @description
+   */
   cover?: string;
-  deletedAt?: string;
+  /*
+   * @description
+   */
+  deletedAt?: GormDeletedAt;
+  /*
+   * @description
+   */
   mapInt?: Record<number, ViewProperty>;
+  /*
+   * @description
+   */
   price?: number;
+  /*
+   * @description
+   */
   properties?: Record<string, ViewProperty>;
+  /*
+   * @description
+   */
   subTitle?: string;
+  /*
+   * @description
+   */
+  title?: string;
+}
+
+export type ViewImage = {
+  url: string;
+}
+
+/*
+ * @description
+ */
+export type ViewProperty = {
+  /*
+   * @description
+   */
   title?: string;
 }
 
 /*
- * @description Image 商品图片
+ * @description
  */
-export type ViewImage = {
-  /*
-   * @description 图片链接
-   */
-  url: string;
-}
-
-export type ViewProperty = {
-  title?: string;
-}
-
 export type ViewSelfRefType = {
+  /*
+   * @description
+   */
   data?: string;
+  /*
+   * @description
+   */
   parent?: ViewSelfRefType;
 }
+

@@ -17,7 +17,7 @@ export type ModelCreateGoodsRequest = {
    * @description Detail images
    */
   images?: ModelImage[];
-  status?: number;
+  status?: ModelGoodsStatus;
   stock?: number;
   title?: string;
 }
@@ -44,7 +44,7 @@ export type ModelGoodsInfo = {
    * @description Detail images
    */
   images?: ModelImage[];
-  status?: number;
+  status?: ModelGoodsStatus;
   stock?: number;
   title?: string;
 }
@@ -95,7 +95,7 @@ export type ModelUpdateGoodsRequest = {
    * @description Detail images
    */
   images?: ModelImage[];
-  status?: number;
+  status?: ModelGoodsStatus;
   stock?: number;
   title?: string;
 }
@@ -104,3 +104,4 @@ export type ModelUploadFileRes = {
   id?: number;
   url?: string;
 }
+

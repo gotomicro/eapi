@@ -51,14 +51,14 @@ func (s *SchemaBuilder) parseTypeDef(def *TypeDefinition) *spec.SchemaRef {
 	if schemaRef == nil {
 		return nil
 	}
-	schemaRef.Value.Key = def.ModelKey(s.typeArgs...)
+	schemaRef.Key = def.ModelKey(s.typeArgs...)
 
 	if len(def.Enums) > 0 {
 		schema := spec.Unref(s.ctx.Doc(), schemaRef)
 		ext := spec.NewExtendedEnumType(def.Enums...)
-		schema.Value.ExtendedTypeInfo = ext
+		schema.ExtendedTypeInfo = ext
 		for _, item := range def.Enums {
-			schema.Value.Enum = append(schema.Value.Enum, item.Value)
+			schema.Enum = append(schema.Enum, item)
 		}
 	}
 
@@ -84,13 +84,13 @@ func (s *SchemaBuilder) parseTypeSpec(t *ast.TypeSpec) *spec.SchemaRef {
 		return nil
 	}
 	if t.TypeParams != nil {
-		schema.Value.ExtendedTypeInfo.TypeParams = typeParams
+		schema.ExtendedTypeInfo.TypeParams = typeParams
 	}
 
 	comment := s.ctx.ParseComment(s.ctx.GetHeadingCommentOf(t.Type.Pos()))
 	comment.ApplyToSchema(schema)
 	if schema.Ref == "" {
-		schema.Value.Title = strcase.ToCamel(s.ctx.Package().Name + t.Name.Name)
+		schema.Title = strcase.ToCamel(s.ctx.Package().Name + t.Name.Name)
 	}
 	return schema
 }
@@ -125,15 +125,12 @@ func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *spec.SchemaRef) {
 
 	case *ast.MapType:
 		value := s.ParseExpr(expr.Value)
-		return spec.NewSchemaRef(
-			"",
-			spec.NewObjectSchema().
-				WithExtendedType(spec.NewMapExtendedType(
-					s.ParseExpr(expr.Key),
-					value,
-				)).
-				WithAdditionalProperties(value),
-		)
+		return spec.NewObjectSchema().
+			WithExtendedType(spec.NewMapExtendedType(
+				s.ParseExpr(expr.Key),
+				value,
+			)).
+			WithAdditionalProperties(value)
 
 	case *ast.ArrayType:
 		return spec.NewArraySchema(s.ParseExpr(expr.Elt)).NewRef()
@@ -148,7 +145,7 @@ func (s *SchemaBuilder) ParseExpr(expr ast.Expr) (schema *spec.SchemaRef) {
 		return s.ParseExpr(expr.Type)
 
 	case *ast.InterfaceType:
-		return spec.NewSchemaRef("", spec.NewObjectSchema().WithDescription("Any Type").WithExtendedType(spec.NewAnyExtendedType()))
+		return spec.NewObjectSchema().WithDescription("Any Type").WithExtendedType(spec.NewAnyExtendedType())
 
 	case *ast.CallExpr:
 		return s.parseCallExpr(expr)
@@ -203,8 +200,8 @@ func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *spec.SchemaRef {
 			if fieldSchema != nil {
 				// merge properties
 				fieldSchema = spec.Unref(s.ctx.Doc(), fieldSchema)
-				if fieldSchema.Value != nil {
-					for name, value := range fieldSchema.Value.Properties {
+				if fieldSchema != nil {
+					for name, value := range fieldSchema.Properties {
 						schema.Properties[name] = value
 					}
 				}
@@ -235,7 +232,7 @@ func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *spec.SchemaRef {
 		}
 	}
 
-	return spec.NewSchemaRef("", schema)
+	return schema
 }
 
 func (s *SchemaBuilder) parseIdent(expr *ast.Ident) *spec.SchemaRef {
@@ -272,7 +269,7 @@ func (s *SchemaBuilder) commonUsedType(t types.Type) *spec.SchemaRef {
 		if !ok {
 			return nil
 		}
-		return spec.NewSchemaRef("", commonType.Clone())
+		return commonType.Clone()
 
 	case *types.Pointer:
 		return s.commonUsedType(t.Elem())
@@ -312,15 +309,15 @@ func (s *SchemaBuilder) basicType(name string) *spec.SchemaRef {
 	switch name {
 	case "uint", "int", "uint8", "int8", "uint16", "int16",
 		"uint32", "int32", "uint64", "int64":
-		return spec.NewSchemaRef("", spec.NewIntegerSchema())
+		return spec.NewIntegerSchema()
 	case "byte", "rune":
-		return spec.NewSchemaRef("", spec.NewBytesSchema())
+		return spec.NewBytesSchema()
 	case "float32", "float64":
-		return spec.NewSchemaRef("", spec.NewFloat64Schema())
+		return spec.NewFloat64Schema()
 	case "bool":
-		return spec.NewSchemaRef("", spec.NewBoolSchema())
+		return spec.NewBoolSchema()
 	case "string":
-		return spec.NewSchemaRef("", spec.NewStringSchema())
+		return spec.NewStringSchema()
 	}
 
 	return nil
