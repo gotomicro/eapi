@@ -31,7 +31,11 @@ class Printer {
           hardline,
           join(
             hardline,
-            ext.enumItems.map(e => [e.key, ' = ', e.value + '', ','])
+            ext.enumItems.map(e => {
+              let value = e.value;
+              if (typeof value === 'string') value = `"${value}"`
+              return [e.key, ' = ', value + '', ',']
+            })
           )
         ]), hardline,
         '}'

@@ -58,7 +58,7 @@ func (s *SchemaBuilder) parseTypeDef(def *TypeDefinition) *spec.SchemaRef {
 		ext := spec.NewExtendedEnumType(def.Enums...)
 		schema.ExtendedTypeInfo = ext
 		for _, item := range def.Enums {
-			schema.Enum = append(schema.Enum, item)
+			schema.Enum = append(schema.Enum, item.Value)
 		}
 	}
 
