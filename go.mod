@@ -2,16 +2,14 @@ module github.com/gotomicro/eapi
 
 go 1.18
 
-replace github.com/dop251/goja v0.0.0-20230216180835-5937a312edda => github.com/link-duan/goja v0.0.0-20230301035314-075961fec17a
-
 require (
-	github.com/dop251/goja v0.0.0-20230216180835-5937a312edda
-	github.com/dop251/goja_nodejs v0.0.0-20230222172725-12ac04f8c000
 	github.com/getkin/kin-openapi v0.109.0
 	github.com/go-openapi/jsonpointer v0.19.5
 	github.com/iancoleman/strcase v0.2.0
 	github.com/invopop/yaml v0.1.0
 	github.com/knadh/koanf v1.4.4
+	github.com/link-duan/goja v1.0.0
+	github.com/link-duan/goja_nodejs v1.0.1
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/robertkrimen/otto v0.2.1
 	github.com/samber/lo v1.28.2

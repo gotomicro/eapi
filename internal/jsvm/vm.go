@@ -4,10 +4,10 @@ import (
 	_ "embed"
 	"fmt"
 
-	"github.com/dop251/goja"
-	"github.com/dop251/goja_nodejs/console"
-	"github.com/dop251/goja_nodejs/require"
 	"github.com/gotomicro/eapi/spec"
+	"github.com/link-duan/goja"
+	"github.com/link-duan/goja_nodejs/console"
+	"github.com/link-duan/goja_nodejs/require"
 )
 
 type VM struct {

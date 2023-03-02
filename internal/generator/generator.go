@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/dop251/goja"
 	"github.com/gotomicro/eapi/internal/jsvm"
 	"github.com/gotomicro/eapi/spec"
+	"github.com/link-duan/goja"
 )
 
 var VM = jsvm.New()
