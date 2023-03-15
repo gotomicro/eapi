@@ -104,4 +104,3 @@ export type ModelUploadFileRes = {
   id?: number;
   url?: string;
 }
-

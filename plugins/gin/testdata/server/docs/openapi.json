@@ -216,26 +216,10 @@
             "server_pkg_view.ErrCode": {
                 "description": "\u003ctable\u003e\u003ctr\u003e\u003cth\u003eValue\u003c/th\u003e\u003cth\u003eKey\u003c/th\u003e\u003cth\u003eDescription\u003c/th\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e\u003c/td\u003e\u003ctd\u003eCodeNotFound\u003c/td\u003e\u003ctd\u003eResource not found\u003c/td\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e\u003c/td\u003e\u003ctd\u003eCodeCancled\u003c/td\u003e\u003ctd\u003eRequest canceld\u003c/td\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e\u003c/td\u003e\u003ctd\u003eCodeUnknown\u003c/td\u003e\u003ctd\u003e\u003c/td\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e\u003c/td\u003e\u003ctd\u003eCodeInvalidArgument\u003c/td\u003e\u003ctd\u003e\u003c/td\u003e\u003c/tr\u003e\u003c/table\u003e",
                 "enum": [
-                    {
-                        "key": "CodeNotFound",
-                        "value": 10000,
-                        "description": "Resource not found"
-                    },
-                    {
-                        "key": "CodeCancled",
-                        "value": 10001,
-                        "description": "Request canceld"
-                    },
-                    {
-                        "key": "CodeUnknown",
-                        "value": 10002,
-                        "description": ""
-                    },
-                    {
-                        "key": "CodeInvalidArgument",
-                        "value": 10003,
-                        "description": ""
-                    }
+                    10000,
+                    10001,
+                    10002,
+                    10003
                 ],
                 "ext": {
                     "type": "enum",

@@ -1,11 +1,13 @@
 package eapi
 
 import (
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/build"
 	"go/token"
 	"go/types"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -68,20 +70,6 @@ func (a *Analyzer) Depends(pkgNames ...string) *Analyzer {
 	return a
 }
 
-func (a *Analyzer) Load(packagePath string) {
-	packagePath, err := filepath.Abs(packagePath)
-	if err != nil {
-		panic("invalid package path: " + err.Error())
-	}
-
-	pkgList := a.load(packagePath)
-	for _, pkg := range pkgList {
-		a.loadDefinitionsFromPkg(pkg, pkg.Module.Dir)
-	}
-
-	a.packages = append(a.packages, pkgList...)
-}
-
 func (a *Analyzer) Process(packagePath string) *Analyzer {
 	if len(a.plugins) <= 0 {
 		panic("must register plugin before processing")
@@ -94,11 +82,12 @@ func (a *Analyzer) Process(packagePath string) *Analyzer {
 
 	pkgList := a.load(packagePath)
 	for _, pkg := range pkgList {
-		a.loadDefinitionsFromPkg(pkg, pkg.Module.Dir)
+		a.definitions = make(Definitions)
+		for _, p := range pkg {
+			a.loadDefinitionsFromPkg(p, p.Module.Dir)
+		}
+		a.processPkg(pkg)
 	}
-	a.packages = append(a.packages, pkgList...)
-
-	a.processPkg(packagePath)
 
 	return a
 }
@@ -117,16 +106,30 @@ func (a *Analyzer) analyze(ctx *Context, node ast.Node) {
 	}
 }
 
-func (a *Analyzer) load(pkgPath string) []*packages.Package {
+const entryPackageName = "command-line-arguments"
+
+func (a *Analyzer) load(pkgPath string) [][]*packages.Package {
 	absPath, err := filepath.Abs(pkgPath)
 	if err != nil {
 		panic("invalid package path: " + pkgPath)
 	}
 
-	pkg, err := build.Default.ImportDir(absPath, build.ImportComment)
-	if err != nil {
-		panic("import directory failed: " + err.Error())
-	}
+	var pkgList []*build.Package
+	filepath.Walk(absPath, func(path string, info fs.FileInfo, err error) error {
+		if !info.IsDir() {
+			return nil
+		}
+		pkg, err := build.Default.ImportDir(path, build.ImportComment)
+		if err != nil {
+			var noGoErr = &build.NoGoError{}
+			if errors.As(err, &noGoErr) {
+				return nil
+			}
+			panic("import directory failed: " + err.Error())
+		}
+		pkgList = append(pkgList, pkg)
+		return filepath.SkipDir
+	})
 
 	config := &packages.Config{
 		Mode: packages.NeedName |
@@ -141,36 +144,40 @@ func (a *Analyzer) load(pkgPath string) []*packages.Package {
 		Tests:      false,
 		Dir:        absPath,
 	}
-	var files []string
-	for _, filename := range append(pkg.GoFiles, pkg.CgoFiles...) {
-		files = append(files, filepath.Join(pkgPath, filename))
-	}
-	res, err := packages.Load(config, files...)
-	if err != nil {
-		panic("load packages failed: " + err.Error())
-	}
-
-	// 前面的 packages.Load() 方法不能解析出以第一层的 Module
-	// 所以这里手动解析 go.mod
-	for _, p := range res {
-		if p.Module != nil {
-			continue
+	var res [][]*packages.Package
+	for _, pkg := range pkgList {
+		var files []string
+		for _, filename := range append(pkg.GoFiles, pkg.CgoFiles...) {
+			files = append(files, filepath.Join(pkg.Dir, filename))
+		}
+		packs, err := packages.Load(config, files...)
+		if err != nil {
+			panic("load packages failed: " + err.Error())
 		}
 
-		module := a.parseGoModule(pkgPath)
-		if module == nil {
-			panic("failed to parse go.mod file in " + pkgPath)
+		// 前面的 packages.Load() 方法不能解析出以第一层的 Module
+		// 所以这里手动解析 go.mod
+		for _, p := range packs {
+			if p.Module != nil {
+				continue
+			}
+
+			module := a.parseGoModule(pkgPath)
+			if module == nil {
+				panic("failed to parse go.mod file in " + pkgPath)
+			}
+			p.Module = module
+			p.PkgPath = entryPackageName
+			p.ID = module.Path
 		}
-		p.Module = module
-		p.PkgPath = module.Path
-		p.ID = module.Path
+		res = append(res, packs)
 	}
 
 	return res
 }
 
-func (a *Analyzer) processPkg(packagePath string) {
-	for _, pkg := range a.packages {
+func (a *Analyzer) processPkg(pkgList []*packages.Package) {
+	for _, pkg := range pkgList {
 		moduleDir := pkg.Module.Dir
 		InspectPackage(pkg, func(pkg *packages.Package) bool {
 			if pkg.Module == nil || pkg.Module.Dir != moduleDir {
