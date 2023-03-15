@@ -1,9 +1,11 @@
 package gin
 
 import (
+	"fmt"
 	"go/ast"
 	"go/token"
 	"go/types"
+	"os"
 	"path"
 	"regexp"
 	"strings"
@@ -167,6 +169,10 @@ func (e *Plugin) parseAPI(ctx *analyzer.Context, callExpr *ast.CallExpr, comment
 	}
 
 	handlerDef := ctx.GetDefinition(handlerFn.Pkg().Path(), handlerFn.Name())
+	if handlerDef == nil {
+		fmt.Fprintf(os.Stderr, "handler function %s.%s not found\n", handlerFn.Pkg().Path(), handlerFn.Name())
+		return
+	}
 	handlerFnDef, ok := handlerDef.(*analyzer.FuncDefinition)
 	if !ok {
 		return

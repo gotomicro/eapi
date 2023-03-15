@@ -1,0 +1,42 @@
+{
+    "components": {},
+    "info": {
+        "title": "",
+        "version": ""
+    },
+    "openapi": "3.0.3",
+    "paths": {
+        "/app-a/hello": {
+            "get": {
+                "operationId": "main.handleHello",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/app-b/hello": {
+            "get": {
+                "operationId": "main.handleHello",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
