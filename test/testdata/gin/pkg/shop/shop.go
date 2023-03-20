@@ -45,14 +45,17 @@ func GoodsDown(c *gin.Context) {
 	c.XML(http.StatusOK, view.GoodsDownRes{})
 }
 
+type GoodsInfoPathParams struct {
+	// Goods Guid
+	Guid int `uri:"guid"`
+}
+
 // GoodsInfo 商品详情
 // @consume application/json
 // @produce application/json
 func GoodsInfo(c *gin.Context) {
-	guid := c.Param("guid")
-
-	// get goods info by guid
-	_ = guid
+	var params GoodsInfoPathParams
+	_ = c.BindUri(&params)
 
 	c.JSON(http.StatusOK, view.GoodsInfoRes{})
 }

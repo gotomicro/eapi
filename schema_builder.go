@@ -22,12 +22,15 @@ const (
 	MimeTypeFormUrlencoded = "application/x-www-form-urlencoded"
 )
 
+type FieldNameParser func(fieldName string, field *ast.Field) string
+
 type SchemaBuilder struct {
-	ctx         *Context
-	contentType string
-	stack       Stack[string]
-	typeArgs    []*spec.SchemaRef
-	typeParams  []*spec.TypeParam
+	ctx             *Context
+	contentType     string
+	stack           Stack[string]
+	typeArgs        []*spec.SchemaRef
+	typeParams      []*spec.TypeParam
+	fieldNameParser FieldNameParser
 }
 
 func NewSchemaBuilder(ctx *Context, contentType string) *SchemaBuilder {
@@ -39,6 +42,11 @@ func NewSchemaBuilder(ctx *Context, contentType string) *SchemaBuilder {
 
 func newSchemaBuilderWithStack(ctx *Context, contentType string, stack Stack[string]) *SchemaBuilder {
 	return &SchemaBuilder{ctx: ctx, contentType: contentType, stack: stack}
+}
+
+func (s *SchemaBuilder) WithFieldNameParser(parser FieldNameParser) *SchemaBuilder {
+	s.fieldNameParser = parser
+	return s
 }
 
 func (s *SchemaBuilder) clone() *SchemaBuilder {
@@ -283,6 +291,10 @@ func (s *SchemaBuilder) parseSelectorExpr(expr *ast.SelectorExpr) *spec.SchemaRe
 }
 
 func (s *SchemaBuilder) getPropName(fieldName string, field *ast.Field, contentType string) (propName string) {
+	if s.fieldNameParser != nil {
+		return s.fieldNameParser(fieldName, field)
+	}
+
 	if field.Tag == nil {
 		return fieldName
 	}
@@ -389,6 +401,7 @@ func (s *SchemaBuilder) parseType(t types.Type) *spec.SchemaRef {
 		defer s.stack.Pop()
 
 		schema = newSchemaBuilderWithStack(s.ctx.WithPackage(typeDef.pkg).WithFile(typeDef.file), s.contentType, s.stack).
+			WithFieldNameParser(s.fieldNameParser).
 			setTypeArgs().
 			parseTypeDef(typeDef)
 		s.ctx.Doc().Components.Schemas[typeDef.ModelKey()] = schema
