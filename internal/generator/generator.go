@@ -45,7 +45,7 @@ func (g *Generator) RunFromModule(module string, doc *spec.T) (result []*Generat
 	exportsObj := exports.ToObject(g.vm.VM())
 	printFn, ok := goja.AssertFunction(exportsObj.Get("print"))
 	if !ok {
-		return nil, fmt.Errorf("print is not a funciton")
+		return nil, fmt.Errorf("print is not a function")
 	}
 
 	getConfigCallback := g.vm.VM().ToValue(func(fc goja.FunctionCall) goja.Value {
