@@ -4,7 +4,9 @@
 
 <h1 align="center">eAPI</h1>
 <p align="center">一个通过分析代码生成 OpenAPI 文档的工具</p>
-<p align="center"><b>还不用写注解</b></p>
+<p align="center">
+   <img src="https://goreportcard.com/badge/github.com/gotomicro/eapi" />
+</p>
 
 ## 介绍
 
