@@ -448,6 +448,19 @@
                 },
                 "title": "ViewSelfRefType",
                 "type": "object"
+            },
+            "server_pkg_shop.GoodsInfoPathParams": {
+                "title": "ShopGoodsInfoPathParams",
+                "type": "object",
+                "ext": {
+                    "type": "object"
+                },
+                "properties": {
+                    "guid": {
+                        "description": "Goods Guid",
+                        "type": "integer"
+                    }
+                }
             }
         },
         "securitySchemes": {
@@ -616,9 +629,10 @@
                         "in": "path",
                         "name": "guid",
                         "required": true,
+                        "description": "Goods Guid",
                         "schema": {
-                            "title": "guid",
-                            "type": "string"
+                            "description": "Goods Guid",
+                            "type": "integer"
                         }
                     }
                 ],

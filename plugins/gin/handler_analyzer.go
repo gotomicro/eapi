@@ -9,7 +9,9 @@ import (
 	analyzer "github.com/gotomicro/eapi"
 	"github.com/gotomicro/eapi/plugins/common"
 	"github.com/gotomicro/eapi/spec"
+	"github.com/gotomicro/eapi/tag"
 	"github.com/iancoleman/strcase"
+	"github.com/samber/lo"
 )
 
 const ginContextIdentName = "*github.com/gin-gonic/gin.Context"
@@ -94,7 +96,7 @@ func (p *handlerAnalyzer) Parse() {
 				case "BindTOML", "ShouldBindTOML":
 					p.parseBindWithContentType(call, "application/toml")
 				case "BindUri", "ShouldBindUri":
-					// TODO
+					p.parseBindUri(call)
 				case "BindHeader", "ShouldBindHeader":
 					// TODO
 				case "JSON":
@@ -336,4 +338,37 @@ func (p *handlerAnalyzer) getDefaultContentType() string {
 	default:
 		return analyzer.MimeTypeJson
 	}
+}
+
+func (p *handlerAnalyzer) parseBindUri(call *ast.CallExpr) {
+	if len(call.Args) != 1 {
+		return
+	}
+	arg0 := call.Args[0]
+
+	analyzer.NewSchemaBuilder(p.ctx, "").WithFieldNameParser(p.parseUriFieldName).ParseExpr(arg0)
+	schema := p.ctx.GetSchemaByExpr(arg0, "")
+	if schema == nil {
+		return
+	}
+	schema = schema.Unref(p.ctx.Doc())
+	if schema == nil {
+		return
+	}
+	for name, property := range schema.Properties {
+		p.api.Spec.Parameters = lo.Filter(p.api.Spec.Parameters, func(ref *spec.ParameterRef, i int) bool { return ref.Name != name })
+		param := spec.NewPathParameter(name).WithSchema(property)
+		param.Description = property.Description
+		p.api.Spec.AddParameter(param)
+	}
+}
+
+func (p *handlerAnalyzer) parseUriFieldName(name string, field *ast.Field) string {
+	tags := tag.Parse(field.Tag.Value)
+	uriTag, ok := tags["uri"]
+	if !ok {
+		return name
+	}
+	res, _, _ := strings.Cut(uriTag, ",")
+	return res
 }
