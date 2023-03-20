@@ -24,7 +24,7 @@ func TestGenerator_Run(t *testing.T) {
 			args: args{
 				jsCode: `
 function print() {
-	return "hello,world"
+	return [{code: "hello,world"}]
 }
 module.exports = { print }
 `,
@@ -37,9 +37,12 @@ module.exports = { print }
 			name: "print-basic-doc",
 			args: args{
 				jsCode: `
-const { utils: {join, indent, hardline}, printDocToString } = require("eapi");
+const { docBuilders: {join, indent, hardline}, printDocToString } = require("eapi");
 function print(doc) {
-	return printDocToString([
+	return [
+		{
+			fileName: 'code.js',
+			code: printDocToString([
 		"// openapi version: ", doc.openapi, hardline,
 		"function hello() {", 
 		indent([
@@ -47,7 +50,9 @@ function print(doc) {
 			'return "hello,world"',
 		]), hardline,
 		"}",
-	], { tabWidth: 2 }).formatted;
+	], { tabWidth: 2 }).formatted
+		}
+	];
 }
 module.exports = { print }
 `,
@@ -64,12 +69,15 @@ function hello() {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := New()
+			g := New(func(key string) interface{} {
+				t.Logf("get config %s", key)
+				return ""
+			})
 			gotResult, err := g.Run(tt.args.jsCode, tt.args.doc)
 			if !tt.wantErr(t, err, fmt.Sprintf("Run(%v, %v)", tt.args.jsCode, tt.args.doc)) {
 				return
 			}
-			assert.Equalf(t, tt.wantResult, gotResult, "Run(%v, %v)", tt.args.jsCode, tt.args.doc)
+			assert.Equalf(t, tt.wantResult, gotResult[0].Code, "Run(%v, %v)", tt.args.jsCode, tt.args.doc)
 		})
 	}
 }

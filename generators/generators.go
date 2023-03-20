@@ -62,9 +62,9 @@ var (
 )
 
 func init() {
-	generator.VM.LoadModule("eapi/generators/ts", ts)
-	generator.VM.LoadModule("eapi/generators/axios", axios)
-	generator.VM.LoadModule("eapi/generators/umi", umi)
+	generator.LoadGlobalModuleFromSource("eapi/generators/ts", ts)
+	generator.LoadGlobalModuleFromSource("eapi/generators/axios", axios)
+	generator.LoadGlobalModuleFromSource("eapi/generators/umi", umi)
 
 	RegisterGenerator(NewGeneratorFromSourceCode("axios", axios))
 	RegisterGenerator(NewGeneratorFromSourceCode("ts", ts))

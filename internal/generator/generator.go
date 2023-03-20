@@ -11,16 +11,18 @@ import (
 	"github.com/link-duan/goja"
 )
 
-var VM = jsvm.New()
-
 type Generator struct {
 	vm        *jsvm.VM
 	getConfig func(key string) interface{}
 }
 
 func New(getConfig func(key string) interface{}) *Generator {
+	vm := jsvm.New()
+	for name, code := range globalModules {
+		vm.LoadModule(name, code)
+	}
 	g := &Generator{getConfig: getConfig}
-	g.vm = VM
+	g.vm = vm
 	return g
 }
 
