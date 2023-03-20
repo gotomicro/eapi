@@ -33,7 +33,7 @@ type OpenAPIConfig struct {
 
 type SecuritySchemes map[string]*spec.SecurityScheme
 
-func (c OpenAPIConfig) applyToDoc(doc *spec.T) {
+func (c OpenAPIConfig) ApplyToDoc(doc *spec.T) {
 	if c.OpenAPI != "" {
 		doc.OpenAPI = c.OpenAPI
 	}
@@ -214,7 +214,7 @@ func (e *Entrypoint) run(c *cli.Context) error {
 
 	a := NewAnalyzer(e.k).Plugin(plugin).Depends(e.cfg.Depends...)
 	doc := a.Process(e.cfg.Dir).Doc().Specialize()
-	e.cfg.OpenAPI.applyToDoc(doc)
+	e.cfg.OpenAPI.ApplyToDoc(doc)
 
 	// write documentation
 	{

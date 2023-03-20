@@ -1,0 +1,957 @@
+{
+    "components": {
+        "schemas": {
+            "UploaderUploadFileRequest": {
+                "ext": {
+                    "type": "object"
+                },
+                "properties": {
+                    "file": {
+                        "title": "file",
+                        "type": "file"
+                    },
+                    "saveToLib": {
+                        "description": "If set true, this file would be saved to lib",
+                        "title": "saveToLib",
+                        "type": "string"
+                    }
+                },
+                "title": "UploaderUploadFileRequest",
+                "type": "object"
+            },
+            "sample_model.Array": {
+                "ext": {
+                    "type": "array",
+                    "items": {
+                        "ext": {
+                            "type": "param",
+                            "typeParam": {
+                                "index": 0,
+                                "name": "T",
+                                "constraint": "any"
+                            }
+                        },
+                        "type": "typeParam"
+                    },
+                    "typeParams": [
+                        {
+                            "index": 0,
+                            "name": "T",
+                            "constraint": "any"
+                        }
+                    ]
+                },
+                "items": {
+                    "ext": {
+                        "type": "param",
+                        "typeParam": {
+                            "index": 0,
+                            "name": "T",
+                            "constraint": "any"
+                        }
+                    },
+                    "type": "typeParam"
+                },
+                "title": "ModelArray",
+                "type": "array"
+            },
+            "sample_model.Array[string]": {
+                "ext": {
+                    "type": "specific",
+                    "specificType": {
+                        "args": [
+                            {
+                                "type": "string"
+                            }
+                        ],
+                        "type": {
+                            "$ref": "#/components/schemas/sample_model.Array"
+                        }
+                    }
+                },
+                "items": {
+                    "type": "string"
+                },
+                "title": "ModelArray",
+                "type": "array"
+            },
+            "sample_model.CreateGoodsRequest": {
+                "ext": {
+                    "type": "object"
+                },
+                "properties": {
+                    "cover": {
+                        "description": "Url of cover image",
+                        "type": "string"
+                    },
+                    "images": {
+                        "description": "Detail images",
+                        "ext": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/components/schemas/sample_model.Image"
+                            }
+                        },
+                        "items": {
+                            "$ref": "#/components/schemas/sample_model.Image"
+                        },
+                        "type": "array"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/sample_model.GoodsStatus"
+                    },
+                    "stock": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    }
+                },
+                "title": "ModelCreateGoodsRequest",
+                "type": "object"
+            },
+            "sample_model.GenericTypeResponse": {
+                "description": "GenericTypeResponse used for testing generic type",
+                "ext": {
+                    "type": "object",
+                    "typeParams": [
+                        {
+                            "index": 0,
+                            "name": "T",
+                            "constraint": "any"
+                        }
+                    ]
+                },
+                "properties": {
+                    "data": {
+                        "ext": {
+                            "type": "param",
+                            "typeParam": {
+                                "index": 0,
+                                "name": "T",
+                                "constraint": "any"
+                            }
+                        },
+                        "type": "typeParam"
+                    },
+                    "metadata": {
+                        "additionalProperties": {
+                            "description": "Any Type",
+                            "ext": {
+                                "type": "any"
+                            },
+                            "type": "object"
+                        },
+                        "ext": {
+                            "type": "map",
+                            "mapKey": {
+                                "type": "string"
+                            },
+                            "mapValue": {
+                                "description": "Any Type",
+                                "ext": {
+                                    "type": "any"
+                                },
+                                "type": "object"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "value": {
+                        "ext": {
+                            "type": "specific",
+                            "specificType": {
+                                "args": [
+                                    {
+                                        "ext": {
+                                            "type": "param",
+                                            "typeParam": {
+                                                "index": 0,
+                                                "name": "T",
+                                                "constraint": "any"
+                                            }
+                                        },
+                                        "type": "typeParam"
+                                    }
+                                ],
+                                "type": {
+                                    "$ref": "#/components/schemas/sample_model.SampleGenericType"
+                                }
+                            }
+                        }
+                    }
+                },
+                "title": "ModelGenericTypeResponse",
+                "type": "object"
+            },
+            "sample_model.GenericTypeResponse[string]": {
+                "description": "GenericTypeResponse used for testing generic type",
+                "ext": {
+                    "type": "specific",
+                    "specificType": {
+                        "args": [
+                            {
+                                "type": "string"
+                            }
+                        ],
+                        "type": {
+                            "$ref": "#/components/schemas/sample_model.GenericTypeResponse"
+                        }
+                    }
+                },
+                "properties": {
+                    "data": {
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "additionalProperties": {
+                            "description": "Any Type",
+                            "ext": {
+                                "type": "any"
+                            },
+                            "type": "object"
+                        },
+                        "ext": {
+                            "type": "map",
+                            "mapKey": {
+                                "type": "string"
+                            },
+                            "mapValue": {
+                                "description": "Any Type",
+                                "ext": {
+                                    "type": "any"
+                                },
+                                "type": "object"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "value": {
+                        "$ref": "#/components/schemas/sample_model.SampleGenericType[string]"
+                    }
+                },
+                "title": "ModelGenericTypeResponse",
+                "type": "object"
+            },
+            "sample_model.GoodsInfo": {
+                "ext": {
+                    "type": "object"
+                },
+                "properties": {
+                    "cover": {
+                        "description": "Url of cover image",
+                        "type": "string"
+                    },
+                    "id": {
+                        "description": "Unique key",
+                        "type": "integer"
+                    },
+                    "images": {
+                        "description": "Detail images",
+                        "ext": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/components/schemas/sample_model.Image"
+                            }
+                        },
+                        "items": {
+                            "$ref": "#/components/schemas/sample_model.Image"
+                        },
+                        "type": "array"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/sample_model.GoodsStatus"
+                    },
+                    "stock": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    }
+                },
+                "title": "ModelGoodsInfo",
+                "type": "object"
+            },
+            "sample_model.GoodsStatus": {
+                "description": "\u003ctable\u003e\u003ctr\u003e\u003cth\u003eValue\u003c/th\u003e\u003cth\u003eKey\u003c/th\u003e\u003cth\u003eDescription\u003c/th\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e\u003c/td\u003e\u003ctd\u003eGoodsOnSale\u003c/td\u003e\u003ctd\u003e\u003c/td\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e\u003c/td\u003e\u003ctd\u003eGoodsOffSale\u003c/td\u003e\u003ctd\u003e\u003c/td\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e\u003c/td\u003e\u003ctd\u003eGoodsOutOfStock\u003c/td\u003e\u003ctd\u003e\u003c/td\u003e\u003c/tr\u003e\u003c/table\u003e",
+                "enum": [
+                    1,
+                    2,
+                    3
+                ],
+                "ext": {
+                    "type": "enum",
+                    "enumItems": [
+                        {
+                            "key": "GoodsOnSale",
+                            "value": 1,
+                            "description": ""
+                        },
+                        {
+                            "key": "GoodsOffSale",
+                            "value": 2,
+                            "description": ""
+                        },
+                        {
+                            "key": "GoodsOutOfStock",
+                            "value": 3,
+                            "description": ""
+                        }
+                    ]
+                },
+                "title": "ModelGoodsStatus",
+                "type": "integer"
+            },
+            "sample_model.Image": {
+                "ext": {
+                    "type": "object"
+                },
+                "properties": {
+                    "src": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    }
+                },
+                "title": "ModelImage",
+                "type": "object"
+            },
+            "sample_model.List": {
+                "ext": {
+                    "type": "array",
+                    "items": {
+                        "ext": {
+                            "type": "param",
+                            "typeParam": {
+                                "index": 0,
+                                "name": "T",
+                                "constraint": "any"
+                            }
+                        },
+                        "type": "typeParam"
+                    },
+                    "typeParams": [
+                        {
+                            "index": 0,
+                            "name": "T",
+                            "constraint": "any"
+                        }
+                    ]
+                },
+                "items": {
+                    "ext": {
+                        "type": "param",
+                        "typeParam": {
+                            "index": 0,
+                            "name": "T",
+                            "constraint": "any"
+                        }
+                    },
+                    "type": "typeParam"
+                },
+                "title": "ModelList",
+                "type": "array"
+            },
+            "sample_model.ListGoodsResponse": {
+                "ext": {
+                    "type": "object"
+                },
+                "properties": {
+                    "items": {
+                        "ext": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/components/schemas/sample_model.GoodsInfo"
+                            }
+                        },
+                        "items": {
+                            "$ref": "#/components/schemas/sample_model.GoodsInfo"
+                        },
+                        "type": "array"
+                    },
+                    "nextPage": {
+                        "description": "Url of next page. If there is no more items, nextPage field not exists.",
+                        "type": "string"
+                    }
+                },
+                "title": "ModelListGoodsResponse",
+                "type": "object"
+            },
+            "sample_model.List[string]": {
+                "ext": {
+                    "type": "specific",
+                    "specificType": {
+                        "args": [
+                            {
+                                "type": "string"
+                            }
+                        ],
+                        "type": {
+                            "$ref": "#/components/schemas/sample_model.List"
+                        }
+                    }
+                },
+                "items": {
+                    "type": "string"
+                },
+                "title": "ModelList",
+                "type": "array"
+            },
+            "sample_model.Map": {
+                "additionalProperties": {
+                    "ext": {
+                        "type": "param",
+                        "typeParam": {
+                            "index": 1,
+                            "name": "V",
+                            "constraint": "any"
+                        }
+                    },
+                    "type": "typeParam"
+                },
+                "ext": {
+                    "type": "map",
+                    "mapKey": {
+                        "ext": {
+                            "type": "param",
+                            "typeParam": {
+                                "index": 0,
+                                "name": "T",
+                                "constraint": "comparable"
+                            }
+                        },
+                        "type": "typeParam"
+                    },
+                    "mapValue": {
+                        "ext": {
+                            "type": "param",
+                            "typeParam": {
+                                "index": 1,
+                                "name": "V",
+                                "constraint": "any"
+                            }
+                        },
+                        "type": "typeParam"
+                    },
+                    "typeParams": [
+                        {
+                            "index": 0,
+                            "name": "T",
+                            "constraint": "comparable"
+                        },
+                        {
+                            "index": 1,
+                            "name": "V",
+                            "constraint": "any"
+                        }
+                    ]
+                },
+                "title": "ModelMap",
+                "type": "object"
+            },
+            "sample_model.Map[integer,string]": {
+                "additionalProperties": {
+                    "type": "string"
+                },
+                "ext": {
+                    "type": "specific",
+                    "specificType": {
+                        "args": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "string"
+                            }
+                        ],
+                        "type": {
+                            "$ref": "#/components/schemas/sample_model.Map"
+                        }
+                    }
+                },
+                "title": "ModelMap",
+                "type": "object"
+            },
+            "sample_model.MultipleParamGeneric": {
+                "ext": {
+                    "type": "object",
+                    "typeParams": [
+                        {
+                            "index": 0,
+                            "name": "T",
+                            "constraint": "any"
+                        },
+                        {
+                            "index": 1,
+                            "name": "V",
+                            "constraint": "any"
+                        }
+                    ]
+                },
+                "properties": {
+                    "A": {
+                        "ext": {
+                            "type": "param",
+                            "typeParam": {
+                                "index": 0,
+                                "name": "T",
+                                "constraint": "any"
+                            }
+                        },
+                        "type": "typeParam"
+                    },
+                    "B": {
+                        "ext": {
+                            "type": "param",
+                            "typeParam": {
+                                "index": 1,
+                                "name": "V",
+                                "constraint": "any"
+                            }
+                        },
+                        "type": "typeParam"
+                    }
+                },
+                "title": "ModelMultipleParamGeneric",
+                "type": "object"
+            },
+            "sample_model.MultipleParamGeneric[integer,string]": {
+                "ext": {
+                    "type": "specific",
+                    "specificType": {
+                        "args": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "string"
+                            }
+                        ],
+                        "type": {
+                            "$ref": "#/components/schemas/sample_model.MultipleParamGeneric"
+                        }
+                    }
+                },
+                "properties": {
+                    "A": {
+                        "type": "integer"
+                    },
+                    "B": {
+                        "type": "string"
+                    }
+                },
+                "title": "ModelMultipleParamGeneric",
+                "type": "object"
+            },
+            "sample_model.SampleGenericType": {
+                "ext": {
+                    "type": "object",
+                    "typeParams": [
+                        {
+                            "index": 0,
+                            "name": "T",
+                            "constraint": "any"
+                        }
+                    ]
+                },
+                "properties": {
+                    "array": {
+                        "ext": {
+                            "type": "specific",
+                            "specificType": {
+                                "args": [
+                                    {
+                                        "ext": {
+                                            "type": "param",
+                                            "typeParam": {
+                                                "index": 0,
+                                                "name": "T",
+                                                "constraint": "any"
+                                            }
+                                        },
+                                        "type": "typeParam"
+                                    }
+                                ],
+                                "type": {
+                                    "$ref": "#/components/schemas/sample_model.Array"
+                                }
+                            }
+                        }
+                    },
+                    "list": {
+                        "ext": {
+                            "type": "specific",
+                            "specificType": {
+                                "args": [
+                                    {
+                                        "ext": {
+                                            "type": "param",
+                                            "typeParam": {
+                                                "index": 0,
+                                                "name": "T",
+                                                "constraint": "any"
+                                            }
+                                        },
+                                        "type": "typeParam"
+                                    }
+                                ],
+                                "type": {
+                                    "$ref": "#/components/schemas/sample_model.List"
+                                }
+                            }
+                        }
+                    },
+                    "map": {
+                        "ext": {
+                            "type": "specific",
+                            "specificType": {
+                                "args": [
+                                    {
+                                        "type": "integer"
+                                    },
+                                    {
+                                        "ext": {
+                                            "type": "param",
+                                            "typeParam": {
+                                                "index": 0,
+                                                "name": "T",
+                                                "constraint": "any"
+                                            }
+                                        },
+                                        "type": "typeParam"
+                                    }
+                                ],
+                                "type": {
+                                    "$ref": "#/components/schemas/sample_model.Map"
+                                }
+                            }
+                        }
+                    },
+                    "multipleParamGeneric": {
+                        "ext": {
+                            "type": "specific",
+                            "specificType": {
+                                "args": [
+                                    {
+                                        "type": "integer"
+                                    },
+                                    {
+                                        "ext": {
+                                            "type": "param",
+                                            "typeParam": {
+                                                "index": 0,
+                                                "name": "T",
+                                                "constraint": "any"
+                                            }
+                                        },
+                                        "type": "typeParam"
+                                    }
+                                ],
+                                "type": {
+                                    "$ref": "#/components/schemas/sample_model.MultipleParamGeneric"
+                                }
+                            }
+                        }
+                    },
+                    "selfRef": {
+                        "ext": {
+                            "type": "specific",
+                            "specificType": {
+                                "args": [
+                                    {
+                                        "ext": {
+                                            "type": "param",
+                                            "typeParam": {
+                                                "index": 0,
+                                                "name": "T",
+                                                "constraint": "any"
+                                            }
+                                        },
+                                        "type": "typeParam"
+                                    }
+                                ],
+                                "type": {
+                                    "$ref": "#/components/schemas/sample_model.GenericTypeResponse"
+                                }
+                            }
+                        }
+                    },
+                    "value": {
+                        "ext": {
+                            "type": "param",
+                            "typeParam": {
+                                "index": 0,
+                                "name": "T",
+                                "constraint": "any"
+                            }
+                        },
+                        "type": "typeParam"
+                    }
+                },
+                "title": "ModelSampleGenericType",
+                "type": "object"
+            },
+            "sample_model.SampleGenericType[string]": {
+                "ext": {
+                    "type": "specific",
+                    "specificType": {
+                        "args": [
+                            {
+                                "type": "string"
+                            }
+                        ],
+                        "type": {
+                            "$ref": "#/components/schemas/sample_model.SampleGenericType"
+                        }
+                    }
+                },
+                "properties": {
+                    "array": {
+                        "$ref": "#/components/schemas/sample_model.Array[string]"
+                    },
+                    "list": {
+                        "$ref": "#/components/schemas/sample_model.List[string]"
+                    },
+                    "map": {
+                        "$ref": "#/components/schemas/sample_model.Map[integer,string]"
+                    },
+                    "multipleParamGeneric": {
+                        "$ref": "#/components/schemas/sample_model.MultipleParamGeneric[integer,string]"
+                    },
+                    "selfRef": {
+                        "$ref": "#/components/schemas/sample_model.GenericTypeResponse[string]"
+                    },
+                    "value": {
+                        "type": "string"
+                    }
+                },
+                "title": "ModelSampleGenericType",
+                "type": "object"
+            },
+            "sample_model.UpdateGoodsRequest": {
+                "ext": {
+                    "type": "object"
+                },
+                "properties": {
+                    "cover": {
+                        "description": "Url of cover image",
+                        "type": "string"
+                    },
+                    "images": {
+                        "description": "Detail images",
+                        "ext": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/components/schemas/sample_model.Image"
+                            }
+                        },
+                        "items": {
+                            "$ref": "#/components/schemas/sample_model.Image"
+                        },
+                        "type": "array"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/sample_model.GoodsStatus"
+                    },
+                    "stock": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    }
+                },
+                "title": "ModelUpdateGoodsRequest",
+                "type": "object"
+            },
+            "sample_model.UploadFileRes": {
+                "ext": {
+                    "type": "object"
+                },
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "url": {
+                        "type": "string"
+                    }
+                },
+                "title": "ModelUploadFileRes",
+                "type": "object"
+            }
+        }
+    },
+    "info": {
+        "title": "",
+        "version": ""
+    },
+    "openapi": "3.0.3",
+    "paths": {
+        "/v1/goods": {
+            "get": {
+                "description": "List",
+                "operationId": "goods.List",
+                "parameters": [
+                    {
+                        "description": "Obtained in `nextPage` field of previous page response.",
+                        "in": "query",
+                        "name": "since",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "limit",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/sample_model.ListGoodsResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "List Goods",
+                "tags": [
+                    "Goods"
+                ]
+            },
+            "patch": {
+                "description": "Update",
+                "operationId": "goods.Update",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/sample_model.UpdateGoodsRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "ext": {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/components/schemas/sample_model.GoodsInfo"
+                                        }
+                                    },
+                                    "items": {
+                                        "$ref": "#/components/schemas/sample_model.GoodsInfo"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Update Goods",
+                "tags": [
+                    "Goods"
+                ]
+            },
+            "post": {
+                "description": "Create",
+                "operationId": "goods.Create",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/sample_model.CreateGoodsRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/sample_model.GoodsInfo"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Create Goods",
+                "tags": [
+                    "Goods"
+                ]
+            }
+        },
+        "/v1/goods/{id}": {
+            "delete": {
+                "description": "Delete",
+                "operationId": "goods.Delete",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "title": "id",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/sample_model.GenericTypeResponse[string]"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Delete Goods",
+                "tags": [
+                    "Goods"
+                ]
+            }
+        },
+        "/v1/upload": {
+            "post": {
+                "description": "UploadFile",
+                "operationId": "uploader.UploadFile",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UploaderUploadFileRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/sample_model.UploadFileRes"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Upload File",
+                "tags": [
+                    "Uploader"
+                ]
+            }
+        }
+    }
+}
