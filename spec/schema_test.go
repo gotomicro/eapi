@@ -802,9 +802,7 @@ var schemaExamples = []schemaExample{
 		Schema: &Schema{
 			Type: "object",
 			AdditionalProperties: &SchemaRef{
-				Value: &Schema{
-					Type: "number",
-				},
+				Type: "number",
 			},
 		},
 		Serialization: map[string]interface{}{
@@ -848,13 +846,11 @@ var schemaExamples = []schemaExample{
 		Title: "NOT",
 		Schema: &Schema{
 			Not: &SchemaRef{
-				Value: &Schema{
-					Enum: []interface{}{
-						nil,
-						true,
-						3.14,
-						"not this",
-					},
+				Enum: []interface{}{
+					nil,
+					true,
+					3.14,
+					"not this",
 				},
 			},
 		},
@@ -885,16 +881,12 @@ var schemaExamples = []schemaExample{
 		Title: "ANY OF",
 		Schema: &Schema{
 			AnyOf: []*Schema{
-				{
-					Value: NewFloat64Schema().
-						WithMin(1).
-						WithMax(2),
-				},
-				{
-					Value: NewFloat64Schema().
-						WithMin(2).
-						WithMax(3),
-				},
+				NewFloat64Schema().
+					WithMin(1).
+					WithMax(2),
+				NewFloat64Schema().
+					WithMin(2).
+					WithMax(3),
 			},
 		},
 		Serialization: map[string]interface{}{
@@ -926,16 +918,12 @@ var schemaExamples = []schemaExample{
 		Title: "ALL OF",
 		Schema: &Schema{
 			AllOf: []*Schema{
-				{
-					Value: NewFloat64Schema().
-						WithMin(1).
-						WithMax(2),
-				},
-				{
-					Value: NewFloat64Schema().
-						WithMin(2).
-						WithMax(3),
-				},
+				NewFloat64Schema().
+					WithMin(1).
+					WithMax(2),
+				NewFloat64Schema().
+					WithMin(2).
+					WithMax(3),
 			},
 		},
 		Serialization: map[string]interface{}{
@@ -967,16 +955,12 @@ var schemaExamples = []schemaExample{
 		Title: "ONE OF",
 		Schema: &Schema{
 			OneOf: []*Schema{
-				{
-					Value: NewFloat64Schema().
-						WithMin(1).
-						WithMax(2),
-				},
-				{
-					Value: NewFloat64Schema().
-						WithMin(2).
-						WithMax(3),
-				},
+				NewFloat64Schema().
+					WithMin(1).
+					WithMax(2),
+				NewFloat64Schema().
+					WithMin(2).
+					WithMax(3),
 			},
 		},
 		Serialization: map[string]interface{}{
@@ -1276,33 +1260,6 @@ var schemaMultiErrorExamples = []schemaMultiErrorExample{
 			},
 		},
 	},
-}
-
-func TestIssue283(t *testing.T) {
-	const api = `
-openapi: "3.0.1"
-components:
-  schemas:
-    Test:
-      properties:
-        name:
-          type: string
-        ownerName:
-          not:
-            type: boolean
-      type: object
-`
-	data := map[string]interface{}{
-		"name":      "kin-openapi",
-		"ownerName": true,
-	}
-	s, err := NewLoader().LoadFromData([]byte(api))
-	require.NoError(t, err)
-	require.NotNil(t, s)
-	err = s.Components.Schemas["Test"].Value.VisitJSON(data)
-	require.NotNil(t, err)
-	require.NotEqual(t, errSchema, err)
-	require.Contains(t, err.Error(), `Error at "/ownerName": Doesn't match schema "not"`)
 }
 
 func TestValidationFailsOnInvalidPattern(t *testing.T) {

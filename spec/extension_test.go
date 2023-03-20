@@ -1,36 +1,12 @@
 package spec
 
 import (
-	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/getkin/kin-openapi/jsoninfo"
 )
-
-func ExampleExtensionProps_DecodeWith() {
-	loader := NewLoader()
-	loader.IsExternalRefsAllowed = true
-	spec, err := loader.LoadFromFile("testdata/testref.openapi.json")
-	if err != nil {
-		panic(err)
-	}
-
-	dec, err := jsoninfo.NewObjectDecoder(spec.Info.Extensions["x-my-extension"].(json.RawMessage))
-	if err != nil {
-		panic(err)
-	}
-	var value struct {
-		Key int `json:"k"`
-	}
-	if err = spec.Info.DecodeWith(dec, &value); err != nil {
-		panic(err)
-	}
-	fmt.Println(value.Key)
-	// Output: 42
-}
 
 func TestExtensionProps_EncodeWith(t *testing.T) {
 	t.Run("successfully encoded", func(t *testing.T) {

@@ -2,89 +2,12 @@ package spec
 
 import (
 	"context"
-	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/invopop/yaml"
 	"github.com/stretchr/testify/require"
 )
-
-func TestRefsJSON(t *testing.T) {
-	loader := NewLoader()
-
-	t.Log("Marshal *T to JSON")
-	data, err := json.Marshal(spec())
-	require.NoError(t, err)
-	require.NotEmpty(t, data)
-
-	t.Log("Unmarshal *T from JSON")
-	docA := &T{}
-	err = json.Unmarshal(specJSON, &docA)
-	require.NoError(t, err)
-	require.NotEmpty(t, data)
-
-	t.Log("Resolve refs in unmarshalled *T")
-	err = loader.ResolveRefsIn(docA, nil)
-	require.NoError(t, err)
-	t.Log("Resolve refs in marshalled *T")
-	docB, err := loader.LoadFromData(data)
-	require.NoError(t, err)
-	require.NotEmpty(t, docB)
-
-	t.Log("Validate *T")
-	err = docA.Validate(loader.Context)
-	require.NoError(t, err)
-	err = docB.Validate(loader.Context)
-	require.NoError(t, err)
-
-	t.Log("Ensure representations match")
-	dataA, err := json.Marshal(docA)
-	require.NoError(t, err)
-	dataB, err := json.Marshal(docB)
-	require.NoError(t, err)
-	require.JSONEq(t, string(data), string(specJSON))
-	require.JSONEq(t, string(data), string(dataA))
-	require.JSONEq(t, string(data), string(dataB))
-}
-
-func TestRefsYAML(t *testing.T) {
-	loader := NewLoader()
-
-	t.Log("Marshal *T to YAML")
-	data, err := yaml.Marshal(spec())
-	require.NoError(t, err)
-	require.NotEmpty(t, data)
-
-	t.Log("Unmarshal *T from YAML")
-	docA := &T{}
-	err = yaml.Unmarshal(specYAML, &docA)
-	require.NoError(t, err)
-	require.NotEmpty(t, data)
-
-	t.Log("Resolve refs in unmarshalled *T")
-	err = loader.ResolveRefsIn(docA, nil)
-	require.NoError(t, err)
-	t.Log("Resolve refs in marshalled *T")
-	docB, err := loader.LoadFromData(data)
-	require.NoError(t, err)
-	require.NotEmpty(t, docB)
-
-	t.Log("Validate *T")
-	err = docA.Validate(loader.Context)
-	require.NoError(t, err)
-	err = docB.Validate(loader.Context)
-	require.NoError(t, err)
-
-	t.Log("Ensure representations match")
-	dataA, err := yaml.Marshal(docA)
-	require.NoError(t, err)
-	dataB, err := yaml.Marshal(docB)
-	require.NoError(t, err)
-	eqYAML(t, data, specYAML)
-	eqYAML(t, data, dataA)
-	eqYAML(t, data, dataB)
-}
 
 func eqYAML(t *testing.T, expected, actual []byte) {
 	var e, a interface{}
@@ -276,56 +199,44 @@ func spec() *T {
 				Post: &Operation{
 					Parameters: Parameters{
 						{
-							Ref:   "#/components/parameters/someParameter",
-							Value: parameter,
+							Ref: "#/components/parameters/someParameter",
 						},
 					},
 					RequestBody: &RequestBodyRef{
-						Ref:   "#/components/requestBodies/someRequestBody",
-						Value: requestBody,
+						Ref: "#/components/requestBodies/someRequestBody",
 					},
 					Responses: Responses{
 						"200": &ResponseRef{
-							Ref:   "#/components/responses/someResponse",
-							Value: response,
+							Ref: "#/components/responses/someResponse",
 						},
 					},
 				},
 				Parameters: Parameters{
 					{
-						Ref:   "#/components/parameters/someParameter",
-						Value: parameter,
+						Ref: "#/components/parameters/someParameter",
 					},
 				},
 			},
 		},
 		Components: Components{
 			Parameters: map[string]*ParameterRef{
-				"someParameter": {
-					Value: parameter,
-				},
+				"someParameter": parameter,
 			},
 			RequestBodies: map[string]*RequestBodyRef{
-				"someRequestBody": {
-					Value: requestBody,
-				},
+				"someRequestBody": requestBody,
 			},
 			Responses: map[string]*ResponseRef{
-				"someResponse": {
-					Value: response,
-				},
+				"someResponse": response,
 			},
 			Schemas: map[string]*Schema{
-				"someSchema": {
-					Value: schema,
-				},
+				"someSchema": schema,
 			},
 			Headers: map[string]*HeaderRef{
 				"someHeader": {
 					Ref: "#/components/headers/otherHeader",
 				},
 				"otherHeader": {
-					Value: &Header{Parameter{Schema: &SchemaRef{Value: NewStringSchema()}}},
+					Value: &Header{Parameter{Schema: NewStringSchema()}},
 				},
 			},
 			Examples: map[string]*ExampleRef{

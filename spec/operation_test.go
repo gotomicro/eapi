@@ -29,8 +29,8 @@ func TestAddResponse(t *testing.T) {
 	initOperation()
 	operation.AddResponse(200, NewResponse())
 	operation.AddResponse(400, NewResponse())
-	require.NotNil(t, "status 200", operation.Responses.Get(200).Value)
-	require.NotNil(t, "status 400", operation.Responses.Get(400).Value)
+	require.NotNil(t, "status 200", operation.Responses.Get(200))
+	require.NotNil(t, "status 400", operation.Responses.Get(400))
 }
 
 func operationWithoutResponses() *Operation {

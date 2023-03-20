@@ -54,10 +54,8 @@ var mediaTypeJSON = []byte(`
 func mediaType() *MediaType {
 	example := map[string]string{"name": "Some example"}
 	return &MediaType{
-		Schema: &SchemaRef{
-			Value: &Schema{
-				Description: "Some schema",
-			},
+		Schema: &Schema{
+			Description: "Some schema",
 		},
 		Encoding: map[string]*Encoding{
 			"someEncoding": {

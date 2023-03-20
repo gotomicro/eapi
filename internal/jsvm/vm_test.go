@@ -21,7 +21,7 @@ func TestVM_Print(t *testing.T) {
 			name: "print test",
 			args: args{
 				code: `
-const { utils: {join, indent, hardline}, printDocToString } = require("eapi");
+const { docBuilders: {join, indent, hardline}, printDocToString } = require("eapi");
 module.exports.print = function (doc) {
 	console.log(JSON.stringify(doc));
 	return printDocToString([
