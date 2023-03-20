@@ -6,6 +6,7 @@
 <p align="center">一个通过分析代码生成 OpenAPI 文档的工具</p>
 <p align="center">
    <img src="https://goreportcard.com/badge/github.com/gotomicro/eapi" />
+   <img src="https://github.com/gotomicro/eapi/workflows/Go/badge.svg?branch=main" />
 </p>
 
 ## 介绍
