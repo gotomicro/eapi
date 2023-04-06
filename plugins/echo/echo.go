@@ -133,7 +133,7 @@ func (p *Plugin) callExpr(ctx *eapi.Context, callExpr *ast.CallExpr) {
 	)
 }
 
-func (e *Plugin) parseAPI(ctx *eapi.Context, callExpr *ast.CallExpr, comment *eapi.Comment) (api *eapi.API) {
+func (p *Plugin) parseAPI(ctx *eapi.Context, callExpr *ast.CallExpr, comment *eapi.Comment) (api *eapi.API) {
 	if len(callExpr.Args) < 2 {
 		return
 	}
@@ -151,7 +151,7 @@ func (e *Plugin) parseAPI(ctx *eapi.Context, callExpr *ast.CallExpr, comment *ea
 		}
 	}
 
-	handlerFn := e.getHandlerFn(ctx, callExpr)
+	handlerFn := p.getHandlerFn(ctx, callExpr)
 	if handlerFn == nil {
 		return
 	}
@@ -166,7 +166,7 @@ func (e *Plugin) parseAPI(ctx *eapi.Context, callExpr *ast.CallExpr, comment *ea
 		return
 	}
 
-	fullPath := path.Join(prefix, e.normalizePath(strings.Trim(arg0.Value, "\"")))
+	fullPath := path.Join(prefix, p.normalizePath(strings.Trim(arg0.Value, "\"")))
 	method := selExpr.Sel.Name
 	api = eapi.NewAPI(method, fullPath)
 	api.Spec.LoadFromComment(ctx, comment)
@@ -182,12 +182,12 @@ func (e *Plugin) parseAPI(ctx *eapi.Context, callExpr *ast.CallExpr, comment *ea
 		ctx.NewEnv().WithPackage(handlerFnDef.Pkg()).WithFile(handlerFnDef.File()),
 		api,
 		handlerFnDef.Decl,
-	).WithConfig(&e.config).Parse()
+	).WithConfig(&p.config).Parse()
 
 	return
 }
 
-func (e *Plugin) getHandlerFn(ctx *eapi.Context, callExpr *ast.CallExpr) (handlerFn *types.Func) {
+func (p *Plugin) getHandlerFn(ctx *eapi.Context, callExpr *ast.CallExpr) (handlerFn *types.Func) {
 	handlerArg := callExpr.Args[len(callExpr.Args)-1]
 	if call, ok := handlerArg.(*ast.CallExpr); ok {
 		nestedCall := utils.UnwrapCall(call)
@@ -203,7 +203,7 @@ var (
 	pathParamPattern = regexp.MustCompile(`:([^\/]+)`)
 )
 
-func (e *Plugin) normalizePath(path string) string {
+func (p *Plugin) normalizePath(path string) string {
 	return pathParamPattern.ReplaceAllStringFunc(path, func(s string) string {
 		s = strings.TrimPrefix(s, ":")
 		return "{" + s + "}"
