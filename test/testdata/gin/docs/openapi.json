@@ -213,6 +213,19 @@
                 "title": "GormDeletedAt",
                 "type": "string"
             },
+            "server_pkg_shop.GoodsInfoPathParams": {
+                "ext": {
+                    "type": "object"
+                },
+                "properties": {
+                    "guid": {
+                        "description": "Goods Guid",
+                        "type": "integer"
+                    }
+                },
+                "title": "ShopGoodsInfoPathParams",
+                "type": "object"
+            },
             "server_pkg_view.ErrCode": {
                 "description": "\u003ctable\u003e\u003ctr\u003e\u003cth\u003eValue\u003c/th\u003e\u003cth\u003eKey\u003c/th\u003e\u003cth\u003eDescription\u003c/th\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e\u003c/td\u003e\u003ctd\u003eCodeNotFound\u003c/td\u003e\u003ctd\u003eResource not found\u003c/td\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e\u003c/td\u003e\u003ctd\u003eCodeCancled\u003c/td\u003e\u003ctd\u003eRequest canceld\u003c/td\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e\u003c/td\u003e\u003ctd\u003eCodeUnknown\u003c/td\u003e\u003ctd\u003e\u003c/td\u003e\u003c/tr\u003e\u003ctr\u003e\u003ctd\u003e\u003c/td\u003e\u003ctd\u003eCodeInvalidArgument\u003c/td\u003e\u003ctd\u003e\u003c/td\u003e\u003c/tr\u003e\u003c/table\u003e",
                 "enum": [
@@ -448,19 +461,6 @@
                 },
                 "title": "ViewSelfRefType",
                 "type": "object"
-            },
-            "server_pkg_shop.GoodsInfoPathParams": {
-                "title": "ShopGoodsInfoPathParams",
-                "type": "object",
-                "ext": {
-                    "type": "object"
-                },
-                "properties": {
-                    "guid": {
-                        "description": "Goods Guid",
-                        "type": "integer"
-                    }
-                }
             }
         },
         "securitySchemes": {
@@ -485,6 +485,27 @@
     },
     "openapi": "3.1.0",
     "paths": {
+        "/api/controller/goods/{guid}": {
+            "delete": {
+                "operationId": "controller.Delete",
+                "parameters": [
+                    {
+                        "description": "Goods Guid",
+                        "in": "path",
+                        "name": "guid",
+                        "required": true,
+                        "schema": {
+                            "title": "guid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {},
+                "tags": [
+                    "Shop"
+                ]
+            }
+        },
         "/api/goods": {
             "post": {
                 "description": "GoodsCreate 创建商品接口",
@@ -626,10 +647,10 @@
                 "operationId": "shop.GoodsInfo",
                 "parameters": [
                     {
+                        "description": "Goods Guid",
                         "in": "path",
                         "name": "guid",
                         "required": true,
-                        "description": "Goods Guid",
                         "schema": {
                             "description": "Goods Guid",
                             "type": "integer"

@@ -12,6 +12,7 @@ import (
 
 	analyzer "github.com/gotomicro/eapi"
 	"github.com/gotomicro/eapi/plugins/common"
+	"github.com/gotomicro/eapi/utils"
 	"github.com/knadh/koanf"
 )
 
@@ -167,10 +168,10 @@ func (e *Plugin) parseAPI(ctx *analyzer.Context, callExpr *ast.CallExpr, comment
 	if handlerFn == nil {
 		return
 	}
-
-	handlerDef := ctx.GetDefinition(handlerFn.Pkg().Path(), handlerFn.Name())
+	typeName, methodName := utils.GetFuncInfo(handlerFn)
+	handlerDef := ctx.GetDefinition(typeName, methodName)
 	if handlerDef == nil {
-		fmt.Fprintf(os.Stderr, "handler function %s.%s not found\n", handlerFn.Pkg().Path(), handlerFn.Name())
+		fmt.Fprintf(os.Stderr, "handler function %s.%s not found\n", typeName, methodName)
 		return
 	}
 	handlerFnDef, ok := handlerDef.(*analyzer.FuncDefinition)
@@ -198,49 +199,16 @@ func (e *Plugin) parseAPI(ctx *analyzer.Context, callExpr *ast.CallExpr, comment
 	return
 }
 
-// unwrap and returns the first nested call
-// e.g. unwrapCall(`a(b(c(d)), b1(c1))`) return `c(d)`
-func (e *Plugin) unwrapCall(callExpr *ast.CallExpr) *ast.CallExpr {
-	if len(callExpr.Args) == 0 {
-		return callExpr
-	}
-
-	arg0 := callExpr.Args[0]
-	arg0Call, ok := arg0.(*ast.CallExpr)
-	if ok {
-		return e.unwrapCall(arg0Call)
-	}
-
-	return callExpr
-}
-
 func (e *Plugin) getHandlerFn(ctx *analyzer.Context, callExpr *ast.CallExpr) (handlerFn *types.Func) {
 	handlerArg := callExpr.Args[len(callExpr.Args)-1]
-
 	if call, ok := handlerArg.(*ast.CallExpr); ok {
-		nestedCall := e.unwrapCall(call)
+		nestedCall := utils.UnwrapCall(call)
 		if len(nestedCall.Args) <= 0 {
 			return
 		}
 		handlerArg = nestedCall.Args[0]
 	}
-
-	var handler interface{}
-	switch handlerArg := handlerArg.(type) {
-	case *ast.Ident:
-		handler = ctx.Package().TypesInfo.Uses[handlerArg]
-	case *ast.SelectorExpr:
-		handler = ctx.Package().TypesInfo.Uses[handlerArg.Sel]
-	default:
-		return
-	}
-
-	handlerFn, ok := handler.(*types.Func)
-	if !ok {
-		return
-	}
-
-	return
+	return ctx.GetFuncFromAstNode(handlerArg)
 }
 
 var (

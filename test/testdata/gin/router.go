@@ -1,6 +1,7 @@
 package router
 
 import (
+	"server/pkg/controller"
 	"server/pkg/handler"
 	"server/pkg/shop"
 
@@ -33,9 +34,13 @@ func ServeHttp() *gin.Engine {
 			g.POST("/goods", handler.Handler(shop.GoodsCreate))
 			g.POST("/goods/:guid/down", shop.GoodsDown)
 		}
-		g = g.Group("/v2")
+		g := g.Group("/v2")
 		g.GET("/goods/:guid", shop.GoodsInfo)
 	}
+
+	// controller style
+	goodsController := controller.NewGoodsController()
+	g.DELETE("/controller/goods/:guid", goodsController.Delete)
 
 	return r
 }

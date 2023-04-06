@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/gotomicro/eapi/spec"
+	"github.com/gotomicro/eapi/utils"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -212,6 +213,23 @@ func (c *Context) MatchCall(n ast.Node, rule *CallRule, callback func(call *ast.
 	return
 }
 
+func (c *Context) GetFuncFromAstNode(n ast.Node) *types.Func {
+	var obj interface{}
+	switch handlerArg := n.(type) {
+	case *ast.Ident:
+		obj = c.Package().TypesInfo.ObjectOf(handlerArg)
+	case *ast.SelectorExpr:
+		obj = c.Package().TypesInfo.ObjectOf(handlerArg.Sel)
+	default:
+		return nil
+	}
+	fn, ok := obj.(*types.Func)
+	if !ok {
+		return nil
+	}
+	return fn
+}
+
 type CallInfo struct {
 	Type   string
 	Method string
@@ -298,15 +316,7 @@ func (c *Context) parseCallInfoByIdent(ident *ast.Ident) (info *CallInfo) {
 	if !ok {
 		return nil
 	}
-	info.Method = fn.Name()
-
-	sign := fn.Type().(*types.Signature)
-	if sign.Recv() != nil {
-		info.Type = sign.Recv().Type().String()
-	} else {
-		info.Type = fn.Pkg().Path()
-	}
-
+	info.Type, info.Method = utils.GetFuncInfo(fn)
 	return
 }
 
