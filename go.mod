@@ -1,6 +1,6 @@
 module github.com/gotomicro/eapi
 
-go 1.18
+go 1.21.1
 
 require (
 	github.com/getkin/kin-openapi v0.109.0
