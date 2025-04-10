@@ -37,21 +37,25 @@ func (f *FuncDefinition) Key() string {
 		case *ast.Ident:
 			return f.pkg.PkgPath + "." + t.Name + "." + f.Decl.Name.Name
 		case *ast.StarExpr:
-			i, ok := t.X.(*ast.Ident)
-			if !ok {
-				fmt.Printf("invalid function receiver at %s", f.pkg.Fset.Position(receiver.Pos()).String())
-				break
+			switch i := t.X.(type) {
+			case *ast.Ident:
+				return "*" + f.pkg.PkgPath + "." + i.Name + "." + f.Decl.Name.Name
+			case *ast.IndexExpr:
+				// 范型未被完全支持，暂时先这样处理
+				_i, ok := i.X.(*ast.Ident)
+				if !ok {
+					return ""
+				}
+				return "*" + f.pkg.PkgPath + "." + _i.Name + "." + f.Decl.Name.Name
+			default:
+				fmt.Printf("invalid function receiver at %s\n", f.pkg.Fset.Position(receiver.Pos()).String())
 			}
-			return "*" + f.pkg.PkgPath + "." + i.Name + "." + f.Decl.Name.Name
+		case *ast.IndexExpr:
+			// 范型未被完全支持，暂时先这样处理
+			return ""
 		default:
-			fmt.Printf("invalid function receiver at %s", f.pkg.Fset.Position(receiver.Pos()).String())
+			fmt.Printf("invalid function receiver at %s\n", f.pkg.Fset.Position(receiver.Pos()).String())
 		}
-		ident, ok := receiver.Type.(*ast.Ident)
-		if !ok {
-			fmt.Printf("invalid function receiver at %s", f.pkg.Fset.Position(receiver.Pos()).String())
-			return f.pkg.PkgPath + "." + f.Decl.Name.Name
-		}
-		return f.pkg.PkgPath + "." + ident.Name + f.Decl.Name.Name
 	}
 
 	return f.pkg.PkgPath + "." + f.Decl.Name.Name
@@ -121,7 +125,10 @@ func (t *TypeDefinition) RefKey(typeArgs ...*spec.SchemaRef) string {
 type Definitions map[string]Definition
 
 func (d *Definitions) Set(def Definition) {
-	(*d)[def.Key()] = def
+	k := def.Key()
+	if k != "" {
+		(*d)[k] = def
+	}
 }
 
 func (d *Definitions) Get(key string) Definition {
