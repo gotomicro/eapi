@@ -76,10 +76,10 @@ func (p *ParamParser) parseStructType(structType *ast.StructType) (params []*spe
 func (p *ParamParser) parseField(name *ast.Ident, field *ast.Field) (param *spec.Parameter) {
 	param = p.typeOf(field.Type)
 
-	tagValues := tag.Parse(field.Tag.Value)
 	param.Name = name.Name
 	param.In = "query"
-	if p.nameParser != nil {
+	if field.Tag != nil && p.nameParser != nil {
+		tagValues := tag.Parse(field.Tag.Value)
 		param.Name, param.In = p.nameParser(name.Name, tagValues)
 	}
 

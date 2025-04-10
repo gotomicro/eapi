@@ -12,6 +12,8 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+var DEBUG = os.Getenv("DEBUG") == "on"
+
 func InspectPackage(pkg *packages.Package, visit func(pkg *packages.Package) bool) {
 	if !visit(pkg) {
 		return

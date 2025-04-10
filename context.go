@@ -74,6 +74,9 @@ func (c *Context) ParseType(t types.Type) Definition {
 	case *types.Pointer:
 		return c.ParseType(t.Elem())
 	case *types.Named:
+		if t.Obj().Pkg() == nil {
+			return nil
+		}
 		return c.GetDefinition(t.Obj().Pkg().Path(), t.Obj().Name())
 	case types.Object:
 		return c.GetDefinition(t.Pkg().Path(), t.Name())

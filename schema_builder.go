@@ -245,6 +245,9 @@ func (s *SchemaBuilder) parseStruct(expr *ast.StructType) *spec.SchemaRef {
 
 func (s *SchemaBuilder) parseIdent(expr *ast.Ident) *spec.SchemaRef {
 	t := s.ctx.Package().TypesInfo.TypeOf(expr)
+	if t == nil {
+		return nil
+	}
 	return s.parseType(t)
 }
 
@@ -272,6 +275,9 @@ var commonTypes = map[string]*spec.Schema{
 func (s *SchemaBuilder) commonUsedType(t types.Type) *spec.SchemaRef {
 	switch t := t.(type) {
 	case *types.Named:
+		if t.Obj() == nil || t.Obj().Pkg() == nil {
+			return nil
+		}
 		typeName := t.Obj().Pkg().Path() + "." + t.Obj().Name()
 		commonType, ok := commonTypes[typeName]
 		if !ok {

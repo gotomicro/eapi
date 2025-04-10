@@ -80,13 +80,36 @@ func (a *Analyzer) Process(packagePath string) *Analyzer {
 		panic("invalid package path: " + err.Error())
 	}
 
+	var visited = make(map[string]struct{})
 	pkgList := a.load(packagePath)
 	for _, pkg := range pkgList {
 		a.definitions = make(Definitions)
 		for _, p := range pkg {
 			a.loadDefinitionsFromPkg(p, p.Module.Dir)
 		}
-		a.processPkg(pkg)
+
+		for _, pkg := range pkg {
+			moduleDir := pkg.Module.Dir
+			InspectPackage(pkg, func(pkg *packages.Package) bool {
+				if _, ok := visited[pkg.PkgPath]; ok {
+					return false
+				}
+				visited[pkg.PkgPath] = struct{}{}
+				if pkg.Module == nil || pkg.Module.Dir != moduleDir {
+					return false
+				}
+				if DEBUG {
+					fmt.Printf("inspect %s\n", pkg.PkgPath)
+				}
+
+				ctx := a.context().Block().WithPackage(pkg)
+				for _, file := range pkg.Syntax {
+					a.processFile(ctx.Block().WithFile(file), file, pkg)
+				}
+
+				return true
+			})
+		}
 	}
 
 	return a
@@ -176,24 +199,6 @@ func (a *Analyzer) load(pkgPath string) [][]*packages.Package {
 	return res
 }
 
-func (a *Analyzer) processPkg(pkgList []*packages.Package) {
-	for _, pkg := range pkgList {
-		moduleDir := pkg.Module.Dir
-		InspectPackage(pkg, func(pkg *packages.Package) bool {
-			if pkg.Module == nil || pkg.Module.Dir != moduleDir {
-				return false
-			}
-
-			ctx := a.context().Block().WithPackage(pkg)
-			for _, file := range pkg.Syntax {
-				a.processFile(ctx.Block().WithFile(file), file, pkg)
-			}
-
-			return true
-		})
-	}
-}
-
 func (a *Analyzer) processFile(ctx *Context, file *ast.File, pkg *packages.Package) {
 	comment := ctx.ParseComment(file.Doc)
 	if comment.Ignore() {
@@ -236,7 +241,13 @@ func (a *Analyzer) funDecl(ctx *Context, node *ast.FuncDecl, file *ast.File, pkg
 }
 
 func (a *Analyzer) loadDefinitionsFromPkg(pkg *packages.Package, moduleDir string) {
+	var visited = make(map[string]struct{})
 	InspectPackage(pkg, func(pkg *packages.Package) bool {
+		if _, ok := visited[pkg.PkgPath]; ok {
+			return false
+		}
+		visited[pkg.PkgPath] = struct{}{}
+
 		if pkg.Module == nil { // Go 内置包
 			ignore := true
 			for _, depend := range a.depends {
